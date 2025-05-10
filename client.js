@@ -14,23 +14,21 @@ class GeminiAPIService {
   constructor(config = {}) {
     // Store the configuration with defaults
     this.config = {
-      model_name: 'gemini-2.5-pro-preview-05-06',
+      model_name: 'gemini-1.5-pro-latest', 
       ...config
     };
 
-    // Check for API key
     const apiKeyFromEnv = process.env.GEMINI_API_KEY;
     if (!apiKeyFromEnv) {
       console.error('GEMINI_API_KEY environment variable not found');
       this.apiKeyMissing = true;
-      return; // don't create the client but don't crash
+      return; 
     }
 
-    // Initialize the client with proper configuration object
     this.client = new GoogleGenAI({
       apiKey: apiKeyFromEnv,
       httpOptions: {
-        timeout: 900000 // 15 minutes in milliseconds
+        timeout: 900000 
       }
     });
   }
@@ -38,7 +36,7 @@ class GeminiAPIService {
   /**
    * Stream a response with thinking-like functionality
    * @param {string} prompt - Prompt to complete
-   * @param {Object} options - API options
+   * @param {Object} options - API options (currently unused but kept for interface compatibility)
    * @param {Function} onThinking - Callback for thinking content
    * @param {Function} onText - Callback for response text
    * @returns {Promise<void>}
@@ -49,7 +47,6 @@ class GeminiAPIService {
     }
 
     try {
-      // Add thinking instructions to the prompt
       const thinkingPrompt = `
 ${prompt}
 
@@ -60,82 +57,79 @@ The THINKING section should be comprehensive, showing all your reasoning steps.
 The RESPONSE section should only contain your final answer.
 `;
 
-      // Get the model
-      const model = this.client.getGenerativeModel({ 
+      // Reverted to HarmBlockThreshold.OFF as per your original code and feedback
+      const safetySettings = [
+        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.OFF },
+        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.OFF },
+        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.OFF },
+        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.OFF }
+      ];
+      
+      const streamGenerator = await this.client.models.generateContentStream({
         model: this.config.model_name,
-        safetySettings: [
-          { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.OFF },
-          { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.OFF },
-          { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.OFF },
-          { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.OFF }
-        ]
+        contents: [{ role: "user", parts: [{ text: thinkingPrompt }] }],
+        safetySettings: safetySettings
       });
 
-      // Generate content stream
-      const result = await model.generateContentStream({
-        contents: [{ role: "user", parts: [{ text: thinkingPrompt }] }]
-      });
-
-      // Process the stream and separate thinking from response
       let inThinkingMode = false;
       let inResponseMode = false;
       
-      for await (const chunk of result.stream) {
-        if (chunk.candidates && 
-            chunk.candidates.length > 0 && 
-            chunk.candidates[0].content && 
-            chunk.candidates[0].content.parts && 
-            chunk.candidates[0].content.parts.length > 0) {
-          
-          const text = chunk.candidates[0].content.parts[0].text || '';
-          
-          // Check for thinking marker
-          if (text.includes("THINKING:") && !inResponseMode) {
+      for await (const chunk of streamGenerator) {
+        let currentText = chunk.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        if (!currentText) {
+          continue;
+        }
+
+        if (inThinkingMode) {
+          const responseMarkerIndex = currentText.indexOf("RESPONSE:");
+          if (responseMarkerIndex !== -1) {
+            const thinkingPart = currentText.substring(0, responseMarkerIndex);
+            if (thinkingPart) onThinking(thinkingPart);
+            
+            const responsePart = currentText.substring(responseMarkerIndex + "RESPONSE:".length);
+            if (responsePart) onText(responsePart);
+            
+            inThinkingMode = false;
+            inResponseMode = true;
+          } else {
+            onThinking(currentText);
+          }
+        } else if (inResponseMode) {
+          onText(currentText);
+        } else { 
+          const thinkingMarkerIndex = currentText.indexOf("THINKING:");
+          const responseMarkerIndex = currentText.indexOf("RESPONSE:");
+
+          if (thinkingMarkerIndex !== -1 && (responseMarkerIndex === -1 || thinkingMarkerIndex < responseMarkerIndex)) {
+            const preambleText = currentText.substring(0, thinkingMarkerIndex);
+            if (preambleText) onText(preambleText);
+            
+            let postThinkingMarkerText = currentText.substring(thinkingMarkerIndex + "THINKING:".length);
             inThinkingMode = true;
             
-            // Split at THINKING: marker
-            const parts = text.split("THINKING:");
-            
-            // If there's content before the marker, it's preliminary response
-            if (parts[0] && parts[0].trim() && onText) {
-              onText(parts[0]);
+            const nestedResponseMarkerIndex = postThinkingMarkerText.indexOf("RESPONSE:");
+            if (nestedResponseMarkerIndex !== -1) {
+              const thinkingPart = postThinkingMarkerText.substring(0, nestedResponseMarkerIndex);
+              if (thinkingPart) onThinking(thinkingPart);
+              
+              const responsePart = postThinkingMarkerText.substring(nestedResponseMarkerIndex + "RESPONSE:".length);
+              if (responsePart) onText(responsePart);
+              
+              inThinkingMode = false;
+              inResponseMode = true;
+            } else {
+              if (postThinkingMarkerText) onThinking(postThinkingMarkerText);
             }
+          } else if (responseMarkerIndex !== -1) {
+            const preambleText = currentText.substring(0, responseMarkerIndex);
+            if (preambleText) onText(preambleText);
             
-            // Process thinking content after the marker
-            if (parts.length > 1 && parts[1] && onThinking) {
-              onThinking(parts[1]);
-            }
-            continue;
-          }
-          
-          // Check for response marker
-          if (text.includes("RESPONSE:")) {
+            const responsePart = currentText.substring(responseMarkerIndex + "RESPONSE:".length);
+            if (responsePart) onText(responsePart);
+            
             inResponseMode = true;
-            inThinkingMode = false;
-            
-            // Split at RESPONSE: marker
-            const parts = text.split("RESPONSE:");
-            
-            // Add any remaining thinking content
-            if (parts[0] && parts[0].trim() && inThinkingMode && onThinking) {
-              onThinking(parts[0]);
-            }
-            
-            // Process response content after the marker
-            if (parts.length > 1 && parts[1] && onText) {
-              onText(parts[1]);
-            }
-            continue;
-          }
-          
-          // Handle content based on current mode
-          if (inThinkingMode && onThinking) {
-            onThinking(text);
-          } else if (inResponseMode && onText) {
-            onText(text);
-          } else if (onText) {
-            // Default case: if no markers found yet, treat as response
-            onText(text);
+          } else {
+            onText(currentText);
           }
         }
       }
@@ -156,20 +150,14 @@ The RESPONSE section should only contain your final answer.
     }
 
     try {
-      // Get the model
-      const model = this.client.getGenerativeModel({ model: this.config.model_name });
-      
-      // Count tokens using the model API
-      const result = await model.countTokens({
-        contents: [{ role: "user", parts: [{ text: text }] }]
+      const result = await this.client.models.countTokens({
+        model: this.config.model_name,
+        contents: [{ role: "user", parts: [{ text: text }] }] 
       });
       
-      // Return the token count from the response
       return result.totalTokens || 0;
     } catch (error) {
       console.error('Token counting error:', error);
-      
-      // Simple fallback - estimate roughly 1 token per 4 characters
       return Math.ceil(text.length / 4);
     }
   }
@@ -181,12 +169,13 @@ The RESPONSE section should only contain your final answer.
    * @returns {Object} - Calculated token budgets and limits
    */
   calculateTokenBudgets(promptTokens) {
-    // Reasonable defaults that are compatible with Claude API interface
-    const contextWindow = 1000000; // Gemini can handle large contexts
+    const contextWindow = 1000000; 
     const availableTokens = contextWindow - promptTokens;
-    const desiredOutputTokens = this.config.desired_output_tokens || 12000;
-    const thinkingBudget = 0; // Gemini doesn't have thinking budgets
-    const maxTokens = Math.min(availableTokens, 32000);
+    const desiredOutputTokens = this.config.desired_output_tokens || 8192; 
+    const thinkingBudget = 0; 
+    
+    const maxOutputTokenLimit = 8192; 
+    const maxTokens = Math.min(availableTokens, maxOutputTokenLimit);
     
     return {
       contextWindow,
@@ -195,22 +184,16 @@ The RESPONSE section should only contain your final answer.
       maxTokens,
       thinkingBudget,
       desiredOutputTokens,
-      isPromptTooLarge: false
+      isPromptTooLarge: promptTokens >= contextWindow 
     };
   }
 
-  /**
-   * Empty method for Claude API compatibility
-   */
   recreate() {
-    // Not needed for Gemini
+    // Not needed
   }
 
-  /**
-   * Empty method for Claude API compatibility
-   */
   close() {
-    // Not needed for Gemini
+    // Not needed
   }
 }
 
