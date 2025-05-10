@@ -18,13 +18,13 @@ const fs = require('fs/promises');
 class GenericTool extends BaseTool {
   /**
    * Constructor
-   * @param {Object} claudeService - Claude API service
+   * @param {Object} GeminiAPIService - Claude API service
    * @param {Object} config - Tool configuration
    */
-  constructor(claudeService, config = {}) {
+  constructor(GeminiAPIService, config = {}) {
     // TODO: Change 'generic_tool' to your tool's ID
     super('generic_tool', config);
-    this.claudeService = claudeService;
+    this.GeminiAPIService = GeminiAPIService;
     // console.log('Generic Tool initialized with config:', config);
   }
   
@@ -69,10 +69,10 @@ class GenericTool extends BaseTool {
 
       // Count tokens in the prompt
       this.emitOutput(`Counting tokens in prompt...\n`);
-      const promptTokens = await this.claudeService.countTokens(prompt);
+      const promptTokens = await this.GeminiAPIService.countTokens(prompt);
 
       // Call the shared token budget calculator
-      const tokenBudgets = this.claudeService.calculateTokenBudgets(promptTokens);
+      const tokenBudgets = this.GeminiAPIService.calculateTokenBudgets(promptTokens);
 
       // Handle logging based on the returned values
       this.emitOutput(`\nToken stats:\n`);
@@ -109,7 +109,7 @@ class GenericTool extends BaseTool {
 
       // Use the calculated values in the API call
       try {
-        await this.claudeService.streamWithThinking(
+        await this.GeminiAPIService.streamWithThinking(
           prompt,
           {
             model: "claude-3-7-sonnet-20250219",
@@ -147,7 +147,7 @@ class GenericTool extends BaseTool {
       this.emitOutput(`Report has approximately ${wordCount} words.\n`);
       
       // Count tokens in response
-      const responseTokens = await this.claudeService.countTokens(fullResponse);
+      const responseTokens = await this.GeminiAPIService.countTokens(fullResponse);
       this.emitOutput(`Response token count: ${responseTokens}\n`);
       
       // Save the response to a file

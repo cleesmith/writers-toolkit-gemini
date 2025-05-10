@@ -13,12 +13,12 @@ const appState = require('./state.js');
 class KdpPublishingPrep extends BaseTool {
   /**
    * Constructor
-   * @param {Object} claudeService - Claude API service
+   * @param {Object} GeminiAPIService - Claude API service
    * @param {Object} config - Tool configuration
    */
-  constructor(claudeService, config = {}) {
+  constructor(GeminiAPIService, config = {}) {
     super('kdp_publishing_prep', config);
-    this.claudeService = claudeService;
+    this.GeminiAPIService = GeminiAPIService;
   }
   
   /**
@@ -80,10 +80,10 @@ class KdpPublishingPrep extends BaseTool {
       
       // Count tokens in the prompt
       this.emitOutput(`Counting tokens in prompt...\n`);
-      const promptTokens = await this.claudeService.countTokens(prompt);
+      const promptTokens = await this.GeminiAPIService.countTokens(prompt);
 
       // Calculate token budgets
-      const tokenBudgets = this.claudeService.calculateTokenBudgets(promptTokens);
+      const tokenBudgets = this.GeminiAPIService.calculateTokenBudgets(promptTokens);
 
       // Log token information
       this.emitOutput(`\nToken stats:\n`);
@@ -113,7 +113,7 @@ class KdpPublishingPrep extends BaseTool {
       
       // Use the calculated values in the API call
       try {
-        await this.claudeService.streamWithThinking(
+        await this.GeminiAPIService.streamWithThinking(
           prompt,
           {
             max_tokens: tokenBudgets.maxTokens,
@@ -193,7 +193,7 @@ class KdpPublishingPrep extends BaseTool {
           wordCount,
           responseWordCount,
           promptTokens,
-          responseTokens: await this.claudeService.countTokens(fullResponse)
+          responseTokens: await this.GeminiAPIService.countTokens(fullResponse)
         }
       };
       

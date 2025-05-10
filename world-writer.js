@@ -13,12 +13,12 @@ const fs = require('fs/promises');
 class WorldWriter extends BaseTool {
   /**
    * Constructor
-   * @param {Object} claudeService - Claude API service
+   * @param {Object} GeminiAPIService - Claude API service
    * @param {Object} config - Tool configuration
    */
-  constructor(claudeService, config = {}) {
+  constructor(GeminiAPIService, config = {}) {
     super('world_writer', config);
-    this.claudeService = claudeService;
+    this.GeminiAPIService = GeminiAPIService;
     // console.log('WorldWriter Tool initialized with config:', config);
   }
   
@@ -87,7 +87,7 @@ class WorldWriter extends BaseTool {
       
       // Count tokens in prompt
       this.emitOutput(`Counting tokens in prompt...\n`);
-      const promptTokens = await this.claudeService.countTokens(prompt);
+      const promptTokens = await this.GeminiAPIService.countTokens(prompt);
       
       // Calculate available tokens after prompt
       const contextWindow = this.config.context_window || 200000;
@@ -149,7 +149,7 @@ class WorldWriter extends BaseTool {
       
       try {
         // Use streaming API call
-        await this.claudeService.streamWithThinking(
+        await this.GeminiAPIService.streamWithThinking(
           prompt,
           {
             model: "claude-3-7-sonnet-20250219",
@@ -187,7 +187,7 @@ class WorldWriter extends BaseTool {
       this.emitOutput(`World document has approximately ${wordCount} words.\n`);
       
       // Count tokens in response
-      const responseTokens = await this.claudeService.countTokens(fullResponse);
+      const responseTokens = await this.GeminiAPIService.countTokens(fullResponse);
       this.emitOutput(`World document token count: ${responseTokens}\n`);
       
       // Save the world document to a file

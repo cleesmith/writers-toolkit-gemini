@@ -49,12 +49,12 @@ const fs = require('fs/promises');
 class NarrativeIntegrity extends BaseTool {
   /**
    * Constructor
-   * @param {Object} claudeService - Claude API service
+   * @param {Object} GeminiAPIService - Claude API service
    * @param {Object} config - Tool configuration
    */
-  constructor(claudeService, config = {}) {
+  constructor(GeminiAPIService, config = {}) {
     super('narrative_integrity', config);
-    this.claudeService = claudeService;
+    this.GeminiAPIService = GeminiAPIService;
   }
   
   /**
@@ -128,10 +128,10 @@ class NarrativeIntegrity extends BaseTool {
 
         // Count tokens in the prompt
         this.emitOutput(`Counting tokens in prompt...\n`);
-        const promptTokens = await this.claudeService.countTokens(prompt);
+        const promptTokens = await this.GeminiAPIService.countTokens(prompt);
 
         // Call the shared token budget calculator
-        const tokenBudgets = this.claudeService.calculateTokenBudgets(promptTokens);
+        const tokenBudgets = this.GeminiAPIService.calculateTokenBudgets(promptTokens);
 
         // Handle logging based on the returned values
         this.emitOutput(`\nToken stats:\n`);
@@ -166,7 +166,7 @@ class NarrativeIntegrity extends BaseTool {
 
         // Use the calculated values in the API call
         try {
-          await this.claudeService.streamWithThinking(
+          await this.GeminiAPIService.streamWithThinking(
             prompt,
             {
               system: systemPrompt,
@@ -211,7 +211,7 @@ class NarrativeIntegrity extends BaseTool {
         this.emitOutput(`Report has approximately ${wordCount} words.\n`);
         
         // Count tokens in response
-        const responseTokens = await this.claudeService.countTokens(fullResponse);
+        const responseTokens = await this.GeminiAPIService.countTokens(fullResponse);
         this.emitOutput(`Response token count: ${responseTokens}\n`);
 
         fullResponse = this.removeMarkdown(fullResponse);

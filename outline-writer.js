@@ -13,12 +13,12 @@ const fs = require('fs/promises');
 class OutlineWriter extends BaseTool {
   /**
    * Constructor
-   * @param {Object} claudeService - Claude API service
+   * @param {Object} GeminiAPIService - Claude API service
    * @param {Object} config - Tool configuration
    */
-  constructor(claudeService, config = {}) {
+  constructor(GeminiAPIService, config = {}) {
     super('outline_writer', config);
-    this.claudeService = claudeService;
+    this.GeminiAPIService = GeminiAPIService;
     // console.log('OutlineWriter Tool initialized with config:', config);
   }
   
@@ -114,7 +114,7 @@ class OutlineWriter extends BaseTool {
       
       // Count tokens in prompt
       this.emitOutput(`Counting tokens in prompt...\n`);
-      const promptTokens = await this.claudeService.countTokens(prompt);
+      const promptTokens = await this.GeminiAPIService.countTokens(prompt);
       
       // Calculate available tokens after prompt
       const contextWindow = this.config.context_window || 200000;
@@ -174,7 +174,7 @@ class OutlineWriter extends BaseTool {
       
       try {
         // Use streaming API call
-        await this.claudeService.streamWithThinking(
+        await this.GeminiAPIService.streamWithThinking(
           prompt,
           {
             model: "claude-3-7-sonnet-20250219",
@@ -215,7 +215,7 @@ class OutlineWriter extends BaseTool {
       this.emitOutput(`Outline has approximately ${wordCount} words.\n`);
       
       // Count tokens in response
-      const responseTokens = await this.claudeService.countTokens(cleanedResponse);
+      const responseTokens = await this.GeminiAPIService.countTokens(cleanedResponse);
       this.emitOutput(`Outline token count: ${responseTokens}\n`);
       
       // Save the outline to a file

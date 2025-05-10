@@ -12,12 +12,12 @@ const fs = require('fs/promises');
 class ChapterWriter extends BaseTool {
   /**
    * Constructor
-   * @param {Object} claudeService - Claude API service
+   * @param {Object} GeminiAPIService - Claude API service
    * @param {Object} config - Tool configuration
    */
-  constructor(claudeService, config = {}) {
+  constructor(GeminiAPIService, config = {}) {
     super('chapter_writer', config);
-    this.claudeService = claudeService;
+    this.GeminiAPIService = GeminiAPIService;
     // console.log('ChapterWriter Tool initialized with config:', config);
   }
   
@@ -306,7 +306,7 @@ class ChapterWriter extends BaseTool {
       
       // Count tokens in prompt
       this.emitOutput(`Counting tokens in prompt...\n`);
-      const promptTokens = await this.claudeService.countTokens(prompt);
+      const promptTokens = await this.GeminiAPIService.countTokens(prompt);
       
       // Calculate available tokens after prompt
       const contextWindow = this.config.context_window || 200000;
@@ -365,7 +365,7 @@ class ChapterWriter extends BaseTool {
       
       try {
         // Use streaming API call
-        await this.claudeService.streamWithThinking(
+        await this.GeminiAPIService.streamWithThinking(
           prompt,
           {
             model: "claude-3-7-sonnet-20250219",
@@ -411,7 +411,7 @@ class ChapterWriter extends BaseTool {
       const chapterWordCount = this.countWords(cleanedResponse);
       
       // Count tokens in chapter
-      const chapterTokenCount = await this.claudeService.countTokens(cleanedResponse);
+      const chapterTokenCount = await this.GeminiAPIService.countTokens(cleanedResponse);
       
       // Append the new chapter to the manuscript file if not disabled
       if (!noAppend) {
@@ -445,7 +445,7 @@ Chapter ${chapterNum} token count: ${chapterTokenCount}
       // Save thinking content if available
       let thinkingPath = null;
       if (thinkingContent) {
-        const thinkingTokenCount = await this.claudeService.countTokens(thinkingContent);
+        const thinkingTokenCount = await this.GeminiAPIService.countTokens(thinkingContent);
         const thinkingEfficiency = (thinkingTokenCount / thinkingBudget) * 100;
         const thinkingToOutputRatio = thinkingTokenCount / chapterTokenCount;
         

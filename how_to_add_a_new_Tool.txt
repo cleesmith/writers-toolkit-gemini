@@ -9,7 +9,7 @@ Complete Process for Adding a New Non-AI Tool
    class YourNewTool extends BaseTool {
      constructor(config = {}) {
        super('your_new_tool', config);
-       // No claudeService needed for non-AI tools
+       // No GeminiAPIService needed for non-AI tools
      }
      
      async execute(options) {

@@ -7,19 +7,19 @@ const path = require('path');
 /**
  * Main function to analyze a manuscript file
  * @param {string} filePath - Path to the manuscript text file
- * @param {Object} claudeService - Claude API service instance
+ * @param {Object} GeminiAPIService - Claude API service instance
  * @param {number} maxChaptersPerGroup - Maximum chapters per group (default: 5)
  * @param {number} targetTokensPerGroup - Target tokens per group (default: 20000)
  * @returns {Promise<Object>} Analysis results
  */
-async function analyzeManuscript(filePath, claudeService, maxChaptersPerGroup = 5, targetTokensPerGroup = 20000) {
+async function analyzeManuscript(filePath, GeminiAPIService, maxChaptersPerGroup = 5, targetTokensPerGroup = 20000) {
     try {
         // Verify inputs
         if (!filePath || !fs.existsSync(filePath)) {
             throw new Error(`Manuscript file not found: ${filePath}`);
         }
         
-        if (!claudeService) {
+        if (!GeminiAPIService) {
             throw new Error('Claude API service is required');
         }
         
@@ -33,7 +33,7 @@ async function analyzeManuscript(filePath, claudeService, maxChaptersPerGroup = 
         console.log(`Identified ${chapters.length} chapters`);
         
         // Count words and tokens for each chapter
-        const chaptersWithCounts = await countWordsAndTokens(chapters, claudeService);
+        const chaptersWithCounts = await countWordsAndTokens(chapters, GeminiAPIService);
         
         // Create suggested groupings
         const groupings = createChapterGroupings(chaptersWithCounts, maxChaptersPerGroup, targetTokensPerGroup);
@@ -126,10 +126,10 @@ function identifyChapters(text) {
 /**
  * Counts words and tokens for each chapter
  * @param {Array} chapters - Array of chapter objects
- * @param {Object} claudeService - Claude API service
+ * @param {Object} GeminiAPIService - Claude API service
  * @returns {Promise<Array>} Chapters with word and token counts
  */
-async function countWordsAndTokens(chapters, claudeService) {
+async function countWordsAndTokens(chapters, GeminiAPIService) {
     const updatedChapters = [];
     
     for (let i = 0; i < chapters.length; i++) {
@@ -142,7 +142,7 @@ async function countWordsAndTokens(chapters, claudeService) {
         try {
             // Use Claude API to count tokens
             console.log(`Counting tokens for Chapter ${chapter.number}...`);
-            const tokenCount = await claudeService.countTokens(chapter.content);
+            const tokenCount = await GeminiAPIService.countTokens(chapter.content);
             console.log(`Chapter ${chapter.number}: ${wordCount} words, ${tokenCount} tokens`);
             
             updatedChapters.push({
@@ -283,7 +283,7 @@ if (require.main === module) {
     
     // Create Claude service with the required configuration
     // Using the same configuration seen in your screenshot and error messages
-    const claudeService = new ClaudeAPIService({
+    const GeminiAPIService = new ClaudeAPIService({
         max_retries: 3,
         request_timeout: 120,
         context_window: 200000,
@@ -299,7 +299,7 @@ if (require.main === module) {
     });
     
     // Run analysis
-    analyzeManuscript(manuscriptPath, claudeService)
+    analyzeManuscript(manuscriptPath, GeminiAPIService)
         .then(results => {
             displayResults(results);
             console.log('Analysis complete!');

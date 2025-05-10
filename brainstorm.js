@@ -13,12 +13,12 @@ const fs = require('fs/promises');
 class BrainstormTool extends BaseTool {
   /**
    * Constructor
-   * @param {Object} claudeService - Claude API service
+   * @param {Object} GeminiAPIService - Claude API service
    * @param {Object} config - Tool configuration
    */
-  constructor(claudeService, config = {}) {
+  constructor(GeminiAPIService, config = {}) {
     super('brainstorm', config);
-    this.claudeService = claudeService;
+    this.GeminiAPIService = GeminiAPIService;
   }
   
   /**
@@ -131,10 +131,10 @@ class BrainstormTool extends BaseTool {
 
     // Count tokens in the prompt
     this.emitOutput(`Counting tokens in prompt...\n`);
-    const promptTokens = await this.claudeService.countTokens(prompt);
+    const promptTokens = await this.GeminiAPIService.countTokens(prompt);
 
     // Call the shared token budget calculator
-    const tokenBudgets = this.claudeService.calculateTokenBudgets(promptTokens);
+    const tokenBudgets = this.GeminiAPIService.calculateTokenBudgets(promptTokens);
 
     // Handle logging based on the returned values
     this.emitOutput(`Token stats:\n`);
@@ -169,7 +169,7 @@ class BrainstormTool extends BaseTool {
 
     // Use the calculated values in the API call
     try {
-      await this.claudeService.streamWithThinking(
+      await this.GeminiAPIService.streamWithThinking(
         prompt,
         {
           model: "claude-3-7-sonnet-20250219",
@@ -209,7 +209,7 @@ class BrainstormTool extends BaseTool {
     this.emitOutput(`Generated ${promptType} has approximately ${wordCount} words.\n`);
     
     // Count tokens in response
-    const responseTokens = await this.claudeService.countTokens(cleanedResponse);
+    const responseTokens = await this.GeminiAPIService.countTokens(cleanedResponse);
     this.emitOutput(`Response token count: ${responseTokens}\n`);
     
     // Append to ideas file

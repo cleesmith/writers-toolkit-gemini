@@ -13,12 +13,12 @@ const fs = require('fs/promises');
 class ProofreaderMechanical extends BaseTool {
   /**
    * Constructor
-   * @param {Object} claudeService - Claude API service
+   * @param {Object} GeminiAPIService - Claude API service
    * @param {Object} config - Tool configuration
    */
-  constructor(claudeService, config = {}) {
+  constructor(GeminiAPIService, config = {}) {
     super('proofreader_mechanical', config);
-    this.claudeService = claudeService;
+    this.GeminiAPIService = GeminiAPIService;
   }
 
   /**
@@ -49,14 +49,14 @@ class ProofreaderMechanical extends BaseTool {
     try {
       const manuscriptContent = await this.readInputFile(manuscriptFile);
       const manuscriptWordCount = this.countWords(manuscriptContent);
-      const manuscriptTokens = await this.claudeService.countTokens(manuscriptContent);
+      const manuscriptTokens = await this.GeminiAPIService.countTokens(manuscriptContent);
       
       const prompt = this.createMechanicalProofreadingPrompt(manuscriptContent, language);
 
-      const promptTokens = await this.claudeService.countTokens(prompt);
+      const promptTokens = await this.GeminiAPIService.countTokens(prompt);
 
       // Call the shared token budget calculator
-      const tokenBudgets = this.claudeService.calculateTokenBudgets(promptTokens);
+      const tokenBudgets = this.GeminiAPIService.calculateTokenBudgets(promptTokens);
 
       this.emitOutput(`Reading manuscript file: ${manuscriptFile}\n`);
       this.emitOutput(`\nToken stats:\n`);
@@ -100,7 +100,7 @@ class ProofreaderMechanical extends BaseTool {
       const systemPrompt = "CRITICAL INSTRUCTION: NO Markdown formatting of ANY kind. Never use headers, bullets, or any formatting symbols. Plain text only with standard punctuation.";
 
       try {
-        await this.claudeService.streamWithThinkingAndMessageStart(
+        await this.GeminiAPIService.streamWithThinkingAndMessageStart(
           prompt,
           {
             model: "claude-3-7-sonnet-20250219",
@@ -149,7 +149,7 @@ class ProofreaderMechanical extends BaseTool {
       this.emitOutput(`Report has approximately ${wordCount} words.\n`);
       
       // Count tokens in response
-      const responseTokens = await this.claudeService.countTokens(fullResponse);
+      const responseTokens = await this.GeminiAPIService.countTokens(fullResponse);
       this.emitOutput(`Response token count: ${responseTokens}\n`);
 
       // Remove any markdown formatting

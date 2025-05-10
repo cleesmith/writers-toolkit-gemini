@@ -85,7 +85,7 @@ async function initializeApp() {
       const toolSystemResult = await toolSystem.initializeToolSystem(completeSettings);
 
       // Check if API key is missing
-      if (toolSystemResult.claudeService && toolSystemResult.claudeService.apiKeyMissing) {
+      if (toolSystemResult.GeminiAPIService && toolSystemResult.GeminiAPIService.apiKeyMissing) {
         // Show notification after window is created
         setTimeout(() => {
           if (mainWindow && !mainWindow.isDestroyed()) {
@@ -973,7 +973,7 @@ function setupApiSettingsHandlers() {
       }
 
       // Re‑instantiate the Claude service with complete settings
-      toolSystem.reinitializeClaudeService(completeSettings);
+      toolSystem.reinitializeGeminiAPIService(completeSettings);
 
       // Log the complete configuration
       console.log('Complete Claude API configuration:');
@@ -1490,13 +1490,13 @@ app.on('before-quit', async (event) => {
   // Close any active Claude API clients
   for (const toolId of toolSystem.toolRegistry.getAllToolIds()) {
     const tool = toolSystem.toolRegistry.getTool(toolId);
-    if (tool && tool.claudeService) {
+    if (tool && tool.GeminiAPIService) {
       try {
-        tool.claudeService.close();
+        tool.GeminiAPIService.close();
       } catch (error) {
         // Ignore close errors during shutdown
       } finally {
-        tool.claudeService = null;
+        tool.GeminiAPIService = null;
       }
     }
   }

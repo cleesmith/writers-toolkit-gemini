@@ -13,12 +13,12 @@ const fs = require('fs/promises');
 class ManuscriptExtractor extends BaseTool {
   /**
    * Constructor
-   * @param {Object} claudeService - Claude API service
+   * @param {Object} GeminiAPIService - Claude API service
    * @param {Object} config - Tool configuration
    */
-  constructor(claudeService, config = {}) {
+  constructor(GeminiAPIService, config = {}) {
     super('manuscript_extractor', config);
-    this.claudeService = claudeService;
+    this.GeminiAPIService = GeminiAPIService;
   }
   
   /**
@@ -190,10 +190,10 @@ class ManuscriptExtractor extends BaseTool {
     
     // Count tokens in prompt
     this.emitOutput(`Counting tokens in prompt...\n`);
-    const promptTokens = await this.claudeService.countTokens(prompt);
+    const promptTokens = await this.GeminiAPIService.countTokens(prompt);
     
     // Calculate available tokens
-    const tokenBudgets = this.claudeService.calculateTokenBudgets(promptTokens);
+    const tokenBudgets = this.GeminiAPIService.calculateTokenBudgets(promptTokens);
     
     // Display token stats
     this.emitOutput(`\nToken stats for outline extraction:\n`);
@@ -225,7 +225,7 @@ class ManuscriptExtractor extends BaseTool {
     
     try {
       // Use streaming API call
-      await this.claudeService.streamWithThinking(
+      await this.GeminiAPIService.streamWithThinking(
         prompt,
         {
           system: systemPrompt,
@@ -261,7 +261,7 @@ class ManuscriptExtractor extends BaseTool {
     const wordCount = this.countWords(fullResponse);
     
     // Count tokens in response
-    const responseTokens = await this.claudeService.countTokens(fullResponse);
+    const responseTokens = await this.GeminiAPIService.countTokens(fullResponse);
     
     // Save the outline to a file
     const outlineFilename = 'outline.txt';
@@ -336,10 +336,10 @@ ${stats}`;
     
     // Count tokens in prompt
     this.emitOutput(`Counting tokens in prompt...\n`);
-    const promptTokens = await this.claudeService.countTokens(prompt);
+    const promptTokens = await this.GeminiAPIService.countTokens(prompt);
     
     // Calculate available tokens
-    const tokenBudgets = this.claudeService.calculateTokenBudgets(promptTokens);
+    const tokenBudgets = this.GeminiAPIService.calculateTokenBudgets(promptTokens);
     
     // Display token stats
     this.emitOutput(`\nToken stats for character extraction:\n`);
@@ -371,7 +371,7 @@ ${stats}`;
     
     try {
       // Use streaming API call
-      await this.claudeService.streamWithThinking(
+      await this.GeminiAPIService.streamWithThinking(
         prompt,
         {
           system: systemPrompt,
@@ -407,7 +407,7 @@ ${stats}`;
     const wordCount = this.countWords(fullResponse);
     
     // Count tokens in response
-    const responseTokens = await this.claudeService.countTokens(fullResponse);
+    const responseTokens = await this.GeminiAPIService.countTokens(fullResponse);
     
     // Save the characters to a file
     const charactersFilename = 'characters.txt';
@@ -485,10 +485,10 @@ ${stats}`;
     
     // Count tokens in prompt
     this.emitOutput(`Counting tokens in prompt...\n`);
-    const promptTokens = await this.claudeService.countTokens(prompt);
+    const promptTokens = await this.GeminiAPIService.countTokens(prompt);
     
     // Calculate available tokens
-    const tokenBudgets = this.claudeService.calculateTokenBudgets(promptTokens);
+    const tokenBudgets = this.GeminiAPIService.calculateTokenBudgets(promptTokens);
     
     // Display token stats
     this.emitOutput(`\nToken stats for world extraction:\n`);
@@ -520,7 +520,7 @@ ${stats}`;
     
     try {
       // Use streaming API call
-      await this.claudeService.streamWithThinking(
+      await this.GeminiAPIService.streamWithThinking(
         prompt,
         {
           system: systemPrompt,
@@ -556,7 +556,7 @@ ${stats}`;
     const wordCount = this.countWords(fullResponse);
     
     // Count tokens in response
-    const responseTokens = await this.claudeService.countTokens(fullResponse);
+    const responseTokens = await this.GeminiAPIService.countTokens(fullResponse);
     
     // Save the world to a file
     const worldFilename = 'world.txt';
@@ -628,10 +628,10 @@ ${stats}`;
     
     // Count tokens in prompt
     this.emitOutput(`Counting tokens in prompt...\n`);
-    const promptTokens = await this.claudeService.countTokens(prompt);
+    const promptTokens = await this.GeminiAPIService.countTokens(prompt);
     
     // Calculate available tokens
-    const tokenBudgets = this.claudeService.calculateTokenBudgets(promptTokens);
+    const tokenBudgets = this.GeminiAPIService.calculateTokenBudgets(promptTokens);
     
     // Display token stats
     this.emitOutput(`\nToken stats for timeline extraction:\n`);
@@ -663,7 +663,7 @@ ${stats}`;
     
     try {
       // Use streaming API call
-      await this.claudeService.streamWithThinking(
+      await this.GeminiAPIService.streamWithThinking(
         prompt,
         {
           system: systemPrompt,
@@ -699,7 +699,7 @@ ${stats}`;
     const wordCount = this.countWords(fullResponse);
     
     // Count tokens in response
-    const responseTokens = await this.claudeService.countTokens(fullResponse);
+    const responseTokens = await this.GeminiAPIService.countTokens(fullResponse);
     
     // Save the timeline to a file
     const timelineFilename = 'timeline.txt';
