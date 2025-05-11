@@ -1,12 +1,11 @@
-// client.js - Gemini API Service
+// client.js
 const { GoogleGenAI, HarmCategory, HarmBlockThreshold } = require('@google/genai');
 
 /**
- * Gemini API Service
- * Handles interactions with the Gemini AI API
- * Compatible with the Claude API interface
+ * Gemini AI API Service
+ * Handles interactions with the Google's Gemini AI API
  */
-class GeminiAPIService {
+class GeminiAiAPIService {
   /**
    * Constructor
    * @param {Object} config - API configuration
@@ -14,7 +13,7 @@ class GeminiAPIService {
   constructor(config = {}) {
     // Store the configuration with defaults
     this.config = {
-      model_name: 'gemini-1.5-pro-latest', 
+      model_name: 'gemini-2.5-pro-preview-05-06', 
       ...config
     };
 
@@ -28,7 +27,7 @@ class GeminiAPIService {
     this.client = new GoogleGenAI({
       apiKey: apiKeyFromEnv,
       httpOptions: {
-        timeout: 900000 
+        timeout: 900000 // 15 mins in ms
       }
     });
   }
@@ -164,7 +163,6 @@ The RESPONSE section should only contain your final answer.
 
   /**
    * Calculate token budgets and validate prompt size
-   * This is a compatibility method with Claude API
    * @param {number} promptTokens - Number of tokens in the prompt
    * @returns {Object} - Calculated token budgets and limits
    */

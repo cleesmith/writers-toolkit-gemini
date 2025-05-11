@@ -38,7 +38,7 @@ try {
   safeLog(`ERROR loading base modules: ${error.message}`);
 }
 
-const ClaudeAPIService = require('./client');
+const GeminiAPIService = require('./client');
 
 const toolRegistry = require('./registry');
 
@@ -1283,11 +1283,11 @@ async function initializeToolSystem(settings) {
   }
   
   try {
-    // Create Claude API service with the provided settings
-    const GeminiAPIService = new ClaudeAPIService(settings);
-    console.log('Created ClaudeAPIService instance');
+    // Create AI API service with the provided settings
+    const geminiAPIService = new GeminiAPIService(settings);
+    console.log('Created GeminiAPIService instance');
     
-    // Define which tools are non-AI and don't need Claude service
+    // Define which tools are non-AI and don't need AI API service
     const nonAiToolIds = ['docx_comments', 'epub_converter'];
     
     // Register each tool with proper configuration
@@ -1313,11 +1313,11 @@ async function initializeToolSystem(settings) {
       
       // Check if this is a non-AI tool
       if (nonAiToolIds.includes(def.id)) {
-        // Non-AI tools don't get Claude service
+        // Non-AI tools don't get AI API service
         instance = new def.Class(def.id, toolConfig);
-        console.log(`Initialized non-AI tool ${def.id} without Claude service`);
+        console.log(`Initialized non-AI tool ${def.id} without AI API service`);
       } else {
-        // AI tools get Claude service as first parameter
+        // AI tools get AI API service as first parameter
         console.log(`Passing GeminiAPIService to AI tool ${def.id}`);
         instance = new def.Class(GeminiAPIService, toolConfig);
         
@@ -1330,7 +1330,7 @@ async function initializeToolSystem(settings) {
           instance.GeminiAPIService = GeminiAPIService;
         }
         
-        console.log(`Initialized AI tool ${def.id} with Claude service`);
+        console.log(`Initialized AI tool ${def.id} with AI API service`);
       }
       
       // Add to registry
@@ -1381,7 +1381,7 @@ async function executeToolById(toolId, options) {
     if (tool.GeminiAPIService && typeof tool.GeminiAPIService.recreate === 'function') {
       tool.GeminiAPIService.recreate();
     } else {
-      console.log(`Tool ${toolId} does not have a valid Claude service (has GeminiAPIService: ${!!tool.GeminiAPIService})`);
+      console.log(`Tool ${toolId} does not have a valid AI API service (has GeminiAPIService: ${!!tool.GeminiAPIService})`);
     }
     
     console.log('*** Client after recreate:', !!tool.GeminiAPIService?.client);
@@ -1396,7 +1396,7 @@ async function executeToolById(toolId, options) {
       try {
         tool.GeminiAPIService.close();
       } catch (error) {
-        console.warn(`Error closing Claude service for tool ${toolId}:`, error);
+        console.warn(`Error closing AI API service for tool ${toolId}:`, error);
       } finally {
         // Don't set to null here - this might be causing the problem!
         // tool.GeminiAPIService = null;
@@ -1412,7 +1412,7 @@ async function executeToolById(toolId, options) {
       try {
         tool.GeminiAPIService.close();
       } catch (closeError) {
-        console.warn(`Error closing Claude service after execution error:`, closeError);
+        console.warn(`Error closing AI API service after execution error:`, closeError);
       } finally {
         // Don't set to null here either
         // tool.GeminiAPIService = null;
@@ -1424,20 +1424,20 @@ async function executeToolById(toolId, options) {
 }
 
 /**
- * Reinitialize the Claude API service with updated settings
- * @param {Object} settings - Claude API settings
- * @returns {Object} - New Claude API service instance
+ * Reinitialize the AI API API service with updated settings
+ * @param {Object} settings - AI API settings
+ * @returns {Object} - New AI API service instance
  */
 // In tool-system.js, update the reinitializeGeminiAPIService function (around line 1559):
 
 /**
- * Reinitialize the Claude API service with updated settings
- * @param {Object} settings - Claude API settings
- * @returns {Object} - New Claude API service instance
+ * Reinitialize the AI API service with updated settings
+ * @param {Object} settings - AI API settings
+ * @returns {Object} - New AI API service instance
  */
 function reinitializeGeminiAPIService(settings) {
-  // Create a new Claude service with the updated settings
-  const GeminiAPIService = new ClaudeAPIService(settings);
+  // Create a new AI API service with the updated settings
+  const GeminiAPIService = new GeminiAPIService(settings);
   
   // Update the service in all registered tools
   for (const toolId of toolRegistry.getAllToolIds()) {
@@ -1448,7 +1448,7 @@ function reinitializeGeminiAPIService(settings) {
       try {
         tool.GeminiAPIService.close();
       } catch (error) {
-        console.warn(`Error closing Claude service during reinitialization:`, error);
+        console.warn(`Error closing AI API service during reinitialization:`, error);
       } finally {
         tool.GeminiAPIService = null;  // This ALWAYS happens
       }

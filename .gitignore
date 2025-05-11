@@ -1,4 +1,5 @@
 # 0. testing
+package-lock.json
 count_*
 cls*
 cls_build_with_icons/

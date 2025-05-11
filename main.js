@@ -72,7 +72,7 @@ async function initializeApp() {
     // Set up IPC handlers first
     setupIPCHandlers();
 
-    // Initialize tool system with COMPLETE Claude API settings
+    // Initialize tool system with COMPLETE AI API settings
     try {
       // Get complete settings
       const completeSettings = getCompleteClaudeSettings();
@@ -92,8 +92,8 @@ async function initializeApp() {
             dialog.showMessageBox(mainWindow, {
               type: 'warning',
               title: 'API Key Missing',
-              message: 'Claude API key not found',
-              detail: 'Please configure your Claude API key in API Settings before using AI tools.',
+              message: 'Gemini API key not found',
+              detail: 'Please configure your Gemini API key in API Settings before using AI tools.',
               buttons: ['OK']
             });
           }
@@ -166,17 +166,11 @@ if (isPackaged) {
   logToFile(`Resources path: ${path.join(app.getAppPath(), '..')}`);
 }
 
-// Define Claude API schema globally
-const CLAUDE_API_SCHEMA = [
+// Define Gemini API schema globally
+const GEMINI_API_SCHEMA = [
   { name: 'max_retries',            label: 'Max Retries',                       type: 'number', default: 1,       required: true,  description: 'Maximum retry attempts if an API call fails.' },
   { name: 'request_timeout',        label: 'Request Timeout (seconds)',         type: 'number', default: 300,     required: true,  description: 'Seconds to wait for the API to respond.' },
-  { name: 'desired_output_tokens',  label: 'Desired Output Tokens',             type: 'number', default: 12000,   required: true,  description: 'Approximate size of the visible reply.' },
-  { name: 'context_window',         label: 'Context Window (tokens)',           type: 'number', default: 200000,  required: true,  description: 'Maximum tokens the model can see at once.' },
-  { name: 'thinking_budget_tokens', label: 'Thinking Budget (tokens)',          type: 'number', default: 32000,   required: true,  description: 'Private "thinking" tokens before the reply.' },
-  { name: 'betas_max_tokens',       label: 'Beta Max Tokens',                   type: 'number', default: 128000,  required: true,  description: 'Upper limit when enabling beta features.' },
-  { name: 'model_name',             label: 'Model Name',                        type: 'text',   default: 'claude-3-7-sonnet-20250219', required: true, description: 'Exact model identifier.' },
-  { name: 'betas',                  label: 'Beta Features (comma‑separated)',   type: 'text',   default: 'output-128k-2025-02-19',     required: true, description: 'List of beta flags.' },
-  { name: 'max_thinking_budget',    label: 'Max Thinking Budget (tokens)',      type: 'number', default: 32000,   required: true,  description: 'Absolute cap for thinking tokens.' },
+  { name: 'model_name',             label: 'Model Name',                        type: 'text',   default: 'gemini-2.5-pro-preview-05-06', required: true, description: 'Exact model identifier.' },
   { name: 'max_tokens',             label: 'Max Tokens',                   type: 'number', default: 128000,  required: true,  description: 'Absolute cap for output tokens.' }
 ];
 
@@ -186,7 +180,7 @@ function getCompleteClaudeSettings() {
   const completeSettings = {};
   
   // Add all default values from the schema
-  CLAUDE_API_SCHEMA.forEach(setting => {
+  GEMINI_API_SCHEMA.forEach(setting => {
     completeSettings[setting.name] = setting.default;
   });
   
@@ -832,23 +826,6 @@ function createEditorDialog(fileToOpen = null) {
   // Get the parent window - either the tool window or main window
   const parentWindow = toolSetupRunWindow || mainWindow;
 
-  // Create the dialog window
-  // editorDialogWindow = new BrowserWindow({
-  //   width: parentWindow.getSize()[0],
-  //   height: parentWindow.getSize()[1],
-  //   x: parentWindow.getPosition()[0],
-  //   y: parentWindow.getPosition()[1],
-  //   parent: parentWindow,
-  //   modal: true,
-  //   show: false,
-  //   webPreferences: {
-  //     nodeIntegration: false,
-  //     contextIsolation: true,
-  //     preload: path.join(__dirname, 'preload.js')
-  //   },
-  //   backgroundColor: '#121212', // Dark background
-  //   autoHideMenuBar: true,
-  // });
   editorDialogWindow = new BrowserWindow({
     width: parentWindow.getSize()[0],
     height: parentWindow.getSize()[1],
@@ -940,7 +917,7 @@ function setupApiSettingsHandlers() {
       }
       
       return {
-        schema: CLAUDE_API_SCHEMA,
+        schema: GEMINI_API_SCHEMA,
         values: completeSettings
       };
     } catch (error) {
