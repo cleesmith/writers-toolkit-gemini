@@ -108,6 +108,7 @@ class AppState {
         this.DEFAULT_SAVE_DIR = savedPath;
       }
     }
+  }
   
   isPathValid(filePath) {
     // Verify path exists and is within PROJECTS_DIR
