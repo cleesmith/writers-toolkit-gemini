@@ -57,13 +57,9 @@ class AppState {
     this.initialized = false;
     
     // Default Claude API settings
-    this.settings_claude_api_configuration = {
+    this.settings_ai_api_configuration = {
       max_retries: 1,
       request_timeout: 300,
-      context_window: 200000,
-      thinking_budget_tokens: 32000,
-      betas_max_tokens: 128000,
-      desired_output_tokens: 12000
     };
   }
   
@@ -120,14 +116,10 @@ class AppState {
     }
     
     // Load Claude API settings
-    this.settings_claude_api_configuration = 
-      this.store.get('claude_api_configuration', {
+    this.settings_ai_api_configuration = 
+      this.store.get('ai_api_configuration', {
         max_retries: 1,
         request_timeout: 300,
-        context_window: 200000,
-        thinking_budget_tokens: 32000,
-        betas_max_tokens: 128000,
-        desired_output_tokens: 12000
       });
   }
   

@@ -75,7 +75,7 @@ async function initializeApp() {
     // Initialize tool system with COMPLETE AI API settings
     try {
       // Get complete settings
-      const completeSettings = getCompleteClaudeSettings();
+      const completeSettings = getCompleteApiSettings();
       
       // Log the complete settings
       console.log('Initializing tool system with complete settings:');
@@ -175,7 +175,7 @@ const GEMINI_API_SCHEMA = [
 ];
 
 // Global function to get complete settings 
-function getCompleteClaudeSettings() {
+function getCompleteApiSettings() {
   // Start with an empty settings object
   const completeSettings = {};
   
@@ -185,9 +185,9 @@ function getCompleteClaudeSettings() {
   });
   
   // Override with any existing user settings
-  if (appState.settings_claude_api_configuration) {
-    for (const key in appState.settings_claude_api_configuration) {
-      completeSettings[key] = appState.settings_claude_api_configuration[key];
+  if (appState.settings_ai_api_configuration) {
+    for (const key in appState.settings_ai_api_configuration) {
+      completeSettings[key] = appState.settings_ai_api_configuration[key];
     }
   }
   
@@ -903,15 +903,15 @@ function setupApiSettingsHandlers() {
   ipcMain.handle('get-claude-api-settings', async () => {
     try {
       // Create complete settings from schema defaults and user settings
-      const completeSettings = getCompleteClaudeSettings();
+      const completeSettings = getCompleteApiSettings();
       
       // Update appState with the complete settings
-      appState.settings_claude_api_configuration = completeSettings;
+      appState.settings_ai_api_configuration = completeSettings;
       
       // Save to store
       if (appState.store) {
         appState.store.set(
-          'claude_api_configuration',
+          'ai_api_configuration',
           completeSettings
         );
       }
@@ -931,7 +931,7 @@ function setupApiSettingsHandlers() {
       console.log('Saving Claude API settings:', settings);
 
       // Start with complete settings
-      const completeSettings = getCompleteClaudeSettings();
+      const completeSettings = getCompleteApiSettings();
       
       // Update with new values
       for (const key in settings) {
@@ -939,21 +939,21 @@ function setupApiSettingsHandlers() {
       }
 
       // Update appState with complete settings
-      appState.settings_claude_api_configuration = completeSettings;
+      appState.settings_ai_api_configuration = completeSettings;
       
       // Save to store
       if (appState.store) {
         appState.store.set(
-          'claude_api_configuration',
+          'ai_api_configuration',
           completeSettings
         );
       }
 
-      // Re‑instantiate the Claude service with complete settings
-      toolSystem.reinitializeGeminiAPIService(completeSettings);
+      // Re‑instantiate the service with complete settings
+      // toolSystem.reinitializeGeminiAPIService(completeSettings);
 
       // Log the complete configuration
-      console.log('Complete Claude API configuration:');
+      console.log('Complete API configuration:');
       console.log(JSON.stringify(completeSettings, null, 2));
 
       return { success: true };

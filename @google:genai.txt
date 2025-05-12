@@ -29,26 +29,26 @@ INSTALLATION
 
 To install the SDK, run the following command: 
 
-npm install @google/genai Copy 
+npm install @google/genai  
 
 QUICKSTART 
 
 The simplest way to get started is to using an API key from Google AI Studio : 
 
 import { GoogleGenAI } from '@google/genai' ; 
-const GEMINI_API_KEY = process . env . GEMINI_API_KEY ; 
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY ; 
 
-const ai = new GoogleGenAI ({ apiKey: GEMINI_API_KEY }); 
+const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY }); 
 
 async function main () { 
-const response = await ai . models . generateContent ({ 
+const response = await ai.models.generateContent ({ 
 model: 'gemini-2.0-flash-001' , 
 contents: 'Why is the sky blue?' , 
 }); 
-console . log ( response . text ); 
+console.log( response.text ); 
 } 
 
-main (); Copy 
+main ();  
 
 INITIALIZATION 
 
@@ -60,7 +60,7 @@ For server-side applications, initialize using an API key, which can
 be acquired from Google AI Studio : 
 
 import { GoogleGenAI } from '@google/genai' ; 
-const ai = new GoogleGenAI ({ apiKey: 'GEMINI_API_KEY' }); Copy 
+const ai = new GoogleGenAI({ apiKey: 'GEMINI_API_KEY' });
 
 BROWSER 
 
@@ -72,7 +72,7 @@ Use server-side implementations in production environments.
 In the browser the initialization code is identical: 
 
 import { GoogleGenAI } from '@google/genai' ; 
-const ai = new GoogleGenAI ({ apiKey: 'GEMINI_API_KEY' }); Copy 
+const ai = new GoogleGenAI ({ apiKey: 'GEMINI_API_KEY' });  
 
 VERTEX AI 
 
@@ -84,7 +84,7 @@ const ai = new GoogleGenAI ({
 vertexai: true , 
 project: 'your_project' , 
 location: 'your_location' , 
-}); Copy 
+});  
 
 GOOGLEGENAI OVERVIEW 
 
@@ -120,21 +120,21 @@ STREAMING
 For quicker, more responsive API interactions use the generateContentStream method which yields chunks as they're generated: 
 
 import { GoogleGenAI } from '@google/genai' ; 
-const GEMINI_API_KEY = process . env . GEMINI_API_KEY ; 
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY ; 
 
-const ai = new GoogleGenAI ({ apiKey: GEMINI_API_KEY }); 
+const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY }); 
 
 async function main () { 
-const response = await ai . models . generateContentStream ({ 
+const response = await ai.models.generateContentStream ({ 
 model: 'gemini-2.0-flash-001' , 
-contents: 'Write a 100-word poem.' , 
+contents: 'Write a 10-word poem.' , 
 }); 
-for await ( const chunk of response ) { 
-console . log ( chunk . text ); 
+for await (const chunk of response) { 
+console.log(chunk.text); 
 } 
 } 
 
-main (); Copy 
+main ();  
 
 FUNCTION CALLING 
 
@@ -193,7 +193,7 @@ tools: [{ functionDeclarations: [ controlLightDeclaration ]}]
 console . log ( response . functionCalls ); 
 } 
 
-main (); Copy 
+main ();  
 
 GENERATE CONTENT 
 
@@ -310,7 +310,7 @@ config: {
 'systemInstruction' : 'What is the sum of the two pdfs?' , 
 'ttl' : '86400s' , 
 } 
-}); Copy 
+});  
 
 - Defined in caches.ts:72 
 
@@ -334,7 +334,7 @@ The empty response returned by the API.
 
 EXAMPLE 
 
-await ai . caches . delete ({ name: '...' }); // The server-generated resource name. Copy 
+await ai . caches . delete ({ name: '...' }); // The server-generated resource name.  
 
 - Defined in caches.ts:252 
 
@@ -356,7 +356,7 @@ The cached content.
 
 EXAMPLE 
 
-await ai . caches . get ({ name: '...' }); // The server-generated resource name. Copy 
+await ai . caches . get ({ name: '...' }); // The server-generated resource name.  
 
 - Defined in caches.ts:162 
 
@@ -381,7 +381,7 @@ EXAMPLE
 const cachedContents = await ai . caches . list ({ config: { 'pageSize' : 2 }}); 
 for ( const cachedContent of cachedContents ) { 
 console . log ( cachedContent ); 
-} Copy 
+}  
 
 - Defined in caches.ts:35 
 
@@ -406,7 +406,7 @@ EXAMPLE
 const response = await ai . caches . update ({ 
 name: '...' , // The server-generated resource name. 
 config: { 'ttl' : '7600s' } 
-}); Copy 
+});  
 
 - Defined in caches.ts:341
 ###
@@ -435,7 +435,7 @@ EXAMPLE
 Initializing the SDK for using the Gemini API: 
 
 import { GoogleGenAI } from '@google/genai' ; 
-const ai = new GoogleGenAI ({ apiKey: 'GEMINI_API_KEY' }); Copy 
+const ai = new GoogleGenAI ({ apiKey: 'GEMINI_API_KEY' });  
 
 EXAMPLE 
 
@@ -446,7 +446,7 @@ const ai = new GoogleGenAI ({
 vertexai: true , 
 project: 'PROJECT_ID' , 
 location: 'PROJECT_LOCATION' 
-}); Copy 
+});  
 
 - Defined in client.ts:120 
 
@@ -885,7 +885,7 @@ EXAMPLE
 
 The following code deletes an example file named "files/mehozpxf877d". 
 
-await ai . files . delete ({ name: file . name }); Copy 
+await ai . files . delete ({ name: file . name });  
 
 - Defined in files.ts:288 
 
@@ -910,7 +910,7 @@ EXAMPLE
 The following code downloads an example file named "files/mehozpxf877d" as
 "file.txt". 
 
-await ai . files . download ({ file: file . name , downloadPath: 'file.txt' }); Copy 
+await ai . files . download ({ file: file . name , downloadPath: 'file.txt' });  
 
 - Defined in files.ts:124 
 
@@ -936,7 +936,7 @@ const config : GetFileParameters = {
 name: fileName , 
 }; 
 file = await ai . files . get ( config ); 
-console . log ( file . name ); Copy 
+console . log ( file . name );  
 
 - Defined in files.ts:235 
 
@@ -964,7 +964,7 @@ size of each page is 10.
 const listResponse = await ai . files . list ({ config: { 'pageSize' : 10 }}); 
 for await ( const file of listResponse ) { 
 console . log ( file . name ); 
-} Copy 
+}  
 
 - Defined in files.ts:38 
 
@@ -1030,10 +1030,10 @@ EXAMPLE
 
 The following code uploads a file to Gemini API. 
 
-const file = await ai . files . upload ({ file: 'file.txt' , config: { 
+const file = await ai.files.upload({ file: 'file.txt' , config: { 
 mimeType: 'text/plain' , 
 }}); 
-console . log ( file . name ); Copy 
+console . log ( file . name );  
 
 - Defined in files.ts:92
 ###
@@ -1099,11 +1099,11 @@ The response from the API.
 
 EXAMPLE 
 
-const response = await ai . models . computeTokens ({ 
+const response = await ai.models.computeTokens ({ 
 model: 'gemini-2.0-flash' , 
 contents: 'What is your name?' 
 }); 
-console . log ( response ); Copy 
+console . log ( response );  
 
 - Defined in models.ts:1015 
 
@@ -1126,11 +1126,11 @@ The response from the API.
 
 EXAMPLE 
 
-const response = await ai . models . countTokens ({ 
+const response = await ai.models.countTokens ({ 
 model: 'gemini-2.0-flash' , 
 contents: 'The quick brown fox jumps over the lazy dog.' 
 }); 
-console . log ( response ); Copy 
+console.log(response);
 
 - Defined in models.ts:916 
 
@@ -1152,7 +1152,7 @@ The response from the API.
 
 EXAMPLE 
 
-const response = await ai . models . delete ({ model: 'tuned-model-name' }); Copy 
+const response = await ai . models . delete ({ model: 'tuned-model-name' });  
 
 - Defined in models.ts:825 
 
@@ -1184,7 +1184,7 @@ config: {
 outputDimensionality: 64 , 
 }, 
 }); 
-console . log ( response ); Copy 
+console . log ( response );  
 
 - Defined in models.ts:388 
 
@@ -1242,7 +1242,7 @@ config: {
 candidateCount: 2 , 
 } 
 }); 
-console . log ( response ); Copy 
+console . log ( response );  
 
 - Defined in models.ts:59 
 
@@ -1303,7 +1303,7 @@ maxOutputTokens: 200 ,
 }); 
 for await ( const chunk of response ) { 
 console . log ( chunk ); 
-} Copy 
+}  
 
 - Defined in models.ts:106 
 
@@ -1333,7 +1333,7 @@ numberOfImages: 1 ,
 includeRaiReason: true , 
 }, 
 }); 
-console . log ( response ?. generatedImages ?.[ 0 ]?. image ?. imageBytes ); Copy 
+console . log ( response ?. generatedImages ?.[ 0 ]?. image ?. imageBytes );  
 
 - Defined in models.ts:133 
 
@@ -1369,7 +1369,7 @@ await new Promise ( resolve => setTimeout ( resolve , 10000 ));
 operation = await ai . operations . getVideosOperation ({ operation: operation }); 
 } 
 
-console . log ( operation . response ?. generatedVideos ?.[ 0 ]?. video ?. uri ); Copy 
+console . log ( operation . response ?. generatedVideos ?.[ 0 ]?. video ?. uri );  
 
 - Defined in models.ts:1086 
 
@@ -1387,7 +1387,7 @@ RETURNS PROMISE < MODEL >
 
 EXAMPLE 
 
-const modelInfo = await ai . models . get ({ model: 'gemini-2.0-flash' }); Copy 
+const modelInfo = await ai . models . get ({ model: 'gemini-2.0-flash' });  
 
 - Defined in models.ts:577 
 
@@ -1427,7 +1427,7 @@ config: {
 displayName: 'New display name' , 
 description: 'New description' , 
 }, 
-}); Copy 
+});  
 
 - Defined in models.ts:743
 ###

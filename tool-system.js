@@ -38,7 +38,7 @@ try {
   safeLog(`ERROR loading base modules: ${error.message}`);
 }
 
-const GeminiAPIService = require('./client');
+const GeminiAiAPIService = require('./client');
 
 const toolRegistry = require('./registry');
 
@@ -1284,8 +1284,8 @@ async function initializeToolSystem(settings) {
   
   try {
     // Create AI API service with the provided settings
-    const geminiAPIService = new GeminiAPIService(settings);
-    console.log('Created GeminiAPIService instance');
+    const aiAPIService = new GeminiAiAPIService(settings);
+    console.log('Created AI API Service instance');
     
     // Define which tools are non-AI and don't need AI API service
     const nonAiToolIds = ['docx_comments', 'epub_converter'];
@@ -1318,16 +1318,16 @@ async function initializeToolSystem(settings) {
         console.log(`Initialized non-AI tool ${def.id} without AI API service`);
       } else {
         // AI tools get AI API service as first parameter
-        console.log(`Passing GeminiAPIService to AI tool ${def.id}`);
-        instance = new def.Class(GeminiAPIService, toolConfig);
+        console.log(`Passing aiAPIService to AI tool ${def.id}`);
+        instance = new def.Class(aiAPIService, toolConfig);
         
         // Verify the service was stored
-        console.log(`Tool ${def.id} has GeminiAPIService: ${!!instance.GeminiAPIService}`);
+        console.log(`Tool ${def.id} has aiAPIService: ${!!instance.aiAPIService}`);
         
-        // If the tool doesn't properly store GeminiAPIService, add it here
-        if (!instance.GeminiAPIService) {
-          console.log(`Manually setting GeminiAPIService for tool ${def.id}`);
-          instance.GeminiAPIService = GeminiAPIService;
+        // If the tool doesn't properly store aiAPIService, add it here
+        if (!instance.aiAPIService) {
+          console.log(`Manually setting aiAPIService for tool ${def.id}`);
+          instance.GeminiAiAPIService = aiAPIService;
         }
         
         console.log(`Initialized AI tool ${def.id} with AI API service`);
@@ -1338,7 +1338,7 @@ async function initializeToolSystem(settings) {
       
       // Verify the tool in registry
       const registeredTool = toolRegistry.getTool(def.id);
-      console.log(`Verified tool ${def.id} in registry has GeminiAPIService: ${!!registeredTool.GeminiAPIService}`);
+      console.log(`Verified tool ${def.id} in registry has aiAPIService: ${!!registeredTool.aiAPIService}`);
       
       toolCount++;
     });
@@ -1347,7 +1347,7 @@ async function initializeToolSystem(settings) {
     const allTools = toolRegistry.getAllToolIds();
     // console.log(`Registered ${allTools.length} built-in tools:`, allTools);
     
-    return { GeminiAPIService, toolRegistry };
+    return { GeminiAiAPIService, toolRegistry };
   } catch (error) {
     console.error(`[tool-system] ERROR during initialization: ${error.message}`);
     throw error;
@@ -1372,19 +1372,18 @@ async function executeToolById(toolId, options) {
   }
   
   // Store the original GeminiAPIService in case we need to restore it
-  const originalGeminiAPIService = tool.GeminiAPIService;
+  const originalGeminiAPIService = tool.GeminiAiAPIService;
   
   try {
-    console.log('*** Client before recreate:', !!tool.GeminiAPIService?.client);
+    // console.log('*** Client before recreate:', !!tool.GeminiAiAPIService?.client);
+    // // Only try to recreate if tool has a GeminiAiAPIService
+    // if (tool.GeminiAiAPIService && typeof tool.GeminiAiAPIService.recreate === 'function') {
+    //   tool.GeminiAiAPIService.recreate();
+    // } else {
+    //   console.log(`Tool ${toolId} does not have a valid AI API service (has GeminiAiAPIService: ${!!tool.GeminiAiAPIService})`);
+    // }
     
-    // Only try to recreate if tool has a GeminiAPIService
-    if (tool.GeminiAPIService && typeof tool.GeminiAPIService.recreate === 'function') {
-      tool.GeminiAPIService.recreate();
-    } else {
-      console.log(`Tool ${toolId} does not have a valid AI API service (has GeminiAPIService: ${!!tool.GeminiAPIService})`);
-    }
-    
-    console.log('*** Client after recreate:', !!tool.GeminiAPIService?.client);
+    // console.log('*** Client after recreate:', !!tool.GeminiAiAPIService?.client);
     
     // Execute the tool
     console.log(`Starting execution of tool: ${toolId}`);
@@ -1392,43 +1391,36 @@ async function executeToolById(toolId, options) {
     console.log(`Tool execution complete: ${toolId}`);
     
     // Close the client after successful execution
-    if (tool.GeminiAPIService && typeof tool.GeminiAPIService.close === 'function') {
-      try {
-        tool.GeminiAPIService.close();
-      } catch (error) {
-        console.warn(`Error closing AI API service for tool ${toolId}:`, error);
-      } finally {
-        // Don't set to null here - this might be causing the problem!
-        // tool.GeminiAPIService = null;
-      }
-    }
+    // if (tool.GeminiAiAPIService && typeof tool.GeminiAiAPIService.close === 'function') {
+    //   try {
+    //     tool.GeminiAiAPIService.close();
+    //   } catch (error) {
+    //     console.warn(`Error closing AI API service for tool ${toolId}:`, error);
+    //   } finally {
+    //     // Don't set to null here - this might be causing the problem!
+    //     // tool.GeminiAiAPIService = null;
+    //   }
+    // }
     
     return result;
   } catch (error) {
     console.error(`Error executing tool ${toolId}:`, error);
     
     // Ensure the client is closed even if execution fails
-    if (tool && tool.GeminiAPIService && typeof tool.GeminiAPIService.close === 'function') {
-      try {
-        tool.GeminiAPIService.close();
-      } catch (closeError) {
-        console.warn(`Error closing AI API service after execution error:`, closeError);
-      } finally {
-        // Don't set to null here either
-        // tool.GeminiAPIService = null;
-      }
-    }
+    // if (tool && tool.GeminiAPIService && typeof tool.GeminiAPIService.close === 'function') {
+    //   try {
+    //     tool.GeminiAPIService.close();
+    //   } catch (closeError) {
+    //     console.warn(`Error closing AI API service after execution error:`, closeError);
+    //   } finally {
+    //     // Don't set to null here either
+    //     // tool.GeminiAPIService = null;
+    //   }
+    // }
     
     throw error;
   }
 }
-
-/**
- * Reinitialize the AI API API service with updated settings
- * @param {Object} settings - AI API settings
- * @returns {Object} - New AI API service instance
- */
-// In tool-system.js, update the reinitializeGeminiAPIService function (around line 1559):
 
 /**
  * Reinitialize the AI API service with updated settings
@@ -1437,7 +1429,7 @@ async function executeToolById(toolId, options) {
  */
 function reinitializeGeminiAPIService(settings) {
   // Create a new AI API service with the updated settings
-  const GeminiAPIService = new GeminiAPIService(settings);
+  const GeminiAPIService = new GeminiAiAPIService(settings);
   
   // Update the service in all registered tools
   for (const toolId of toolRegistry.getAllToolIds()) {

@@ -30,6 +30,20 @@ class GeminiAiAPIService {
         timeout: 900000 // 15 mins in ms
       }
     });
+
+    // this.test(); // ensure we can talk to api
+  }
+
+  async test() { 
+    const response = await this.client.models.generateContentStream({
+      model: this.config.model_name,
+      contents: 'Write a 10-word poem.'
+    });
+    console.log(`\n\n>>>>> test`);
+    for await (const chunk of response) { 
+      console.log(chunk.text); 
+    }; 
+    console.log(`test <<<<\n\n`);
   }
 
   /**
@@ -195,4 +209,4 @@ The RESPONSE section should only contain your final answer.
   }
 }
 
-module.exports = GeminiAPIService;
+module.exports = GeminiAiAPIService;

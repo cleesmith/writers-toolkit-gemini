@@ -11,9 +11,9 @@ const fs = require('fs').promises;
  * with visualizations for each chapter's token usage
  */
 class TokensWordsCounter extends BaseTool {
-  constructor(GeminiAPIService, config = {}) {
+  constructor(GeminiAiAPIService, config = {}) {
     super('tokens_words_counter', config);
-    this.GeminiAPIService = GeminiAPIService;
+    this.apiService = GeminiAiAPIService;
   }
   
   /**
@@ -26,13 +26,32 @@ class TokensWordsCounter extends BaseTool {
   }
   
   /**
+   * Count tokens in a text string
+   * @param {string} text - Text to count tokens in
+   * @returns {Promise<number>} - Token count
+   */
+  async countTokens(text) {
+    try {
+      const response = await this.apiService.client.models.countTokens({
+        model: this.config.model_name,
+        contents: text
+      });
+      console.log(`\nresponse=${response}\n`);
+      return response.input_tokens;
+    } catch (error) {
+      console.error('Token counting error:', error);
+      throw error;
+    }
+  }
+  
+  /**
    * Execute the tool
    * @param {Object} options - Tool options
    * @returns {Promise<Object>} - Execution result
    */
   async execute(options) {
-    if (!this.GeminiAPIService) {
-      throw new Error('Claude service not initialized for TokensWordsCounter');
+    if (!this.apiService) {
+      throw new Error('API service not initialized for TokensWordsCounter');
     }
 
     try {
@@ -74,7 +93,7 @@ class TokensWordsCounter extends BaseTool {
       const wordCount = this.countWords(text);
       this.emitOutput(`Word count: ${wordCount.toLocaleString()}\n`);
       
-      const totalTokens = await this.GeminiAPIService.countTokens(text);
+      const totalTokens = await this.countTokens(text);
       this.emitOutput(`Token count: ${totalTokens.toLocaleString()}\n`);
 
       const wordsPerToken = totalTokens > 0 ? wordCount / totalTokens : 0;
@@ -97,7 +116,7 @@ class TokensWordsCounter extends BaseTool {
       }
       
       // Use the shared token budgets calculator from the Claude service
-      const tokenBudgets = this.GeminiAPIService.calculateTokenBudgets(totalTokens);
+      const tokenBudgets = this.apiService.calculateTokenBudgets(totalTokens);
       
       // Calculate available tokens for output (after thinking budget)
       const availableOutputTokens = tokenBudgets.availableTokens - thinkingBudget;
@@ -166,8 +185,8 @@ class TokensWordsCounter extends BaseTool {
     } catch (error) {
       console.error('Error in TokensWordsCounter:', error);
       this.emitOutput(`\nError: ${error.message}\n`);
-      if (!this.GeminiAPIService) {
-        console.error('GeminiAPIService is null');
+      if (!this.apiService) {
+        console.error('apiService is null');
       }
       throw error;
     }
@@ -269,8 +288,8 @@ class TokensWordsCounter extends BaseTool {
       const wordCount = this.countWords(chapter.content);
       
       try {
-        // Use Claude API to count tokens
-        const tokenCount = await this.GeminiAPIService.countTokens(chapter.content);
+        // Use API to count tokens
+        const tokenCount = await this.apiService.models.countTokens(chapter.content);
         
         // Calculate remaining tokens for this chapter
         const remainingTokens = contextWindow - tokenCount - thinkingBudget;
