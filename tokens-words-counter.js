@@ -6,14 +6,12 @@ const appState = require('./state.js');
 const fs = require('fs').promises;
 
 /**
- * TokensWordsCounter Tool
- * Enhanced to analyze manuscripts, count tokens/words, and identify chapters
- * with visualizations for each chapter's token usage
+ * Tokens & Words Counter Tool
  */
 class TokensWordsCounter extends BaseTool {
-  constructor(AiApiService, config = {}) {
+  constructor(apiService, config = {}) {
     super('tokens_words_counter', config);
-    this.apiService = AiApiService;
+    this.apiService = apiService;
   }
   
   /**
@@ -32,18 +30,14 @@ class TokensWordsCounter extends BaseTool {
    */
   async countTokens(text) {
     try {
-      const response = await this.apiService.client.models.countTokens({
-        model: this.config.model_name,
-        contents: text
-      });
-      console.log(`\nresponse=${response}\n`);
-      return response.input_tokens;
+      const tokenCount = await this.apiService.countTokens(text);
+      return tokenCount;
     } catch (error) {
       console.error('Token counting error:', error);
       throw error;
     }
   }
-  
+
   /**
    * Execute the tool
    * @param {Object} options - Tool options
@@ -79,11 +73,9 @@ class TokensWordsCounter extends BaseTool {
       }
 
       // Read the input file
-      this.emitOutput(`Reading file: ${inputFile}\n`);
       const text = await this.readInputFile(inputFile);
       
       // Basic token and word counting
-      this.emitOutput('Counting words...\n');
       const wordCount = this.countWords(text);
       this.emitOutput(`Word count: ${wordCount.toLocaleString()}\n`);
       
@@ -92,26 +84,12 @@ class TokensWordsCounter extends BaseTool {
 
       const wordsPerToken = totalTokens > 0 ? wordCount / totalTokens : 0;
       
-      if (totalTokens >= contextWindow) {
-        this.emitOutput(`\nDocument is too large to anaylze chapters: ${totalTokens} tokens is greater than ${contextWindow} tokens\n`);
-        const availableOutputTokens = 0;
-        return {
-          success: false,
-          outputFiles,
-          stats: {
-            wordCount,
-            tokenCount: totalTokens,
-            wordsPerToken: wordsPerToken.toFixed(2),
-          }
-        };
-      }
-      
       // Generate the full report
       let reportContent = this.generateReport(
         inputFile, 
         wordCount, 
         totalTokens, 
-        wordsPerToken, 
+        wordsPerToken
       );
       
       // Output the summary report to the console
@@ -151,12 +129,8 @@ class TokensWordsCounter extends BaseTool {
     } catch (error) {
       console.error('Error in TokensWordsCounter:', error);
       this.emitOutput(`\nError: ${error.message}\n`);
-      if (!this.apiService) {
-        console.error('apiService is null');
-      }
       throw error;
     }
-
   }
 
   /**
@@ -168,9 +142,9 @@ class TokensWordsCounter extends BaseTool {
    * @returns {string} Formatted report
    */
   generateReport(filePath, wordCount, totalTokens, wordsPerToken) {
-    const availableOutputTokens = tokenBudgets.availableTokens - thinkingBudget;
-    
-    let report = `MANUSCRIPT ANALYSIS REPORT  ${new Date().toLocaleString()}
+    let report = `Tokens & Words Counter Tool
+
+MANUSCRIPT ANALYSIS REPORT  ${new Date().toLocaleString()}
 
 File: ${filePath}
 

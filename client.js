@@ -27,8 +27,6 @@ class AiApiService {
     this.client = new GoogleGenAI({
       apiKey: apiKeyFromEnv
     });
-
-    // this.test(); // ensure we can talk to api
   }
 
   async test() { 
@@ -44,30 +42,18 @@ class AiApiService {
   }
 
   /**
-   * Stream a response with thinking-like functionality
+   * Stream a response
    * @param {string} prompt - Prompt to complete
-   * @param {Object} options - API options (currently unused but kept for interface compatibility)
-   * @param {Function} onThinking - Callback for thinking content
    * @param {Function} onText - Callback for response text
    * @returns {Promise<void>}
    */
-  async streamWithThinking(prompt, options = {}, onThinking, onText) {
+  async streamWithThinking(prompt, onText) {
     if (!this.client || this.apiKeyMissing) {
       throw new Error('Gemini API client not initialized - API key missing');
     }
 
     try {
-      const thinkingPrompt = `
-${prompt}
-
-IMPORTANT INSTRUCTION: First, think through this task step by step.
-Begin your internal analysis by writing "THINKING:" followed by your detailed analysis.
-After you've completed your analysis, write "RESPONSE:" followed by your final answer.
-The THINKING section should be comprehensive, showing all your reasoning steps.
-The RESPONSE section should only contain your final answer.
-`;
-
-      // Reverted to HarmBlockThreshold.OFF as per your original code and feedback
+      // Set safety settings to OFF
       const safetySettings = [
         { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.OFF },
         { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.OFF },
@@ -75,76 +61,39 @@ The RESPONSE section should only contain your final answer.
         { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.OFF }
       ];
       
+      // Stream the response directly
       const streamGenerator = await this.client.models.generateContentStream({
         model: this.config.model_name,
-        contents: [{ role: "user", parts: [{ text: thinkingPrompt }] }],
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
         safetySettings: safetySettings
       });
 
-      let inThinkingMode = false;
-      let inResponseMode = false;
-      
+      // Process each chunk
       for await (const chunk of streamGenerator) {
+        console.log(JSON.stringify(chunk.candidates[0].content.parts[0], null, 2));
+        console.log("Full chunk structure:"); // Label for the upcoming output
+        console.dir(chunk, { depth: null });  // Display the complete object structure
+
         let currentText = chunk.candidates?.[0]?.content?.parts?.[0]?.text || '';
         if (!currentText) {
           continue;
         }
-
-        if (inThinkingMode) {
-          const responseMarkerIndex = currentText.indexOf("RESPONSE:");
-          if (responseMarkerIndex !== -1) {
-            const thinkingPart = currentText.substring(0, responseMarkerIndex);
-            if (thinkingPart) onThinking(thinkingPart);
-            
-            const responsePart = currentText.substring(responseMarkerIndex + "RESPONSE:".length);
-            if (responsePart) onText(responsePart);
-            
-            inThinkingMode = false;
-            inResponseMode = true;
-          } else {
-            onThinking(currentText);
-          }
-        } else if (inResponseMode) {
-          onText(currentText);
-        } else { 
-          const thinkingMarkerIndex = currentText.indexOf("THINKING:");
-          const responseMarkerIndex = currentText.indexOf("RESPONSE:");
-
-          if (thinkingMarkerIndex !== -1 && (responseMarkerIndex === -1 || thinkingMarkerIndex < responseMarkerIndex)) {
-            const preambleText = currentText.substring(0, thinkingMarkerIndex);
-            if (preambleText) onText(preambleText);
-            
-            let postThinkingMarkerText = currentText.substring(thinkingMarkerIndex + "THINKING:".length);
-            inThinkingMode = true;
-            
-            const nestedResponseMarkerIndex = postThinkingMarkerText.indexOf("RESPONSE:");
-            if (nestedResponseMarkerIndex !== -1) {
-              const thinkingPart = postThinkingMarkerText.substring(0, nestedResponseMarkerIndex);
-              if (thinkingPart) onThinking(thinkingPart);
-              
-              const responsePart = postThinkingMarkerText.substring(nestedResponseMarkerIndex + "RESPONSE:".length);
-              if (responsePart) onText(responsePart);
-              
-              inThinkingMode = false;
-              inResponseMode = true;
-            } else {
-              if (postThinkingMarkerText) onThinking(postThinkingMarkerText);
-            }
-          } else if (responseMarkerIndex !== -1) {
-            const preambleText = currentText.substring(0, responseMarkerIndex);
-            if (preambleText) onText(preambleText);
-            
-            const responsePart = currentText.substring(responseMarkerIndex + "RESPONSE:".length);
-            if (responsePart) onText(responsePart);
-            
-            inResponseMode = true;
-          } else {
-            onText(currentText);
-          }
-        }
+        
+        // Send all text directly to the onText callback
+        onText(currentText);
       }
     } catch (error) {
-      console.error('Error in Gemini streaming with thinking:', error);
+      console.error('API Connection Error:', {
+        message: error.message,
+        status: error.status,
+        statusText: error.statusText,
+        url: error.url,
+        type: error.type,
+        response: error.response ? {
+          status: error.response.status,
+          statusText: error.response.statusText
+        } : 'No response'
+      });
       throw error;
     }
   }

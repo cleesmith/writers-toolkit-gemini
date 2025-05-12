@@ -13,12 +13,12 @@ const fs = require('fs/promises');
 class ProofreaderMechanical extends BaseTool {
   /**
    * Constructor
-   * @param {Object} GeminiAPIService - Claude API service
+   * @param {Object} apiService - AI API service
    * @param {Object} config - Tool configuration
    */
-  constructor(GeminiAPIService, config = {}) {
+  constructor(apiService, config = {}) {
     super('proofreader_mechanical', config);
-    this.GeminiAPIService = GeminiAPIService;
+    this.apiService = apiService;
   }
 
   /**
@@ -49,40 +49,17 @@ class ProofreaderMechanical extends BaseTool {
     try {
       const manuscriptContent = await this.readInputFile(manuscriptFile);
       const manuscriptWordCount = this.countWords(manuscriptContent);
-      const manuscriptTokens = await this.GeminiAPIService.countTokens(manuscriptContent);
+      const manuscriptTokens = await this.apiService.countTokens(manuscriptContent);
       
       const prompt = this.createMechanicalProofreadingPrompt(manuscriptContent, language);
 
-      const promptTokens = await this.GeminiAPIService.countTokens(prompt);
-
-      // Call the shared token budget calculator
-      const tokenBudgets = this.GeminiAPIService.calculateTokenBudgets(promptTokens);
+      const promptTokens = await this.apiService.countTokens(prompt);
 
       this.emitOutput(`Reading manuscript file: ${manuscriptFile}\n`);
-      this.emitOutput(`\nToken stats:\n`);
       this.emitOutput(`Manuscript is ${manuscriptWordCount} words and ${manuscriptTokens} tokens.\n`);
-      this.emitOutput(`Input prompt tokens: [${tokenBudgets.promptTokens}]\n`);
-      this.emitOutput(`\n`);
-      this.emitOutput(`Max AI model context window: [${tokenBudgets.contextWindow}] tokens\n`);
-      this.emitOutput(`Available tokens: [${tokenBudgets.availableTokens}] = context_window - prompt\n`);
-      this.emitOutput(`Desired output tokens: [${tokenBudgets.desiredOutputTokens}]\n`);
-      this.emitOutput(`AI model thinking budget: [${tokenBudgets.thinkingBudget}] tokens\n`);
-      this.emitOutput(`Max output tokens: [${tokenBudgets.maxTokens}] tokens\n`);
-
-      // Check for special conditions
-      if (tokenBudgets.capThinkingBudget) {
-        this.emitOutput(`Warning: thinking budget is larger than 32K, set to 32K.\n`);
-      }
-
-      // Check if the prompt is too large
-      if (tokenBudgets.isPromptTooLarge) {
-        this.emitOutput(`Error: prompt is too large to have a ${tokenBudgets.configuredThinkingBudget} thinking budget!\n`);
-        this.emitOutput(`Run aborted!\n`);
-        throw new Error(`Prompt is too large for ${tokenBudgets.configuredThinkingBudget} thinking budget - run aborted`);
-      }
       
-      // Call Claude API with streaming
-      this.emitOutput(`Sending request to Claude API . . .\n`);
+      // Call API with streaming
+      this.emitOutput(`Sending request to AI API . . .\n`);
 
       // Add a message about waiting
       this.emitOutput(`****************************************************************************\n`);
@@ -94,44 +71,14 @@ class ProofreaderMechanical extends BaseTool {
       
       const startTime = Date.now();
       let fullResponse = "";
-      let thinkingContent = "";
       
-      // Create system prompt to avoid markdown and enforce plain text
-      const systemPrompt = "CRITICAL INSTRUCTION: NO Markdown formatting of ANY kind. Never use headers, bullets, or any formatting symbols. Plain text only with standard punctuation.";
-
       try {
-        await this.GeminiAPIService.streamWithThinkingAndMessageStart(
+        await this.apiService.streamWithThinking(
           prompt,
-          {
-            model: "claude-3-7-sonnet-20250219",
-            system: systemPrompt,
-            max_tokens: tokenBudgets.maxTokens,
-            thinking: {
-              type: "enabled",
-              budget_tokens: tokenBudgets.thinkingBudget
-            },
-            betas: ["output-128k-2025-02-19"]
-          },
-          // callback for thinking content
-          (thinkingDelta) => {
-            thinkingContent += thinkingDelta;
-          },
-          // callback for response text
           (textDelta) => {
             fullResponse += textDelta;
-          },
-          // callback for message start with stats
-          (messageStart) => {
-            this.emitOutput(`${messageStart}\n`);
-          },
-          // callback for response headers
-          (responseHeaders) => {
-            this.emitOutput(`${responseHeaders}\n`);
-          },
-          // callback for status
-          (callStatus) => {
-            this.emitOutput(`${callStatus}\n`);
-          },
+            this.emitOutput(textDelta);
+          }
         );
       } catch (error) {
         this.emitOutput(`\nAPI Error: ${error.message}\n`);
@@ -149,7 +96,7 @@ class ProofreaderMechanical extends BaseTool {
       this.emitOutput(`Report has approximately ${wordCount} words.\n`);
       
       // Count tokens in response
-      const responseTokens = await this.GeminiAPIService.countTokens(fullResponse);
+      const responseTokens = await this.apiService.countTokens(fullResponse);
       this.emitOutput(`Response token count: ${responseTokens}\n`);
 
       // Remove any markdown formatting
@@ -159,7 +106,6 @@ class ProofreaderMechanical extends BaseTool {
       const outputFile = await this.saveReport(
         language,
         fullResponse,
-        thinkingContent,
         promptTokens,
         responseTokens,
         saveDir
@@ -196,7 +142,7 @@ class ProofreaderMechanical extends BaseTool {
    * Create mechanical proofreading prompt
    * @param {string} manuscriptContent - Manuscript content
    * @param {string} language - Language of the manuscript
-   * @returns {string} - Prompt for Claude API
+   * @returns {string} - Prompt for AI API
    */
   createMechanicalProofreadingPrompt(manuscriptContent, language = 'English') {
     // Create a focused, plain language prompt that avoids complexity
@@ -274,10 +220,9 @@ At the end, briefly confirm that you focused only on mechanical errors.`;
   }
   
   /**
-   * Save report and thinking content to files
+   * Save report to file
    * @param {string} language - Language of the manuscript
    * @param {string} content - Response content
-   * @param {string} thinking - Thinking content
    * @param {number} promptTokens - Prompt token count
    * @param {number} responseTokens - Response token count
    * @param {string} saveDir - Directory to save to
@@ -286,7 +231,6 @@ At the end, briefly confirm that you focused only on mechanical errors.`;
   async saveReport(
     language,
     content,
-    thinking,
     promptTokens,
     responseTokens,
     saveDir
@@ -312,41 +256,20 @@ At the end, briefly confirm that you focused only on mechanical errors.`;
       // Array to collect all saved file paths
       const savedFilePaths = [];
       
-      // Create stats for thinking file
-      const stats = `
-Details:  ${dateTimeStr}
-Language: ${language}
-Max request timeout: ${this.config.request_timeout} seconds
-Max AI model context window: ${this.config.context_window} tokens
-AI model thinking budget: ${this.config.thinking_budget_tokens} tokens
-Desired output tokens: ${this.config.desired_output_tokens} tokens
+      // Add stats to the top of the report
+      const reportWithStats = `=== PROOFREADING REPORT (${language}) ===
+Date: ${dateTimeStr}
+Prompt tokens: ${promptTokens}
+Response tokens: ${responseTokens}
 
-Input tokens: ${promptTokens}
-Output tokens: ${responseTokens}
-`;
+${content}`;
       
       // Save full response
       const reportFilename = `${baseFilename}.txt`;
       const reportPath = path.join(saveDir, reportFilename);
-      await this.writeOutputFile(content, saveDir, reportFilename);
+      await this.writeOutputFile(reportWithStats, saveDir, reportFilename);
       savedFilePaths.push(reportPath);
       
-      // Save thinking content if available and not skipped
-      if (thinking) {
-        const thinkingFilename = `${baseFilename}_thinking.txt`;
-        const thinkingPath = path.join(saveDir, thinkingFilename);
-        const thinkingContent = `=== PROOFREADER THINKING ===
-
-${thinking}
-
-=== END PROOFREADER THINKING ===
-${stats}`;
-        
-        await this.writeOutputFile(thinkingContent, saveDir, thinkingFilename);
-        this.emitOutput(`AI thinking saved to: ${thinkingPath}\n`);
-        savedFilePaths.push(thinkingPath);
-      }
-
       this.emitOutput(`Report saved to: ${reportPath}\n`);
       return savedFilePaths;
     } catch (error) {
