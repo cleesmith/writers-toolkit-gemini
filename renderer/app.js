@@ -41,9 +41,8 @@ function App() {
     <div className="app">
       <AppBar position="static">
         <Toolbar>
-          <Typography variant="h6">Writer's Toolkit</Typography>
+          <Typography variant="h6">Writers Toolkit</Typography>
           <div style={{ flexGrow: 1 }} />
-          <Button color="inherit">API Settings</Button>
           <Button color="inherit">Quit</Button>
         </Toolbar>
       </AppBar>

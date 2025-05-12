@@ -49,13 +49,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveFile: (data) => ipcRenderer.invoke('save-file', data),
   closeEditorDialog: () => ipcRenderer.send('close-editor-dialog'),
   onFileOpened: (callback) => ipcRenderer.on('file-opened', (_, data) => callback(data)),
-
-  // API settings
-  getClaudeApiSettings: () => ipcRenderer.invoke('get-claude-api-settings'),
-  saveClaudeApiSettings: (settings) => ipcRenderer.invoke('save-claude-api-settings', settings),
-  showApiSettingsDialog: () => ipcRenderer.send('show-api-settings-dialog'),
-  closeApiSettingsDialog: (action, data) => ipcRenderer.send('close-api-settings-dialog', action, data),
-  onApiSettingsUpdated: (callback) => ipcRenderer.on('api-settings-updated', (_, data) => callback(data)),
   
   onSetTheme: (callback) => ipcRenderer.on('set-theme', (_, theme) => callback(theme)),
 

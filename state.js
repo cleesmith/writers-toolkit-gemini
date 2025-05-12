@@ -55,12 +55,6 @@ class AppState {
     // Store will be initialized in initialize()
     this.store = null;
     this.initialized = false;
-    
-    // Default Claude API settings
-    this.settings_ai_api_configuration = {
-      max_retries: 1,
-      request_timeout: 300,
-    };
   }
   
   // Async initialization method
@@ -114,14 +108,6 @@ class AppState {
         this.DEFAULT_SAVE_DIR = savedPath;
       }
     }
-    
-    // Load Claude API settings
-    this.settings_ai_api_configuration = 
-      this.store.get('ai_api_configuration', {
-        max_retries: 1,
-        request_timeout: 300,
-      });
-  }
   
   isPathValid(filePath) {
     // Verify path exists and is within PROJECTS_DIR

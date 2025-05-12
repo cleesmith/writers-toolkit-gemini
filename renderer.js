@@ -3,7 +3,6 @@ const themeToggleBtn = document.getElementById('theme-toggle');
 const sunIcon = document.getElementById('sun-icon');
 const moonIcon = document.getElementById('moon-icon');
 const quitButton = document.getElementById('quit-button');
-const apiSettingsBtn = document.getElementById('api-settings-btn');
 const body = document.body;
 
 // Track theme state (initially dark)
@@ -762,19 +761,6 @@ if (exportTxtBtn) {
     }
   });
 }
-
-// Open API Settings dialog
-if (apiSettingsBtn) {
-  apiSettingsBtn.addEventListener('click', () => {
-    window.electronAPI.showApiSettingsDialog();
-  });
-}
-
-// Listen for API settings updates
-window.electronAPI.onApiSettingsUpdated((settings) => {
-  console.log('API settings updated:', settings);
-  // Could refresh any UI that depends on these settings
-});
 
 // Add this to your DOMContentLoaded event listener in renderer.js:
 document.addEventListener('DOMContentLoaded', () => {

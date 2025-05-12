@@ -2,10 +2,10 @@
 const { GoogleGenAI, HarmCategory, HarmBlockThreshold } = require('@google/genai');
 
 /**
- * Gemini AI API Service
- * Handles interactions with the Google's Gemini AI API
+ * AI API Service
+ * Handles interactions with AI API services (currently Gemini)
  */
-class GeminiAiAPIService {
+class AiApiService {
   /**
    * Constructor
    * @param {Object} config - API configuration
@@ -25,10 +25,7 @@ class GeminiAiAPIService {
     }
 
     this.client = new GoogleGenAI({
-      apiKey: apiKeyFromEnv,
-      httpOptions: {
-        timeout: 900000 // 15 mins in ms
-      }
+      apiKey: apiKeyFromEnv
     });
 
     // this.test(); // ensure we can talk to api
@@ -155,58 +152,21 @@ The RESPONSE section should only contain your final answer.
   /**
    * Count tokens in a text string
    * @param {string} text - Text to count tokens in
-   * @returns {Promise<number>} - Token count
+   * @returns {Promise<number>} - Token count (returns 0 on error)
    */
   async countTokens(text) {
-    if (!this.client || this.apiKeyMissing) {
-      throw new Error('Gemini API client not initialized - API key missing');
-    }
-
     try {
       const result = await this.client.models.countTokens({
         model: this.config.model_name,
         contents: [{ role: "user", parts: [{ text: text }] }] 
       });
       
-      return result.totalTokens || 0;
+      return result.totalTokens;
     } catch (error) {
       console.error('Token counting error:', error);
-      return Math.ceil(text.length / 4);
+      return 0;
     }
-  }
-
-  /**
-   * Calculate token budgets and validate prompt size
-   * @param {number} promptTokens - Number of tokens in the prompt
-   * @returns {Object} - Calculated token budgets and limits
-   */
-  calculateTokenBudgets(promptTokens) {
-    const contextWindow = 1000000; 
-    const availableTokens = contextWindow - promptTokens;
-    const desiredOutputTokens = this.config.desired_output_tokens || 8192; 
-    const thinkingBudget = 0; 
-    
-    const maxOutputTokenLimit = 8192; 
-    const maxTokens = Math.min(availableTokens, maxOutputTokenLimit);
-    
-    return {
-      contextWindow,
-      promptTokens,
-      availableTokens,
-      maxTokens,
-      thinkingBudget,
-      desiredOutputTokens,
-      isPromptTooLarge: promptTokens >= contextWindow 
-    };
-  }
-
-  recreate() {
-    // Not needed
-  }
-
-  close() {
-    // Not needed
   }
 }
 
-module.exports = GeminiAiAPIService;
+module.exports = AiApiService;

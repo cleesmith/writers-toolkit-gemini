@@ -72,17 +72,9 @@ async function initializeApp() {
     // Set up IPC handlers first
     setupIPCHandlers();
 
-    // Initialize tool system with COMPLETE AI API settings
     try {
-      // Get complete settings
-      const completeSettings = getCompleteApiSettings();
-      
-      // Log the complete settings
-      console.log('Initializing tool system with complete settings:');
-      console.log(JSON.stringify(completeSettings, null, 2));
-      
       // Initialize tool system with complete settings
-      const toolSystemResult = await toolSystem.initializeToolSystem(completeSettings);
+      const toolSystemResult = await toolSystem.initializeToolSystem();
 
       // Check if API key is missing
       if (toolSystemResult.GeminiAPIService && toolSystemResult.GeminiAPIService.apiKeyMissing) {
@@ -92,8 +84,8 @@ async function initializeApp() {
             dialog.showMessageBox(mainWindow, {
               type: 'warning',
               title: 'API Key Missing',
-              message: 'Gemini API key not found',
-              detail: 'Please configure your Gemini API key in API Settings before using AI tools.',
+              message: 'AI API key not found',
+              detail: "Please configure your AI API key in computer's environment before using AI tools.",
               buttons: ['OK']
             });
           }
@@ -102,12 +94,6 @@ async function initializeApp() {
 
     } catch (toolError) {
       console.error('>>> Warning: Tool system initialization failed:', toolError.message);
-      // // Show error to user but don't crash the app
-      // dialog.showErrorBox(
-      //   'API Configuration Warning', 
-      //   'Some Claude API settings may be missing. You can update them in Edit → API Settings.'
-      // );
-      // Don't swallow this error - re-throw it to prevent app from starting with broken tools
       throw toolError;
     }
     
@@ -751,71 +737,6 @@ function setupToolHandlers() {
   });
 }
 
-// Function to create the API settings dialog
-function createApiSettingsDialog() {
-  // Create the dialog window
-  apiSettingsWindow = new BrowserWindow({
-    width: 600,
-    height: 800,
-    parent: mainWindow,
-    modal: true,
-    show: false,
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js')
-    },
-    backgroundColor: '#121212', // Dark background
-    autoHideMenuBar: true,
-  });
-
-  // Load the HTML file
-  apiSettingsWindow.loadFile(path.join(__dirname, 'api-settings.html'));
-
-  // Wait for the window to be ready before showing
-  apiSettingsWindow.once('ready-to-show', () => {
-    apiSettingsWindow.show();
-    
-    // Send the current theme as soon as the window is ready
-    if (mainWindow) {
-      mainWindow.webContents.executeJavaScript('document.body.classList.contains("light-mode")')
-        .then(isLightMode => {
-          if (apiSettingsWindow && !apiSettingsWindow.isDestroyed()) {
-            apiSettingsWindow.webContents.send('set-theme', isLightMode ? 'light' : 'dark');
-          }
-        })
-        .catch(err => console.error('Error getting theme:', err));
-    }
-  });
-
-  // Track window destruction
-  apiSettingsWindow.on('closed', () => {
-    apiSettingsWindow = null;
-  });
-  
-  return apiSettingsWindow;
-}
-
-// Show the API settings dialog
-function showApiSettingsDialog() {
-  if (!apiSettingsWindow || apiSettingsWindow.isDestroyed()) {
-    createApiSettingsDialog();
-  } else {
-    apiSettingsWindow.show();
-    
-    // Re-apply the theme when showing an existing window
-    if (mainWindow) {
-      mainWindow.webContents.executeJavaScript('document.body.classList.contains("light-mode")')
-        .then(isLightMode => {
-          if (apiSettingsWindow && !apiSettingsWindow.isDestroyed()) {
-            apiSettingsWindow.webContents.send('set-theme', isLightMode ? 'light' : 'dark');
-          }
-        })
-        .catch(err => console.error('Error getting theme:', err));
-    }
-  }
-}
-
 function createEditorDialog(fileToOpen = null) {
   // If there's already an editor window open, close it first
   if (editorDialogWindow && !editorDialogWindow.isDestroyed()) {
@@ -890,98 +811,10 @@ function createEditorDialog(fileToOpen = null) {
   return editorDialogWindow;
 }
 
-// Prevent duplicate handler registration
-let apiSettingsHandlersRegistered = false;
-
-function setupApiSettingsHandlers() {
-  // Skip if handlers are already registered
-  if (apiSettingsHandlersRegistered) {
-    return;
-  }
-
-  // API settings handlers
-  ipcMain.handle('get-claude-api-settings', async () => {
-    try {
-      // Create complete settings from schema defaults and user settings
-      const completeSettings = getCompleteApiSettings();
-      
-      // Update appState with the complete settings
-      appState.settings_ai_api_configuration = completeSettings;
-      
-      // Save to store
-      if (appState.store) {
-        appState.store.set(
-          'ai_api_configuration',
-          completeSettings
-        );
-      }
-      
-      return {
-        schema: GEMINI_API_SCHEMA,
-        values: completeSettings
-      };
-    } catch (error) {
-      console.error('Error getting Claude API settings:', error);
-      return { success: false, message: error.message };
-    }
-  });
-
-  ipcMain.handle('save-claude-api-settings', async (_event, settings) => {
-    try {
-      console.log('Saving Claude API settings:', settings);
-
-      // Start with complete settings
-      const completeSettings = getCompleteApiSettings();
-      
-      // Update with new values
-      for (const key in settings) {
-        completeSettings[key] = settings[key];
-      }
-
-      // Update appState with complete settings
-      appState.settings_ai_api_configuration = completeSettings;
-      
-      // Save to store
-      if (appState.store) {
-        appState.store.set(
-          'ai_api_configuration',
-          completeSettings
-        );
-      }
-
-      // Re‑instantiate the service with complete settings
-      // toolSystem.reinitializeGeminiAPIService(completeSettings);
-
-      // Log the complete configuration
-      console.log('Complete API configuration:');
-      console.log(JSON.stringify(completeSettings, null, 2));
-
-      return { success: true };
-    } catch (error) {
-      console.error('Error saving Claude API settings:', error);
-      return { success: false, message: error.message };
-    }
-  });
-
-  ipcMain.on('close-api-settings-dialog', (_event, action, data) => {
-    if (apiSettingsWindow && !apiSettingsWindow.isDestroyed()) {
-      apiSettingsWindow.hide();
-
-      if (action === 'saved' && mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('api-settings-updated', data);
-      }
-    }
-  });
-  
-  // Mark that handlers have been registered
-  apiSettingsHandlersRegistered = true;
-}
-
 // Set up all IPC handlers
 function setupIPCHandlers() {
   setupProjectHandlers();
   setupToolHandlers();
-  setupApiSettingsHandlers();
   
   // Handle quit request from renderer
   ipcMain.on('app-quit', () => {
@@ -992,11 +825,6 @@ function setupIPCHandlers() {
   // Show project dialog
   ipcMain.on('show-project-dialog', () => {
     showProjectDialog();
-  });
-  
-  // Show API settings dialog
-  ipcMain.on('show-api-settings-dialog', () => {
-    showApiSettingsDialog();
   });
 
   // Show editor dialog

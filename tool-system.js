@@ -124,7 +124,7 @@ const DocxComments = loadToolClass('docx-comments');
 const EpubConverter = loadToolClass('epub-converter');
 
 const TOOL_DEFS = [
-  { id: 'tokens_words_counter', title: `Tokens & Words Counter`, description: `This is a free call to test that your ANTHROPIC_API_KEY is working properly!  Also, use it to count the approximate tokens and words in text files (mostly for manuscript.txt).  This helps to estimate Claude API usage and context window requirements for your writing, and may help with API Settings for larger manuscripts.`, Class: TokensWordsCounter, options: [
+  { id: 'tokens_words_counter', title: `Tokens & Words Counter`, description: `This tool can test that your AI API key is working properly!  Also, use it to count the approximate tokens and words in text files (mostly for manuscript.txt).`, Class: TokensWordsCounter, options: [
     {
       "name": "input_file",
       "label": "Input File",
@@ -1422,39 +1422,8 @@ async function executeToolById(toolId, options) {
   }
 }
 
-/**
- * Reinitialize the AI API service with updated settings
- * @param {Object} settings - AI API settings
- * @returns {Object} - New AI API service instance
- */
-function reinitializeGeminiAPIService(settings) {
-  // Create a new AI API service with the updated settings
-  const GeminiAPIService = new GeminiAiAPIService(settings);
-  
-  // Update the service in all registered tools
-  for (const toolId of toolRegistry.getAllToolIds()) {
-    const tool = toolRegistry.getTool(toolId);
-    
-    // Close any existing client first
-    if (tool.GeminiAPIService) {
-      try {
-        tool.GeminiAPIService.close();
-      } catch (error) {
-        console.warn(`Error closing AI API service during reinitialization:`, error);
-      } finally {
-        tool.GeminiAPIService = null;  // This ALWAYS happens
-      }
-    }
-    
-    tool.GeminiAPIService = GeminiAPIService;
-  }
-  
-  return GeminiAPIService;
-}
-
 module.exports = {
   initializeToolSystem,
   executeToolById,
-  reinitializeGeminiAPIService,
   toolRegistry
 };

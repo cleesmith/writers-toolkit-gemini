@@ -55,8 +55,7 @@ The application features a main interface (`index.html`, `renderer.js`) where us
 2.  **Select a Tool:** Tools are categorized into AI-based and non-AI tools, selectable via dropdown menus.
 3.  **Configure and Run Tools:** A dedicated "Tool Setup & Run" interface (`tool-setup-run.html`, `tool-setup-run.js`) allows users to configure parameters for the selected tool and then execute it. Output and progress are displayed in this interface.
 4.  **View Results:** Generated reports and files can be viewed and edited using a built-in text editor (`editor-dialog.html`, `editor-dialog.js`, `renderer/editor/index.html`, `renderer/editor/renderer.js`).
-5.  **Manage API Settings:** API keys and related configurations (e.g., timeouts, token budgets) are managed through an API settings dialog (`api-settings.html`, `api-settings.js`).
-6.  **Toggle Theme:** The UI supports dark and light modes.
+5.  **Toggle Theme:** The UI supports dark and light modes.
 
 ### Technical Aspects
 
@@ -89,7 +88,6 @@ The application features a main interface (`index.html`, `renderer.js`) where us
 
 * **Project-Based:** Work is organized into projects, each residing in its own subdirectory within `~/writing`.
 * **Local File Storage:** All primary data (manuscripts, outlines, world files, tool outputs) are stored as text files within the current project directory.
-* **API Configuration:** Users need to provide their own API keys. The application includes a mechanism to manage API settings such as retry attempts, timeouts, and token budget parameters for AI interactions. These settings are crucial for balancing analysis quality with API usage costs and limits. The `README.md` details how the application manages token budgets, prioritizing AI "thinking" capacity.
 * **Output Files:** Tools generate timestamped output files to avoid overwriting previous results.
 
 In summary, the Writer's Toolkit is a comprehensive desktop application that empowers authors with a range of AI-driven and utility tools to enhance their creative writing process, from initial brainstorming and drafting to in-depth analysis and editing, all while keeping their work stored locally.
