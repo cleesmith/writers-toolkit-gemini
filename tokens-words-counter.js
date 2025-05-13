@@ -12,6 +12,11 @@ class TokensWordsCounter extends BaseTool {
   constructor(apiService, config = {}) {
     super('tokens_words_counter', config);
     this.apiService = apiService;
+    // // Assert that cache is available - fail early if missing
+    // if (!config.aiApiCache) {
+    //   throw new Error('Requires AI Api Cache to be configured');
+    // }
+    // this.aiApiCache = config.aiApiCache;
   }
   
   /**

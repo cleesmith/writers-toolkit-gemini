@@ -43,7 +43,7 @@ async function main() {
       file: manuscriptFilePath,
       config: {
         mimeType: 'text/plain',
-        displayName: `Manuscript: ${path.basename(manuscriptFilePath)}`
+        displayName: `${path.resolve(manuscriptFilePath)}`
       }
     };
 
@@ -84,7 +84,7 @@ async function main() {
     process.exit(1);
   }
 
-  const modelName = 'gemini-2.5-pro-preview-05-06'; // Ensure this model supports caching
+  const modelName = 'gemini-2.5-pro-preview-05-06';
   let createdCache;
 
   // --- Define the BASE instructions (will go into the cache's systemInstruction) ---
@@ -253,8 +253,9 @@ Now, please provide the analysis based on the cached manuscript and these genera
         taskSpecificTimerInterval = setInterval(updateTimer, 1000);
 
         let lastUsageMetadata = null;
+        //    **************                   *********************
         const responseStream = await ai.models.generateContentStream({
-          model: modelName, // Must match the model used for caching
+          model: modelName,
           contents: contentsForRequest,
           generationConfig: generationConfiguration,
           safetySettings: safetySettings,
