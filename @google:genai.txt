@@ -287,13 +287,13 @@ EXAMPLE
 
 const contents = ...; // Initialize the content to cache. 
 const response = await ai.caches.create({ 
-model: 'gemini-2.5-pro-preview-05-06' , 
-config: { 
-'contents' : contents , 
-'displayName' : 'test cache' , 
-'systemInstruction' : 'What is the sum of the two pdfs?' , 
-'ttl' : '86400s' , 
-} 
+	model: 'gemini-2.5-pro-preview-05-06' , 
+	config: { 
+		'contents' : contents , 
+		'displayName' : 'test cache' , 
+		'systemInstruction' : 'What is the sum of the two pdfs?' , 
+		'ttl' : '86400s' , 
+	} 
 });  
 
 - Defined in caches.ts:72 

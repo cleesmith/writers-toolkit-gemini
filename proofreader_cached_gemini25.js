@@ -18,8 +18,8 @@ async function main() {
 
   const ai = new GoogleGenAI({ apiKey: apiKeyFromEnv });
 
-  const manuscriptFilePath = 'cls_manuscript.txt';
-  let manuscriptContent = ''; // For size log
+  const manuscriptFilePath = 'test_proofread.txt';
+  let manuscriptContent = '';
 
   try {
     if (!fs.existsSync(manuscriptFilePath)) {
@@ -132,13 +132,13 @@ Now, please provide the analysis based on the cached manuscript and these genera
     }
 
     const cacheConfig = {
-        model: modelName, // Cache is model-specific
+        model: modelName,
         config: {
             contents: [createUserContent(createPartFromUri(uploadedFileMetadata.uri, uploadedFileMetadata.mimeType))],
+            displayName: `${path.resolve(manuscriptFilePath)}`, // 128 bytes ?
             systemInstruction: baseInstructionsFormat,
-            ttl: `${30 * 60}s` // 30 minutes in seconds (e.g., "900s") - cache will auto-delete after this if not explicitly deleted
-        },
-        displayName: `Cache for ${path.basename(manuscriptFilePath)} - ${new Date().toISOString()}`
+            ttl: "14400s" // 4 hours in seconds - cache will auto-delete after this if not explicitly deleted
+        }
     };
 
     console.log("Creating cache with config:", JSON.stringify({
@@ -185,26 +185,26 @@ Now, please provide the analysis based on the cached manuscript and these genera
     responseMimeType: 'text/plain',
   };
   const safetySettings = [
-    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.OFF },
+    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.OFF },
+    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.OFF },
+    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.OFF },
   ];
 
   // --- Define the tasks (focus prompts only) ---
   const tasks = [
     {
       name: "Grammar, Spelling, and Punctuation",
-      focusPrompt: `FOCUS AREA: Grammar, spelling, and punctuation issues.\nFor the "Correction/Suggestion:" line, provide the directly corrected sentence.`
+      focusPrompt: `FOCUS AREA: Spelling issues.\nFor the "Correction/Suggestion:" line, provide the directly corrected sentence.`
     },
-    {
-      name: "Character Consistency",
-      focusPrompt: `FOCUS AREA: Character consistency issues. This includes:\n- Consistent naming of characters.\n- Consistent physical descriptions (unless changes are clearly part of the plot/development).\n- Consistent personality traits, voice, and behavior (unless character development is explicitly shown and justified).\n- Consistent memories, skills, or knowledge attributed to characters.\n- Consistent relationships between characters.\nFor the "Correction/Suggestion:" line, describe the inconsistency and suggest how to make it consistent or what parts of the manuscript to review for alignment.`
-    },
-    {
-      name: "Plot Consistency",
-      focusPrompt: `FOCUS AREA: Plot consistency issues. This includes:\n- Timeline consistency (logical sequence of events, no unexplained time jumps or contradictions).\n- Cause and effect (actions having believable consequences, or lack of consequences being addressed).\n- Adherence to established rules or logic of the story world (e.g., magic systems, technology).\n- Unresolved plot threads or plot holes.\n- Consistency in objects, locations, or significant plot devices.\n- Character motivations aligning with their actions within the plot.\nFor the "Correction/Suggestion:" line, describe the plot inconsistency, plot hole, or unresolved thread, and suggest how it might be resolved or what parts of the manuscript to review for alignment.`
-    }
+    // {
+    //   name: "Character Consistency",
+    //   focusPrompt: `FOCUS AREA: Character consistency issues. This includes:\n- Consistent naming of characters.\n- Consistent physical descriptions (unless changes are clearly part of the plot/development).\n- Consistent personality traits, voice, and behavior (unless character development is explicitly shown and justified).\n- Consistent memories, skills, or knowledge attributed to characters.\n- Consistent relationships between characters.\nFor the "Correction/Suggestion:" line, describe the inconsistency and suggest how to make it consistent or what parts of the manuscript to review for alignment.`
+    // },
+    // {
+    //   name: "Plot Consistency",
+    //   focusPrompt: `FOCUS AREA: Plot consistency issues. This includes:\n- Timeline consistency (logical sequence of events, no unexplained time jumps or contradictions).\n- Cause and effect (actions having believable consequences, or lack of consequences being addressed).\n- Adherence to established rules or logic of the story world (e.g., magic systems, technology).\n- Unresolved plot threads or plot holes.\n- Consistency in objects, locations, or significant plot devices.\n- Character motivations aligning with their actions within the plot.\nFor the "Correction/Suggestion:" line, describe the plot inconsistency, plot hole, or unresolved thread, and suggest how it might be resolved or what parts of the manuscript to review for alignment.`
+    // }
   ];
 
   try {
@@ -345,50 +345,50 @@ Now, please provide the analysis based on the cached manuscript and these genera
       console.error("Error message:", fatalError.message);
       if (fatalError.stack) console.error("Stack trace:", fatalError.stack);
   } finally {
-    if (createdCache && createdCache.name) {
-      console.log(`\n\n======================================================================`);
-      console.log(`--- Attempting to delete created cache: ${createdCache.name} ---`);
-      console.log(`======================================================================`);
-      try {
-        if (ai.caches && typeof ai.caches.delete === 'function') {
-          const deleteParams = { name: createdCache.name };
-          console.log("Calling ai.caches.delete() with params:", JSON.stringify(deleteParams));
-          await ai.caches.delete(deleteParams);
-          console.log(`Cache ${createdCache.name} deleted successfully.`);
-        } else {
-          console.warn("WARN: 'ai.caches.delete' is not a function. Cannot delete created cache.");
-        }
-      } catch (deleteError) {
-        console.error(`ERROR: Failed to delete cache '${createdCache.name}'.`);
-        console.error("Cache deletion error details:", deleteError.message);
-        if (deleteError.stack) console.error("Deletion Stack:", deleteError.stack);
-      }
-      console.log(`--- End of Cache Deletion Attempt ---`);
-    }
+    // if (createdCache && createdCache.name) {
+    //   console.log(`\n\n======================================================================`);
+    //   console.log(`--- Attempting to delete created cache: ${createdCache.name} ---`);
+    //   console.log(`======================================================================`);
+    //   try {
+    //     if (ai.caches && typeof ai.caches.delete === 'function') {
+    //       const deleteParams = { name: createdCache.name };
+    //       console.log("Calling ai.caches.delete() with params:", JSON.stringify(deleteParams));
+    //       await ai.caches.delete(deleteParams);
+    //       console.log(`Cache ${createdCache.name} deleted successfully.`);
+    //     } else {
+    //       console.warn("WARN: 'ai.caches.delete' is not a function. Cannot delete created cache.");
+    //     }
+    //   } catch (deleteError) {
+    //     console.error(`ERROR: Failed to delete cache '${createdCache.name}'.`);
+    //     console.error("Cache deletion error details:", deleteError.message);
+    //     if (deleteError.stack) console.error("Deletion Stack:", deleteError.stack);
+    //   }
+    //   console.log(`--- End of Cache Deletion Attempt ---`);
+    // }
 
-    if (uploadedFileMetadata && uploadedFileMetadata.name) {
-      console.log(`\n\n======================================================================`);
-      console.log(`--- Attempting to delete uploaded file: ${uploadedFileMetadata.name} ---`);
-      console.log(`======================================================================`);
-      try {
-        if (ai.files && typeof ai.files.delete === 'function') {
-          const deleteParams = { name: uploadedFileMetadata.name };
-          console.log("Calling ai.files.delete() with params:", JSON.stringify(deleteParams));
-          await ai.files.delete(deleteParams);
-          console.log(`File ${uploadedFileMetadata.name} deleted successfully.`);
-        } else {
-          console.warn("WARN: 'ai.files.delete' is not a function. Cannot delete uploaded file.");
-        }
-      } catch (deleteError) {
-        console.error(`ERROR: Failed to delete file '${uploadedFileMetadata.name}'.`);
-        console.error("File deletion error details:", deleteError.message);
-        if (deleteError.stack) console.error("Deletion Stack:", deleteError.stack);
-      }
-      console.log(`--- End of File Deletion Attempt ---`);
-    }
+    // if (uploadedFileMetadata && uploadedFileMetadata.name) {
+    //   console.log(`\n\n======================================================================`);
+    //   console.log(`--- Attempting to delete uploaded file: ${uploadedFileMetadata.name} ---`);
+    //   console.log(`======================================================================`);
+    //   try {
+    //     if (ai.files && typeof ai.files.delete === 'function') {
+    //       const deleteParams = { name: uploadedFileMetadata.name };
+    //       console.log("Calling ai.files.delete() with params:", JSON.stringify(deleteParams));
+    //       await ai.files.delete(deleteParams);
+    //       console.log(`File ${uploadedFileMetadata.name} deleted successfully.`);
+    //     } else {
+    //       console.warn("WARN: 'ai.files.delete' is not a function. Cannot delete uploaded file.");
+    //     }
+    //   } catch (deleteError) {
+    //     console.error(`ERROR: Failed to delete file '${uploadedFileMetadata.name}'.`);
+    //     console.error("File deletion error details:", deleteError.message);
+    //     if (deleteError.stack) console.error("Deletion Stack:", deleteError.stack);
+    //   }
+    //   console.log(`--- End of File Deletion Attempt ---`);
+    // }
 
     console.log(`\n\n======================================================================`);
-    console.log(`--- Listing all project caches (after potential deletion) ---`);
+    console.log(`--- Listing all caches ---`);
     console.log(`======================================================================`);
     try {
         if (ai.caches && typeof ai.caches.list === 'function') {
@@ -416,7 +416,7 @@ Now, please provide the analysis based on the cached manuscript and these genera
 
 
     console.log(`\n\n======================================================================`);
-    console.log(`--- Listing all project files (after potential deletion) ---`);
+    console.log(`--- Listing all uploaded files ---`);
     console.log(`======================================================================`);
     try {
       if (ai.files && typeof ai.files.list === 'function') {
