@@ -8,13 +8,11 @@ Documentation: https://googleapis.github.io/js-genai/
 
 The Google Gen AI JavaScript SDK is designed for
 TypeScript and JavaScript developers to build applications powered by Gemini. The SDK
-supports both the Gemini Developer API and Vertex AI . 
+supports both the Gemini Developer API AI 
 
 The Google Gen AI SDK is designed to work with Gemini 2.0 features. 
 
-Note 
-
-SDK Preview: See: Preview Launch . 
+SDK Preview: See: Preview Launch 
 
 Caution 
 
@@ -33,33 +31,36 @@ npm install @google/genai
 
 QUICKSTART 
 
-The simplest way to get started is to using an API key from Google AI Studio : 
+The simplest way to get started is to using an API key from Google AI Studio:
 
-import { GoogleGenAI } from '@google/genai' ; 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY ; 
+// import { GoogleGenAI } from '@google/genai';
+// do NOT use import (ES), rather use CommonJS (require) instead:
+const { GoogleGenAI, HarmCategory, HarmBlockThreshold } = require('@google/genai');
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY; 
 
 const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY }); 
 
-async function main () { 
-const response = await ai.models.generateContent ({ 
-model: 'gemini-2.0-flash-001' , 
-contents: 'Why is the sky blue?' , 
-}); 
-console.log( response.text ); 
+async function main() { 
+	const response = await ai.models.generateContent({ 
+		model: 'gemini-2.5-pro-preview-05-06' , 
+		contents: 'Why is the sky blue?' , 
+	}); 
+	console.log(response.text); 
 } 
 
-main ();  
+main();  
+
 
 INITIALIZATION 
 
-The Google Gen AI SDK provides support for both the Google AI Studio and Vertex AI implementations of the Gemini API. 
+The Google Gen AI SDK provides support for the Google AI Studio implementations of the Gemini API. 
 
 GEMINI DEVELOPER API 
 
-For server-side applications, initialize using an API key, which can
-be acquired from Google AI Studio : 
+For server-side applications, initialize using an API key, 
+which can be acquired from Google AI Studio: 
 
-import { GoogleGenAI } from '@google/genai' ; 
 const ai = new GoogleGenAI({ apiKey: 'GEMINI_API_KEY' });
 
 BROWSER 
@@ -71,28 +72,16 @@ Use server-side implementations in production environments.
 
 In the browser the initialization code is identical: 
 
-import { GoogleGenAI } from '@google/genai' ; 
-const ai = new GoogleGenAI ({ apiKey: 'GEMINI_API_KEY' });  
-
-VERTEX AI 
-
-Sample code for VertexAI initialization: 
-
-import { GoogleGenAI } from '@google/genai' ; 
-
-const ai = new GoogleGenAI ({ 
-vertexai: true , 
-project: 'your_project' , 
-location: 'your_location' , 
+const ai = new GoogleGenAI({ apiKey: 'GEMINI_API_KEY' });  
 });  
 
-GOOGLEGENAI OVERVIEW 
+GOOGLE GENAI OVERVIEW 
 
 All API features are accessed through an instance of the GoogleGenAI classes.
 The submodules bundle together related API methods: 
 
 - ai.models :
-Use models to query models ( generateContent , generateImages , ...), or
+Use models to query models(generateContent , generateImages , ...), or
 examine their metadata. 
 
 - ai.caches :
@@ -113,32 +102,30 @@ input, and text or audio output.
 
 SAMPLES 
 
-More samples can be found in the github samples directory . 
+More samples can be found in the github samples directory 
 
 STREAMING 
 
 For quicker, more responsive API interactions use the generateContentStream method which yields chunks as they're generated: 
 
-import { GoogleGenAI } from '@google/genai' ; 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY ; 
-
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY; 
 const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY }); 
 
-async function main () { 
-const response = await ai.models.generateContentStream ({ 
-model: 'gemini-2.0-flash-001' , 
-contents: 'Write a 10-word poem.' , 
-}); 
-for await (const chunk of response) { 
-console.log(chunk.text); 
-} 
+async function main() { 
+	const response = await ai.models.generateContentStream({ 
+		model: 'gemini-2.5-pro-preview-05-06' , 
+		contents: 'Write a 10-word poem.' , 
+	}); 
+	for await(const chunk of response) { 
+		console.log(chunk.text); 
+	} 
 } 
 
-main ();  
+main();  
 
 FUNCTION CALLING 
 
-To let Gemini to interact with external systems, you can provide provide functionDeclaration objects as tools . To use these tools it's a 4 step 
+To let Gemini to interact with external systems, you can provide provide functionDeclaration objects as tools To use these tools it's a 4 step 
 
 - Declare the function name, description, and parameters 
 
@@ -146,26 +133,26 @@ To let Gemini to interact with external systems, you can provide provide functio
 
 - Use the returned FunctionCall parameters to call your actual function 
 
-- Send the result back to the model (with history, easier in ai.chat )
+- Send the result back to the model(with history, easier in ai.chat)
 as a FunctionResponse 
 
-import { GoogleGenAI , FunctionCallingConfigMode , FunctionDeclaration , Type } from '@google/genai' ; 
-const GEMINI_API_KEY = process . env . GEMINI_API_KEY ; 
+// import { GoogleGenAI , FunctionCallingConfigMode , FunctionDeclaration , Type } from '@google/genai'; 
+const GEMINI_API_KEY = process env.GEMINI_API_KEY; 
 
-async function main () { 
+async function main() { 
 const controlLightDeclaration : FunctionDeclaration = { 
 name: 'controlLight' , 
 parameters: { 
-type: Type . OBJECT , 
+type: Type.OBJECT , 
 description: 'Set the brightness and color temperature of a room light.' , 
 properties: { 
 brightness: { 
-type: Type . NUMBER , 
+type: Type.NUMBER , 
 description: 
 'Light level from 0 to 100. Zero is off and 100 is full brightness.' , 
 }, 
 colorTemperature: { 
-type: Type . STRING , 
+type: Type.STRING , 
 description: 
 'Color temperature of the light fixture which can be `daylight`, `cool`, or `warm`.' , 
 }, 
@@ -174,15 +161,15 @@ required: [ 'brightness' , 'colorTemperature' ],
 }, 
 }; 
 
-const ai = new GoogleGenAI ({ apiKey: GEMINI_API_KEY }); 
-const response = await ai . models . generateContent ({ 
-model: 'gemini-2.0-flash-001' , 
+const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY }); 
+const response = await ai.models.generateContent({ 
+model: 'gemini-2.5-pro-preview-05-06' , 
 contents: 'Dim the lights so the room feels cozy and warm.' , 
 config: { 
 toolConfig: { 
 functionCallingConfig: { 
 // Force it to call any function 
-mode: FunctionCallingConfigMode . ANY , 
+mode: FunctionCallingConfigMode.ANY , 
 allowedFunctionNames: [ 'controlLight' ], 
 } 
 }, 
@@ -190,10 +177,10 @@ tools: [{ functionDeclarations: [ controlLightDeclaration ]}]
 } 
 }); 
 
-console . log ( response . functionCalls ); 
+console.log(response.functionCalls); 
 } 
 
-main ();  
+main();  
 
 GENERATE CONTENT 
 
@@ -228,13 +215,10 @@ At Preview, products or features are ready for testing by customers. Preview off
 
 HOW IS THIS DIFFERENT FROM THE OTHER GOOGLE AI SDKS 
 
-This SDK ( @google/genai ) is Google Deepmind’s "vanilla" SDK for its generative AI offerings, and is where Google Deepmind adds new AI features. 
+This SDK(@google/genai) is Google Deepmind’s "vanilla" SDK for its generative AI offerings, and is where Google Deepmind adds new AI features. 
 
-Models hosted either on the Vertex AI platform or the Gemini Developer platform are accessible through this SDK. 
+Other SDKs may be offering additional AI frameworks on top of this SDK, or may be targeting specific project environments(like Firebase). 
 
-Other SDKs may be offering additional AI frameworks on top of this SDK, or may be targeting specific project environments (like Firebase). 
-
-The @google/generative_language and @google-cloud/vertexai SDKs are previous iterations of this SDK and are no longer receiving new Gemini 2.0+ features.
 ###
 
 
@@ -264,7 +248,7 @@ CONSTRUCTORS
 
 CONSTRUCTOR 
 
-- new Caches ( apiClient : ApiClient ) : Caches 
+- new Caches(apiClient : ApiClient) : Caches 
 
 PARAMETERS 
 
@@ -280,7 +264,7 @@ METHODS
 
 CREATE 
 
-- create ( params : CreateCachedContentParameters ) : Promise < CachedContent > 
+- create(params : CreateCachedContentParameters) : Promise < CachedContent > 
 
 Creates a cached contents resource. 
 
@@ -297,13 +281,13 @@ The created cached content.
 REMARKS 
 
 Context caching is only supported for specific models. See Gemini
-Developer API reference and Vertex AI reference for more information. 
+Developer API reference for more information. 
 
 EXAMPLE 
 
 const contents = ...; // Initialize the content to cache. 
-const response = await ai . caches . create ({ 
-model: 'gemini-2.0-flash-001' , 
+const response = await ai.caches.create({ 
+model: 'gemini-2.5-pro-preview-05-06' , 
 config: { 
 'contents' : contents , 
 'displayName' : 'test cache' , 
@@ -316,7 +300,7 @@ config: {
 
 DELETE 
 
-- delete ( 
+- delete(
 params : DeleteCachedContentParameters , 
 ) : Promise < DeleteCachedContentResponse > 
 
@@ -334,13 +318,13 @@ The empty response returned by the API.
 
 EXAMPLE 
 
-await ai . caches . delete ({ name: '...' }); // The server-generated resource name.  
+await ai.caches.delete({ name: '...' }); // The server-generated resource name.  
 
 - Defined in caches.ts:252 
 
 GET 
 
-- get ( params : GetCachedContentParameters ) : Promise < CachedContent > 
+- get(params : GetCachedContentParameters) : Promise < CachedContent > 
 
 Gets cached content configurations. 
 
@@ -356,13 +340,13 @@ The cached content.
 
 EXAMPLE 
 
-await ai . caches . get ({ name: '...' }); // The server-generated resource name.  
+await ai.caches.get({ name: '...' }); // The server-generated resource name.  
 
 - Defined in caches.ts:162 
 
 LIST 
 
-- list ( params ?: ListCachedContentsParameters ) : Promise < Pager < CachedContent > > 
+- list(params ?: ListCachedContentsParameters) : Promise < Pager < CachedContent > > 
 
 Lists cached content configurations. 
 
@@ -378,16 +362,16 @@ The paginated results of the list of cached contents.
 
 EXAMPLE 
 
-const cachedContents = await ai . caches . list ({ config: { 'pageSize' : 2 }}); 
-for ( const cachedContent of cachedContents ) { 
-console . log ( cachedContent ); 
+const cachedContents = await ai.caches.list({ config: { 'pageSize' : 2 }}); 
+for(const cachedContent of cachedContents) { 
+console.log(cachedContent); 
 }  
 
 - Defined in caches.ts:35 
 
 UPDATE 
 
-- update ( params : UpdateCachedContentParameters ) : Promise < CachedContent > 
+- update(params : UpdateCachedContentParameters) : Promise < CachedContent > 
 
 Updates cached content configurations. 
 
@@ -403,7 +387,7 @@ The updated cached content.
 
 EXAMPLE 
 
-const response = await ai . caches . update ({ 
+const response = await ai.caches.update({ 
 name: '...' , // The server-generated resource name. 
 config: { 'ttl' : '7600s' } 
 });  
@@ -417,38 +401,10 @@ https://googleapis.github.io/js-genai/release_docs/classes/client.GoogleGenAI.ht
 
 - GoogleGenAI 
 
-CLASS GOOGLEGENAI 
+CLASS GOOGLE GENAI 
 
 The Google GenAI SDK. 
 
-REMARKS 
-
-Provides access to the GenAI features through either the Gemini API or the Vertex AI API . 
-
-The GoogleGenAIOptions.vertexai value determines which of the API services to use. 
-
-When using the Gemini API, a GoogleGenAIOptions.apiKey must also be set,
-when using Vertex AI GoogleGenAIOptions.project and GoogleGenAIOptions.location must also be set. 
-
-EXAMPLE 
-
-Initializing the SDK for using the Gemini API: 
-
-import { GoogleGenAI } from '@google/genai' ; 
-const ai = new GoogleGenAI ({ apiKey: 'GEMINI_API_KEY' });  
-
-EXAMPLE 
-
-Initializing the SDK for using the Vertex AI API: 
-
-import { GoogleGenAI } from '@google/genai' ; 
-const ai = new GoogleGenAI ({ 
-vertexai: true , 
-project: 'PROJECT_ID' , 
-location: 'PROJECT_LOCATION' 
-});  
-
-- Defined in client.ts:120 
 
 INDEX 
 
@@ -458,12 +414,12 @@ constructor
 
 PROPERTIES 
 
-caches chats files live models operations tunings vertexai 
+caches chats files live models operations
 CONSTRUCTORS 
 
 CONSTRUCTOR 
 
-- new GoogleGenAI ( options : GoogleGenAIOptions ) : GoogleGenAI 
+- new GoogleGenAI(options : GoogleGenAIOptions) : GoogleGenAI 
 
 PARAMETERS 
 
@@ -517,10 +473,6 @@ tunings : Tunings
 
 - Defined in client.ts:131 
 
-READONLY VERTEXAI 
-
-vertexai : boolean 
-
 - Defined in client.ts:123
 ###
 
@@ -537,13 +489,12 @@ Google Gen AI SDK's configuration options.
 See GoogleGenAI for usage samples. 
 
 interface GoogleGenAIOptions { 
-apiKey ?: string ; 
-apiVersion ?: string ; 
-googleAuthOptions ?: GoogleAuthOptions < JSONClient > ; 
-httpOptions ?: HttpOptions ; 
-location ?: string ; 
-project ?: string ; 
-vertexai ?: boolean ; 
+apiKey ?: string; 
+apiVersion ?: string; 
+googleAuthOptions ?: GoogleAuthOptions < JSONClient >; 
+httpOptions ?: HttpOptions; 
+location ?: string; 
+project ?: string; 
 } 
 
 - Defined in client.ts:31 
@@ -552,7 +503,7 @@ INDEX
 
 PROPERTIES 
 
-api Key? api Version? google Auth Options? http Options? location? project? vertexai? 
+api Key? api Version? google Auth Options? http Options? location? project? 
 PROPERTIES 
 
 OPTIONAL API KEY 
@@ -583,13 +534,13 @@ OPTIONAL GOOGLE AUTH OPTIONS
 
 googleAuthOptions ?: GoogleAuthOptions < JSONClient > 
 
-Optional. Authentication options defined by the by google-auth-library for Vertex AI clients. 
+Optional. Authentication options defined by the by google-auth-library for AI clients. 
 
 REMARKS 
 
 SEE 
 
-GoogleAuthOptions interface in google-auth-library-nodejs . 
+GoogleAuthOptions interface in google-auth-library-nodejs.
 
 Only supported on Node runtimes, ignored on browser runtimes. 
 
@@ -607,7 +558,7 @@ OPTIONAL LOCATION
 
 location ?: string 
 
-Optional. The Google Cloud project location for Vertex AI clients. 
+Optional. The Google Cloud project location for AI clients. 
 
 REMARKS 
 
@@ -619,7 +570,7 @@ OPTIONAL PROJECT
 
 project ?: string 
 
-Optional. The Google Cloud project ID for Vertex AI clients. 
+Optional. The Google Cloud project ID for AI clients. 
 
 Find your project ID: https://cloud.google.com/resource-manager/docs/creating-managing-projects#identifying_projects 
 
@@ -628,21 +579,6 @@ REMARKS
 Only supported on Node runtimes, ignored on browser runtimes. 
 
 - Defined in client.ts:50 
-
-OPTIONAL VERTEXAI 
-
-vertexai ?: boolean 
-
-Optional. Determines whether to use the Vertex AI or the Gemini API. 
-
-REMARKS 
-
-When true, the Vertex AI API will used.
-When false, the Gemini API will be used. 
-
-If unset, default SDK behavior is to use the Gemini API service. 
-
-- Defined in client.ts:41
 ###
 
 
@@ -656,10 +592,10 @@ INTERFACE HTTPOPTIONS
 HTTP options to be used in each of the requests. 
 
 interface HttpOptions { 
-apiVersion ?: string ; 
-baseUrl ?: string ; 
-headers ?: Record < string , string > ; 
-timeout ?: number ; 
+apiVersion ?: string; 
+baseUrl ?: string; 
+headers ?: Record < string , string >; 
+timeout ?: number; 
 } 
 
 - Defined in types.ts:548 
@@ -717,13 +653,12 @@ Google Gen AI SDK's configuration options.
 See GoogleGenAI for usage samples. 
 
 interface GoogleGenAIOptions { 
-apiKey ?: string ; 
-apiVersion ?: string ; 
-googleAuthOptions ?: GoogleAuthOptions < JSONClient > ; 
-httpOptions ?: HttpOptions ; 
-location ?: string ; 
-project ?: string ; 
-vertexai ?: boolean ; 
+apiKey ?: string; 
+apiVersion ?: string; 
+googleAuthOptions ?: GoogleAuthOptions < JSONClient >; 
+httpOptions ?: HttpOptions; 
+location ?: string; 
+project ?: string; 
 } 
 
 - Defined in client.ts:31 
@@ -732,7 +667,7 @@ INDEX
 
 PROPERTIES 
 
-api Key? api Version? google Auth Options? http Options? location? project? vertexai? 
+api Key? api Version? google Auth Options? http Options? location? project?
 PROPERTIES 
 
 OPTIONAL API KEY 
@@ -763,13 +698,13 @@ OPTIONAL GOOGLE AUTH OPTIONS
 
 googleAuthOptions ?: GoogleAuthOptions < JSONClient > 
 
-Optional. Authentication options defined by the by google-auth-library for Vertex AI clients. 
+Optional. Authentication options defined by the by google-auth-library for AI clients. 
 
 REMARKS 
 
 SEE 
 
-GoogleAuthOptions interface in google-auth-library-nodejs . 
+GoogleAuthOptions interface in google-auth-library-nodejs.
 
 Only supported on Node runtimes, ignored on browser runtimes. 
 
@@ -787,7 +722,7 @@ OPTIONAL LOCATION
 
 location ?: string 
 
-Optional. The Google Cloud project location for Vertex AI clients. 
+Optional. The Google Cloud project location for AI clients. 
 
 REMARKS 
 
@@ -799,7 +734,7 @@ OPTIONAL PROJECT
 
 project ?: string 
 
-Optional. The Google Cloud project ID for Vertex AI clients. 
+Optional. The Google Cloud project ID for AI clients. 
 
 Find your project ID: https://cloud.google.com/resource-manager/docs/creating-managing-projects#identifying_projects 
 
@@ -808,21 +743,6 @@ REMARKS
 Only supported on Node runtimes, ignored on browser runtimes. 
 
 - Defined in client.ts:50 
-
-OPTIONAL VERTEXAI 
-
-vertexai ?: boolean 
-
-Optional. Determines whether to use the Vertex AI or the Gemini API. 
-
-REMARKS 
-
-When true, the Vertex AI API will used.
-When false, the Gemini API will be used. 
-
-If unset, default SDK behavior is to use the Gemini API service. 
-
-- Defined in client.ts:41
 ###
 
 https://googleapis.github.io/js-genai/release_docs/classes/files.Files.html
@@ -851,7 +771,7 @@ CONSTRUCTORS
 
 CONSTRUCTOR 
 
-- new Files ( apiClient : ApiClient ) : Files 
+- new Files(apiClient : ApiClient) : Files 
 
 PARAMETERS 
 
@@ -867,7 +787,7 @@ METHODS
 
 DELETE 
 
-- delete ( params : DeleteFileParameters ) : Promise < DeleteFileResponse > 
+- delete(params : DeleteFileParameters) : Promise < DeleteFileResponse > 
 
 Deletes a remotely stored file. 
 
@@ -885,13 +805,13 @@ EXAMPLE
 
 The following code deletes an example file named "files/mehozpxf877d". 
 
-await ai . files . delete ({ name: file . name });  
+await ai.files.delete({ name: file.name });  
 
 - Defined in files.ts:288 
 
 DOWNLOAD 
 
-- download ( params : DownloadFileParameters ) : Promise < void > 
+- download(params : DownloadFileParameters) : Promise < void > 
 
 Downloads a remotely stored file asynchronously to a location specified in
 the params object. This method only works on Node environment, to
@@ -910,13 +830,13 @@ EXAMPLE
 The following code downloads an example file named "files/mehozpxf877d" as
 "file.txt". 
 
-await ai . files . download ({ file: file . name , downloadPath: 'file.txt' });  
+await ai.files.download({ file: file.name , downloadPath: 'file.txt' });  
 
 - Defined in files.ts:124 
 
 GET 
 
-- get ( params : GetFileParameters ) : Promise < File > 
+- get(params : GetFileParameters) : Promise < File > 
 
 Retrieves the file information from the service. 
 
@@ -935,14 +855,14 @@ EXAMPLE
 const config : GetFileParameters = { 
 name: fileName , 
 }; 
-file = await ai . files . get ( config ); 
-console . log ( file . name );  
+file = await ai.files.get(config); 
+console.log(file.name);  
 
 - Defined in files.ts:235 
 
 LIST 
 
-- list ( params ?: ListFilesParameters ) : Promise < Pager < File > > 
+- list(params ?: ListFilesParameters) : Promise < Pager < File > > 
 
 Lists all current project files from the service. 
 
@@ -961,24 +881,23 @@ EXAMPLE
 The following code prints the names of all files from the service, the
 size of each page is 10. 
 
-const listResponse = await ai . files . list ({ config: { 'pageSize' : 10 }}); 
-for await ( const file of listResponse ) { 
-console . log ( file . name ); 
+const listResponse = await ai.files.list({ config: { 'pageSize' : 10 }}); 
+for await(const file of listResponse) { 
+console.log(file.name); 
 }  
 
 - Defined in files.ts:38 
 
 UPLOAD 
 
-- upload ( params : UploadFileParameters ) : Promise < File > 
+- upload(params : UploadFileParameters) : Promise < File > 
 
 Uploads a file asynchronously to the Gemini API.
-This method is not available in Vertex AI.
 Supported upload sources: 
 
-- Node.js: File path (string) or Blob object. 
+- Node.js: File path(string) or Blob object. 
 
-- Browser: Blob object (e.g., File). 
+- Browser: Blob object(e.g., File). 
 
 PARAMETERS 
 
@@ -994,7 +913,7 @@ REMARKS
 
 The mimeType can be specified in the config parameter. If omitted: 
 
-- For file path (string) inputs, the mimeType will be inferred from the
+- For file path(string) inputs, the mimeType will be inferred from the
 file extension. 
 
 - For Blob object inputs, the mimeType will be set to the Blob's type property.
@@ -1015,7 +934,7 @@ config in the parameters.
 
 THROWS 
 
-An error if called on a Vertex AI client. 
+An error if called on a AI client. 
 
 THROWS 
 
@@ -1033,7 +952,7 @@ The following code uploads a file to Gemini API.
 const file = await ai.files.upload({ file: 'file.txt' , config: { 
 mimeType: 'text/plain' , 
 }}); 
-console . log ( file . name );  
+console.log(file.name);  
 
 - Defined in files.ts:92
 ###
@@ -1064,7 +983,7 @@ CONSTRUCTORS
 
 CONSTRUCTOR 
 
-- new Models ( apiClient : ApiClient ) : Models 
+- new Models(apiClient : ApiClient) : Models 
 
 PARAMETERS 
 
@@ -1080,7 +999,7 @@ METHODS
 
 COMPUTE TOKENS 
 
-- computeTokens ( params : ComputeTokensParameters ) : Promise < ComputeTokensResponse > 
+- computeTokens(params : ComputeTokensParameters) : Promise < ComputeTokensResponse > 
 
 Given a list of contents, returns a corresponding TokensInfo containing
 the list of tokens and list of token ids. 
@@ -1099,17 +1018,17 @@ The response from the API.
 
 EXAMPLE 
 
-const response = await ai.models.computeTokens ({ 
-model: 'gemini-2.0-flash' , 
+const response = await ai.models.computeTokens({ 
+model: 'gemini-2.5-pro-preview-05-06' , 
 contents: 'What is your name?' 
 }); 
-console . log ( response );  
+console.log(response);  
 
 - Defined in models.ts:1015 
 
 COUNT TOKENS 
 
-- countTokens ( params : CountTokensParameters ) : Promise < CountTokensResponse > 
+- countTokens(params : CountTokensParameters) : Promise < CountTokensResponse > 
 
 Counts the number of tokens in the given contents. Multimodal input is
 supported for Gemini models. 
@@ -1126,8 +1045,8 @@ The response from the API.
 
 EXAMPLE 
 
-const response = await ai.models.countTokens ({ 
-model: 'gemini-2.0-flash' , 
+const response = await ai.models.countTokens({ 
+model: 'gemini-2.5-pro-preview-05-06' , 
 contents: 'The quick brown fox jumps over the lazy dog.' 
 }); 
 console.log(response);
@@ -1136,7 +1055,7 @@ console.log(response);
 
 DELETE 
 
-- delete ( params : DeleteModelParameters ) : Promise < DeleteModelResponse > 
+- delete(params : DeleteModelParameters) : Promise < DeleteModelResponse > 
 
 Deletes a tuned model by its name. 
 
@@ -1152,13 +1071,13 @@ The response from the API.
 
 EXAMPLE 
 
-const response = await ai . models . delete ({ model: 'tuned-model-name' });  
+const response = await ai.models.delete({ model: 'tuned-model-name' });  
 
 - Defined in models.ts:825 
 
 EMBED CONTENT 
 
-- embedContent ( params : EmbedContentParameters ) : Promise < EmbedContentResponse > 
+- embedContent(params : EmbedContentParameters) : Promise < EmbedContentResponse > 
 
 Calculates embeddings for the given contents. Only text is supported. 
 
@@ -1174,7 +1093,7 @@ The response from the API.
 
 EXAMPLE 
 
-const response = await ai . models . embedContent ({ 
+const response = await ai.models.embedContent({ 
 model: 'text-embedding-004' , 
 contents: [ 
 'What is your name?' , 
@@ -1184,38 +1103,37 @@ config: {
 outputDimensionality: 64 , 
 }, 
 }); 
-console . log ( response );  
+console.log(response);  
 
 - Defined in models.ts:388 
 
 GENERATE CONTENT 
 
-- generateContent ( 
+- generateContent(
 params : GenerateContentParameters , 
 ) : Promise < GenerateContentResponse > 
 
 Makes an API request to generate content with a given model. 
 
-For the model parameter, supported formats for Vertex AI API include: 
+For the model parameter, supported formats for AI API include: 
 
-- The Gemini model ID, for example: 'gemini-2.0-flash' 
+- The Gemini model ID, for example: 'gemini-2.5-pro-preview-05-06' 
 
 - The full resource name starts with 'projects/', for example:
-'projects/my-project-id/locations/us-central1/publishers/google/models/gemini-2.0-flash' 
+'projects/my-project-id/locations/us-central1/publishers/google/models/gemini-2.5-pro-preview-05-06' 
 
 - The partial resource name with 'publishers/', for example:
-'publishers/google/models/gemini-2.0-flash' or
-'publishers/meta/models/llama-3.1-405b-instruct-maas' 
+'publishers/google/models/gemini-2.5-pro-preview-05-06'
 
 - / separated publisher and model name, for example:
-'google/gemini-2.0-flash' or 'meta/llama-3.1-405b-instruct-maas' 
+'google/gemini-2.5-pro-preview-05-06'
 
 For the model parameter, supported formats for Gemini API include: 
 
-- The Gemini model ID, for example: 'gemini-2.0-flash' 
+- The Gemini model ID, for example: 'gemini-2.5-pro-preview-05-06' 
 
 - The model name starts with 'models/', for example:
-'models/gemini-2.0-flash' 
+'models/gemini-2.5-pro-preview-05-06' 
 
 - For tuned models, the model name starts with 'tunedModels/',
 for example:
@@ -1235,46 +1153,45 @@ The response from generating content.
 
 EXAMPLE 
 
-const response = await ai . models . generateContent ({ 
-model: 'gemini-2.0-flash' , 
+const response = await ai.models.generateContent({ 
+model: 'gemini-2.5-pro-preview-05-06' , 
 contents: 'why is the sky blue?' , 
 config: { 
 candidateCount: 2 , 
 } 
 }); 
-console . log ( response );  
+console.log(response);  
 
 - Defined in models.ts:59 
 
 GENERATE CONTENT STREAM 
 
-- generateContentStream ( 
+- generateContentStream(
 params : GenerateContentParameters , 
 ) : Promise < AsyncGenerator < GenerateContentResponse , any , unknown > > 
 
 Makes an API request to generate content with a given model and yields the
 response in chunks. 
 
-For the model parameter, supported formats for Vertex AI API include: 
+For the model parameter, supported formats for AI API include: 
 
-- The Gemini model ID, for example: 'gemini-2.0-flash' 
+- The Gemini model ID, for example: 'gemini-2.5-pro-preview-05-06' 
 
 - The full resource name starts with 'projects/', for example:
-'projects/my-project-id/locations/us-central1/publishers/google/models/gemini-2.0-flash' 
+'projects/my-project-id/locations/us-central1/publishers/google/models/gemini-2.5-pro-preview-05-06' 
 
 - The partial resource name with 'publishers/', for example:
-'publishers/google/models/gemini-2.0-flash' or
-'publishers/meta/models/llama-3.1-405b-instruct-maas' 
+'publishers/google/models/gemini-2.5-pro-preview-05-06'
 
 - / separated publisher and model name, for example:
-'google/gemini-2.0-flash' or 'meta/llama-3.1-405b-instruct-maas' 
+'google/gemini-2.5-pro-preview-05-06'
 
 For the model parameter, supported formats for Gemini API include: 
 
-- The Gemini model ID, for example: 'gemini-2.0-flash' 
+- The Gemini model ID, for example: 'gemini-2.5-pro-preview-05-06' 
 
 - The model name starts with 'models/', for example:
-'models/gemini-2.0-flash' 
+'models/gemini-2.5-pro-preview-05-06' 
 
 - For tuned models, the model name starts with 'tunedModels/',
 for example:
@@ -1294,22 +1211,22 @@ The response from generating content.
 
 EXAMPLE 
 
-const response = await ai . models . generateContentStream ({ 
-model: 'gemini-2.0-flash' , 
+const response = await ai.models.generateContentStream({ 
+model: 'gemini-2.5-pro-preview-05-06' , 
 contents: 'why is the sky blue?' , 
 config: { 
 maxOutputTokens: 200 , 
 } 
 }); 
-for await ( const chunk of response ) { 
-console . log ( chunk ); 
+for await(const chunk of response) { 
+console.log(chunk); 
 }  
 
 - Defined in models.ts:106 
 
 GENERATE IMAGES 
 
-- generateImages ( 
+- generateImages(
 params : GenerateImagesParameters , 
 ) : Promise < GenerateImagesResponse > 
 
@@ -1325,7 +1242,7 @@ The response from the API.
 
 EXAMPLE 
 
-const response = await client . models . generateImages ({ 
+const response = await client.models.generateImages({ 
 model: 'imagen-3.0-generate-002' , 
 prompt: 'Robot holding a red skateboard' , 
 config: { 
@@ -1333,13 +1250,13 @@ numberOfImages: 1 ,
 includeRaiReason: true , 
 }, 
 }); 
-console . log ( response ?. generatedImages ?.[ 0 ]?. image ?. imageBytes );  
+console.log(response ?. generatedImages ?.[ 0 ]?. image ?. imageBytes);  
 
 - Defined in models.ts:133 
 
 GENERATE VIDEOS 
 
-- generateVideos ( 
+- generateVideos(
 params : GenerateVideosParameters , 
 ) : Promise < GenerateVideosOperation > 
 
@@ -1357,25 +1274,25 @@ A Promise which allows you to track the progress and eventually retrieve the gen
 
 EXAMPLE 
 
-const operation = await ai . models . generateVideos ({ 
+const operation = await ai.models.generateVideos({ 
 model: 'veo-2.0-generate-001' , 
 prompt: 'A neon hologram of a cat driving at top speed' , 
 config: { 
 numberOfVideos: 1 
 }); 
 
-while (! operation . done ) { 
-await new Promise ( resolve => setTimeout ( resolve , 10000 )); 
-operation = await ai . operations . getVideosOperation ({ operation: operation }); 
+while(! operation.done) { 
+await new Promise(resolve => setTimeout(resolve , 10000)); 
+operation = await ai.operations.getVideosOperation({ operation: operation }); 
 } 
 
-console . log ( operation . response ?. generatedVideos ?.[ 0 ]?. video ?. uri );  
+console.log(operation.response ?. generatedVideos ?.[ 0 ]?. video ?. uri);  
 
 - Defined in models.ts:1086 
 
 GET 
 
-- get ( params : GetModelParameters ) : Promise < Model > 
+- get(params : GetModelParameters) : Promise < Model > 
 
 Fetches information about a model by name. 
 
@@ -1387,13 +1304,13 @@ RETURNS PROMISE < MODEL >
 
 EXAMPLE 
 
-const modelInfo = await ai . models . get ({ model: 'gemini-2.0-flash' });  
+const modelInfo = await ai.models.get({ model: 'gemini-2.5-pro-preview-05-06' });  
 
 - Defined in models.ts:577 
 
 LIST 
 
-- list ( params ?: ListModelsParameters ) : Promise < Pager < Model > > 
+- list(params ?: ListModelsParameters) : Promise < Pager < Model > > 
 
 PARAMETERS 
 
@@ -1405,7 +1322,7 @@ RETURNS PROMISE < PAGER < MODEL > >
 
 UPDATE 
 
-- update ( params : UpdateModelParameters ) : Promise < Model > 
+- update(params : UpdateModelParameters) : Promise < Model > 
 
 Updates a tuned model by its name. 
 
@@ -1421,7 +1338,7 @@ The response from the API.
 
 EXAMPLE 
 
-const response = await ai . models . update ({ 
+const response = await ai.models.update({ 
 model: 'tuned-model-name' , 
 config: { 
 displayName: 'New display name' , 
@@ -1474,25 +1391,25 @@ Schema is used to make API call to
 Gemini API. 
 
 interface JSONSchema { 
-anyOf ?: JSONSchema [] ; 
-default ?: unknown ; 
-description ?: string ; 
-enum ?: unknown [] ; 
-format ?: string ; 
-items ?: JSONSchema ; 
-maximum ?: number ; 
-maxItems ?: string ; 
-maxLength ?: string ; 
-maxProperties ?: string ; 
-minimum ?: number ; 
-minItems ?: string ; 
-minLength ?: string ; 
-minProperties ?: string ; 
-pattern ?: string ; 
-properties ?: Record < string , JSONSchema > ; 
-required ?: string [] ; 
-title ?: string ; 
-type ?: JSONSchemaType | JSONSchemaType [] ; 
+anyOf ?: JSONSchema []; 
+default ?: unknown; 
+description ?: string; 
+enum ?: unknown []; 
+format ?: string; 
+items ?: JSONSchema; 
+maximum ?: number; 
+maxItems ?: string; 
+maxLength ?: string; 
+maxProperties ?: string; 
+minimum ?: number; 
+minItems ?: string; 
+minLength ?: string; 
+minProperties ?: string; 
+pattern ?: string; 
+properties ?: Record < string , JSONSchema >; 
+required ?: string []; 
+title ?: string; 
+type ?: JSONSchemaType | JSONSchemaType []; 
 } 
 
 - Defined in schema_helper.ts:39 
@@ -1544,7 +1461,7 @@ OPTIONAL FORMAT
 
 format ?: string 
 
-Defines semantic information about a string instance (e.g., "date-time",
+Defines semantic information about a string instance(e.g., "date-time",
 "email"). 
 
 - Defined in schema_helper.ts:51 
@@ -1631,7 +1548,7 @@ OPTIONAL PATTERN
 pattern ?: string 
 
 Used for strings. Key word to specify a regular
-expression (ECMA-262) matches the instance successfully. 
+expression(ECMA-262) matches the instance successfully. 
 
 - Defined in schema_helper.ts:143 
 
@@ -1685,8 +1602,8 @@ This is to set up the named parameters for the functionDeclarationFromZod
 function. 
 
 interface ZodFunction { 
-name : string ; 
-zodFunctionSchema : ZodFunction < ZodTuple < any , ZodTypeAny > , ZodTypeAny > ; 
+name : string; 
+zodFunctionSchema : ZodFunction < ZodTuple < any , ZodTypeAny > , ZodTypeAny >; 
 } 
 
 - Defined in schema_helper.ts:436 
@@ -1739,7 +1656,7 @@ https://googleapis.github.io/js-genai/release_docs/functions/schema_helper.funct
 
 FUNCTION FUNCTIONDECLARATIONFROMZODFUNCTION 
 
-- functionDeclarationFromZodFunction ( 
+- functionDeclarationFromZodFunction(
 zodFunction : ZodFunction , 
 ) : FunctionDeclaration 
 
@@ -1787,11 +1704,11 @@ https://googleapis.github.io/js-genai/release_docs/functions/schema_helper.schem
 
 FUNCTION SCHEMAFROMZODTYPE 
 
-- schemaFromZodType ( zodSchema : ZodType ) : Schema 
+- schemaFromZodType(zodSchema : ZodType) : Schema 
 
 Converts a Zod object into the Gemini schema format. 
 
-[Experimental] This function first validates the structure of the input zodSchema object against an internal representation of JSON Schema (see JSONSchema ).
+[Experimental] This function first validates the structure of the input zodSchema object against an internal representation of JSON Schema(see JSONSchema).
 Any mismatch in data types and inrecongnized properties will cause an error. 
 
 PARAMETERS 
@@ -1810,7 +1727,7 @@ SEE
 
 - Schema 
 
-- JSONSchema The interface used to validate the input zodSchema . 
+- JSONSchema The interface used to validate the input zodSchema.
 
 THROWS 
 
@@ -2326,12 +2243,6 @@ UpscaleImageConfig
 UpscaleImageParameters 
 
 UsageMetadata 
-
-VertexAISearch 
-
-VertexRagStore 
-
-VertexRagStoreRagResource 
 
 Video 
 
