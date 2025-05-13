@@ -17,7 +17,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Launch the text editor
   launchEditor: () => ipcRenderer.invoke('launch-editor'),
   
-  // General file handling
+  // File handling
   selectFile: (options) => ipcRenderer.invoke('select-file', options),
   selectDirectory: (options) => ipcRenderer.invoke('select-directory', options),
   
