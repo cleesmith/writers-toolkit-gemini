@@ -77,7 +77,7 @@ async function initializeApp() {
       const toolSystemResult = await toolSystem.initializeToolSystem();
 
       // Check if API key is missing
-      if (toolSystemResult.GeminiAPIService && toolSystemResult.GeminiAPIService.apiKeyMissing) {
+      if (toolSystemResult.AiApiService && toolSystemResult.AiApiService.apiKeyMissing) {
         // Show notification after window is created
         setTimeout(() => {
           if (mainWindow && !mainWindow.isDestroyed()) {

@@ -101,7 +101,8 @@ const NarrativeIntegrity = loadToolClass('narrative-integrity');
 const DevelopmentalEditing = loadToolClass('developmental-editing');
 const LineEditing = loadToolClass('line-editing');
 const CopyEditing = loadToolClass('copy_editing');
-const ProofreaderMechanical = loadToolClass('proofreader-mechanical');
+const ProofreaderSpelling = loadToolClass('proofreader-spelling');
+const ProofreaderPlotConsistency = loadToolClass('proofreader-plot-consistency');
 const CharacterAnalyzer = loadToolClass('character-analyzer');
 const TenseConsistencyChecker = loadToolClass('tense-consistency-checker');
 const AdjectiveAdverbOptimizer = loadToolClass('adjective-adverb-optimizer');
@@ -282,7 +283,7 @@ const TOOL_DEFS = [
       "group": "Settings"
     }
   ]},
-  { id: 'proofreader_mechanical', title: `Proofreader Mechanical`, description: `Performs proofreading for an entire manuscript. Mechanical checks for spelling, typos, punctuation, and grammar.`, Class: ProofreaderMechanical, options: [
+  { id: 'proofreader_spelling', title: `Proofreader Spelling`, description: `Performs spell checking for an entire manuscript.`, Class: ProofreaderSpelling, options: [
     {
       "name": "manuscript_file",
       "label": "Manuscript File",
@@ -308,7 +309,7 @@ const TOOL_DEFS = [
       "group": "Settings"
     }
   ]},
-  { id: 'proofreader_plot_consistency', title: `Proofreader Plot Consistency`, description: `Focused solely on plot inconsistencies.`, Class: ProofreaderMechanical, options: [
+  { id: 'proofreader_plot_consistency', title: `Proofreader Plot Consistency`, description: `Focused solely on plot inconsistencies.`, Class: ProofreaderPlotConsistency, options: [
     {
       "name": "manuscript_file",
       "label": "Manuscript File",
@@ -1274,163 +1275,6 @@ function getToolPath(toolName) {
     return `./tools/${toolName}`;
   }
 }
-
-// async function initializeToolSystem(settings) {
-//   console.log('Initializing tool system...');
-  
-//   if (typeof global.logToFile === 'function') {
-//     global.logToFile('[tool-system] Starting tool system initialization');
-//   }
-  
-//   try {
-//     // Create AI API service with the provided settings
-//     const aiAPIService = new GeminiAiAPIService(settings);
-//     console.log('Created AI API Service instance');
-    
-//     // Define which tools are non-AI and don't need AI API service
-//     const nonAiToolIds = ['docx_comments', 'epub_converter'];
-    
-//     // Register each tool with proper configuration
-//     let toolCount = 0;
-//     TOOL_DEFS.forEach(def => {
-//       if (typeof global.logToFile === 'function') {
-//         global.logToFile(`[tool-system] Registering tool #${toolCount + 1}: ${def.id}`);
-//       }
-      
-//       // Create tool config with all properties from definition
-//       const toolConfig = {
-//         name: def.id,
-//         title: def.title,
-//         description: def.description,
-//         options: def.options || [],
-//         ...settings
-//       };
-      
-//       console.log(`Creating instance of tool: ${def.id}`);
-      
-//       // Create tool instance
-//       let instance;
-      
-//       // Check if this is a non-AI tool
-//       if (nonAiToolIds.includes(def.id)) {
-//         // Non-AI tools don't get AI API service
-//         instance = new def.Class(def.id, toolConfig);
-//         console.log(`Initialized non-AI tool ${def.id} without AI API service`);
-//       } else {
-//         // AI tools get AI API service as first parameter
-//         console.log(`Passing aiAPIService to AI tool ${def.id}`);
-//         instance = new def.Class(aiAPIService, toolConfig);
-        
-//         // Verify the service was stored
-//         console.log(`Tool ${def.id} has aiAPIService: ${!!instance.aiAPIService}`);
-        
-//         // If the tool doesn't properly store aiAPIService, add it here
-//         if (!instance.aiAPIService) {
-//           console.log(`Manually setting aiAPIService for tool ${def.id}`);
-//           instance.GeminiAiAPIService = aiAPIService;
-//         }
-        
-//         console.log(`Initialized AI tool ${def.id} with AI API service`);
-//       }
-      
-//       // Add to registry
-//       toolRegistry.registerTool(def.id, instance);
-      
-//       // Verify the tool in registry
-//       const registeredTool = toolRegistry.getTool(def.id);
-//       console.log(`Verified tool ${def.id} in registry has aiAPIService: ${!!registeredTool.aiAPIService}`);
-      
-//       toolCount++;
-//     });
-    
-//     // Log registration summary
-//     const allTools = toolRegistry.getAllToolIds();
-//     // console.log(`Registered ${allTools.length} built-in tools:`, allTools);
-    
-//     return { GeminiAiAPIService, toolRegistry };
-//   } catch (error) {
-//     console.error(`[tool-system] ERROR during initialization: ${error.message}`);
-//     throw error;
-//   }
-// }
-// async function initializeToolSystem(settings) {
-//   console.log('Initializing tool system...');
-  
-//   if (typeof global.logToFile === 'function') {
-//     global.logToFile('[tool-system] Starting tool system initialization');
-//   }
-  
-//   try {
-//     // Create AI API service with the provided settings
-//     const aiAPIService = new AiApiService(settings);
-//     console.log('Created AI API Service instance');
-    
-//     // Define which tools are non-AI and don't need AI API service
-//     const nonAiToolIds = ['docx_comments', 'epub_converter'];
-    
-//     // Register each tool with proper configuration
-//     let toolCount = 0;
-//     TOOL_DEFS.forEach(def => {
-//       if (typeof global.logToFile === 'function') {
-//         global.logToFile(`[tool-system] Registering tool #${toolCount + 1}: ${def.id}`);
-//       }
-      
-//       // Create tool config with all properties from definition
-//       const toolConfig = {
-//         name: def.id,
-//         title: def.title,
-//         description: def.description,
-//         options: def.options || [],
-//         ...settings
-//       };
-      
-//       console.log(`Creating instance of tool: ${def.id}`);
-      
-//       // Create tool instance
-//       let instance;
-      
-//       // Check if this is a non-AI tool
-//       if (nonAiToolIds.includes(def.id)) {
-//         // Non-AI tools don't get AI API service
-//         instance = new def.Class(def.id, toolConfig);
-//         console.log(`Initialized non-AI tool ${def.id} without AI API service`);
-//       } else {
-//         // AI tools get AI API service as first parameter
-//         console.log(`Passing aiAPIService to AI tool ${def.id}`);
-//         instance = new def.Class(aiAPIService, toolConfig);
-        
-//         // Verify the service was stored
-//         console.log(`Tool ${def.id} has apiService: ${!!instance.apiService}`);
-        
-//         // If the tool doesn't properly store apiService, add it here
-//         if (!instance.apiService) {
-//           console.log(`Manually setting apiService for tool ${def.id}`);
-//           instance.apiService = aiAPIService;
-//         }
-        
-//         console.log(`Initialized AI tool ${def.id} with AI API service`);
-//       }
-      
-//       // Add to registry
-//       toolRegistry.registerTool(def.id, instance);
-      
-//       // Verify the tool in registry
-//       const registeredTool = toolRegistry.getTool(def.id);
-//       console.log(`Verified tool ${def.id} in registry has apiService: ${!!registeredTool.apiService}`);
-      
-//       toolCount++;
-//     });
-    
-//     // Log registration summary
-//     const allTools = toolRegistry.getAllToolIds();
-//     // console.log(`Registered ${allTools.length} built-in tools:`, allTools);
-    
-//     return { AiApiService: aiAPIService, toolRegistry };
-//   } catch (error) {
-//     console.error(`[tool-system] ERROR during initialization: ${error.message}`);
-//     throw error;
-//   }
-// }
 async function initializeToolSystem(settings) {
   console.log('Initializing tool system...');
   

@@ -118,27 +118,6 @@ class TenseConsistencyChecker extends BaseTool {
 
       // Use the calculated values in the API call
       try {
-        // await this.GeminiAPIService.streamWithThinking(
-        //   prompt,
-        //   {
-        //     model: "claude-3-7-sonnet-20250219",
-        //     system: systemPrompt,
-        //     max_tokens: tokenBudgets.maxTokens,
-        //     thinking: {
-        //       type: "enabled",
-        //       budget_tokens: tokenBudgets.thinkingBudget
-        //     },
-        //     betas: ["output-128k-2025-02-19"]
-        //   },
-        //   // Callback for thinking content
-        //   (thinkingDelta) => {
-        //     thinkingContent += thinkingDelta;
-        //   },
-        //   // Callback for response text
-        //   (textDelta) => {
-        //     fullResponse += textDelta;
-        //   }
-        // );
         await this.GeminiAPIService.streamWithThinkingAndMessageStart(
           prompt,
           {
