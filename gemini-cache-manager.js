@@ -284,10 +284,10 @@ async function deleteAllCaches() {
 
   const count = cachesToList.length;
   const confirmPrompt = `You are about to delete ALL ${count} cache(s) listed above. This action CANNOT BE UNDONE.
-Type 'YES I AM ABSOLUTELY SURE' to confirm: `;
+Type 'sure' to confirm: `;
   const confirmation = await askQuestion(confirmPrompt);
 
-  if (confirmation !== 'YES I AM ABSOLUTELY SURE') {
+  if (confirmation !== 'sure') {
     console.log("Deletion of all caches aborted by user.");
     return;
   }

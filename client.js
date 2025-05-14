@@ -268,26 +268,58 @@ DO NOT repeat any parts of the manuscript that are correct or do not have issues
         }
       ];
 
+      console.log(`contentsForRequest:`);
+      console.dir(contentsForRequest, { depth: null });
+
+      console.log(`\naiApiCache.name:`);
+      console.log(this.aiApiCache.name);
+      console.log(`\naiApiCache.name:`);
+      console.dir(this.aiApiCache, { depth: null });
+
       const responseStream = await this.client.models.generateContentStream({
         model: this.config.model_name,
         contents: contentsForRequest,
-        generationConfig: generationConfiguration,
-        safetySettings: safetySettings,
-        cachedContent: this.aiApiCache.name
+        config: { 
+          generationConfig: generationConfiguration,
+          safetySettings: safetySettings,
+          cachedContent: this.aiApiCache.name
+        }
       });
 
       for await (const chunk of responseStream) {
-        console.log(JSON.stringify(chunk.candidates[0].content.parts[0], null, 2));
-        console.log("Full chunk structure:"); // Label for the upcoming output
-        console.dir(chunk, { depth: null });  // Display the complete object structure
+        // console.log(JSON.stringify(chunk.candidates[0].content.parts[0], null, 2));
+        // console.log("Full chunk structure:"); // Label for the upcoming output
+        // console.dir(chunk, { depth: null });  // Display the complete object structure
 
         let currentText = chunk.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        if (!currentText) {
+        
+        // Check if this is the final chunk with finishReason: 'STOP'
+        const isLastChunk = chunk.candidates?.[0]?.finishReason === 'STOP';
+        
+        // Skip if no content and not the final chunk
+        if (!currentText && !isLastChunk) {
           continue;
+        }
+        
+        if (isLastChunk) {
+          console.log("Full final chunk structure:");
+          console.dir(chunk, { depth: null }); // show the complete object structure
+
+          // Extract metadata for the final chunk
+          const metadata = {
+            finishReason: chunk.candidates[0].finishReason,
+            modelVersion: chunk.modelVersion,
+            usageMetadata: chunk.usageMetadata
+          };
+          
+          // Append metadata as text to the current text
+          currentText += '\n\n--- METADATA ---\n' + JSON.stringify(metadata, null, 2);
         }
         
         onText(currentText);
       }
+
+
     } catch (error) {
       console.error('API Connection Error:', {
         message: error.message,

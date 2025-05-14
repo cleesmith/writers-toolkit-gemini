@@ -9,6 +9,7 @@ const textProcessor = require('./textProcessor');
 /**
  * Proofreader Plot Consistency Tool
  * Tracks narrative elements, world rules, and story logic
+ * Utilizes Gemini's file and cache systems for efficient processing of large manuscripts.
  */
 class ProofreaderPlotConsistency extends BaseTool {
   /**

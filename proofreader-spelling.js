@@ -6,7 +6,7 @@ const appState = require('./state.js');
 const fs = require('fs/promises');
 
 /**
- * ProofreaderSpelling Tool
+ * Proofreader Spelling Tool
  * Analyzes manuscript specifically for spelling issues, focusing on word-by-word analysis while
  * being sensitive to intentional stylistic choices like dialogue and character voice.
  * Utilizes Gemini's file and cache systems for efficient processing of large manuscripts.
@@ -20,7 +20,7 @@ class ProofreaderSpelling extends BaseTool {
   constructor(apiService, config = {}) {
     super('proofreader_spelling', config);
     this.apiService = apiService;
-    this.cache = config.cache;
+    // this.cache = config.cache;
     // // later in code do defensive check each time you use the cache
     // if (this.cache && this.cache.get(key)) {
     //   // safe to use cache
@@ -82,15 +82,13 @@ class ProofreaderSpelling extends BaseTool {
       this.emitOutput(`Reading manuscript file: ${manuscriptFile}\n`);
       this.emitOutput(`Manuscript is ${manuscriptWordCount} words and ${manuscriptTokens} tokens.\n`);
 
+      //                                          *******************
       const prepareResult = await this.apiService.prepareFileAndCache(manuscriptFile);
-      // const existingCache = prepareResult.cache;
 
-      // Output all the messages collected during the preparation process
+      // Output all the messages collected during File/Cache prep
       prepareResult.messages.forEach(message => {
         this.emitOutput(`${message}\n`);
       });
-
-      // Handle any errors that occurred
       if (prepareResult.errors.length > 0) {
         this.emitOutput(`\n--- Errors encountered during preparation ---\n`);
         prepareResult.errors.forEach(error => {
@@ -98,13 +96,10 @@ class ProofreaderSpelling extends BaseTool {
         });
       }
 
-      // Create the spelling prompt
       const spellingPrompt = this.createSpellingProofreadingPrompt(language);
       
-      // Call API with streaming
       this.emitOutput(`\nSending request to AI API . . .\n`);
 
-      // Add a message about waiting
       this.emitOutput(`****************************************************************************\n`);
       this.emitOutput(`*  Proofreading manuscript for ${language} spelling errors...              \n`);
       this.emitOutput(`*  \n`);
@@ -116,62 +111,14 @@ class ProofreaderSpelling extends BaseTool {
       let fullResponse = "";
       
       try {
-        // Prepare for API call
-        if (uploadedFileMetadata && existingCache) {
-          // If we have both file and cache, use them
-          this.emitOutput(`Using cached file for API call...\n`);
-          
-          // Create a streamWithThinking call that uses the cache and file reference
+          //                    ******************
           await this.apiService.streamWithThinking(
             spellingPrompt,
             (textDelta) => {
               fullResponse += textDelta;
               this.emitOutput(textDelta);
-            },
-            {
-              cachedContent: existingCache.name
             }
           );
-        } else if (uploadedFileMetadata) {
-          // If we only have the file but no cache
-          this.emitOutput(`Using uploaded file for API call (no cache)...\n`);
-          
-          // Need to create a prompt that references the file
-          const { createPartFromUri } = this.apiService.client;
-          const filePrompt = [
-            {
-              role: 'user',
-              parts: [
-                { text: spellingPrompt },
-                createPartFromUri(uploadedFileMetadata.uri, uploadedFileMetadata.mimeType)
-              ]
-            }
-          ];
-          
-          // Call the API with the file reference
-          await this.apiService.streamWithContent(
-            filePrompt,
-            (textDelta) => {
-              fullResponse += textDelta;
-              this.emitOutput(textDelta);
-            }
-          );
-        } else {
-          // If we have neither file nor cache, use the standard approach
-          this.emitOutput(`Using direct content for API call (no file or cache)...\n`);
-          
-          // Create the full prompt with manuscript content
-          const fullPrompt = `=== MANUSCRIPT ===\n${manuscriptContent}\n=== END MANUSCRIPT ===\n\n${spellingPrompt}`;
-          
-          // Call the API with the full content
-          await this.apiService.streamWithThinking(
-            fullPrompt,
-            (textDelta) => {
-              fullResponse += textDelta;
-              this.emitOutput(textDelta);
-            }
-          );
-        }
       } catch (error) {
         this.emitOutput(`\nAPI Error: ${error.message}\n`);
         throw error;

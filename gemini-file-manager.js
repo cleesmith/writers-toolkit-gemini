@@ -125,10 +125,10 @@ async function deleteAllFiles() {
 
   const count = filesToList.length;
   const confirmPrompt = `You are about to delete ALL ${count} file(s) listed above. This action CANNOT BE UNDONE.
-Type 'YES I AM ABSOLUTELY SURE' to confirm: `;
+Type 'sure' to confirm: `;
   const confirmation = await askQuestion(confirmPrompt);
 
-  if (confirmation !== 'YES I AM ABSOLUTELY SURE') {
+  if (confirmation !== 'sure') {
     console.log("Deletion of all files aborted by user.");
     return;
   }
