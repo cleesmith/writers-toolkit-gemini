@@ -84,10 +84,22 @@ class TokensWordsCounter extends BaseTool {
       const wordCount = this.countWords(text);
       this.emitOutput(`Word count: ${wordCount.toLocaleString()}\n`);
       
+      let wordsPerToken = 0;
       const totalTokens = await this.countTokens(text);
       this.emitOutput(`Token count: ${totalTokens.toLocaleString()}\n`);
+      if (totalTokens < 1) {
+          this.emitOutput(`\n*** TOKEN COUNTING ERROR: API key not valid or missing ***\n\n`);
+          this.emitOutput('API connection failed. Unable to count tokens.\n');
+          this.emitOutput('Please ensure your API key is correctly configured in your environment.\n');
+        } else {
+          this.emitOutput(`Token count: ${tokenCount.toLocaleString()}\n\n`);
+          
+          // Calculate token:word ratio
+          wordsPerToken = (tokenCount / wordCount).toFixed(2);
+          this.emitOutput(`Token to word ratio: ${ratio}\n\n`);
+        }
 
-      const wordsPerToken = totalTokens > 0 ? wordCount / totalTokens : 0;
+      // const wordsPerToken = totalTokens > 0 ? wordCount / totalTokens : 0;
       
       // Generate the full report
       let reportContent = this.generateReport(
