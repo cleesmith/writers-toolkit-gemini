@@ -15,7 +15,12 @@ const appState = require('./state.js');
 const toolSystem = require('./tool-system');
 const fileCache = require('./file-cache');
 
+let mainWindow = null;
+
 let editorDialogWindow = null;
+
+// Declare AiApiServiceInstance at a scope accessible by initializeApp and IPC handlers
+let AiApiServiceInstance = null;
 
 // Determine if we're running in packaged mode
 const isPackaged = app.isPackaged || !process.defaultApp;
@@ -60,55 +65,114 @@ app.whenReady().then(() => {
     }
   });
   
-  // 3. Initialize the app (replaces your existing main() function)
+  // 3. Initialize the app
   initializeApp();
 });
 
+// async function initializeApp() {
+//   try {
+//     // Initialize AppState before using it
+//     await appState.initialize();
+
+//     // Set up IPC handlers first
+//     setupIPCHandlers();
+
+//     try {
+//       // Initialize tool system with complete settings
+//       const toolSystemResult = await toolSystem.initializeToolSystem();
+
+//       // Check if API key is missing
+//       if (toolSystemResult.AiApiService && toolSystemResult.AiApiService.apiKeyMissing) {
+//         // Show notification after window is created
+//         setTimeout(() => {
+//           if (mainWindow && !mainWindow.isDestroyed()) {
+//             dialog.showMessageBox(mainWindow, {
+//               type: 'warning',
+//               title: 'API Key Missing',
+//               message: 'AI API key not found',
+//               detail: "Please configure your AI API key in computer's environment before using AI tools.",
+//               buttons: ['OK']
+//             });
+//           }
+//         }, 1000);
+//       }
+//     } catch (toolError) {
+//       console.error('>>> Warning: Tool system initialization failed:', toolError.message);
+//       throw toolError;
+//     }
+    
+//     // Create the main window
+//     createWindow();
+    
+//     // Check if a project is selected, if not, show the project dialog
+//     if (!appState.CURRENT_PROJECT && shouldShowProjectDialog) {
+//       // Give the main window time to load first
+//       setTimeout(() => {
+//         showProjectDialog();
+//       }, 500);
+//     }
+//   } catch (error) {
+//     console.error('Failed to initialize application:', error);
+//     app.quit();
+//   }
+// }
 async function initializeApp() {
   try {
-    // Initialize AppState before using it
     await appState.initialize();
 
-    // Set up IPC handlers first
+    // Initialize tool system and get the AiApiService instance
+    const toolSystemResult = await toolSystem.initializeToolSystem(getCompleteApiSettings());
+    AiApiServiceInstance = toolSystemResult.AiApiService;
+    console.log(`\nAiApiServiceInstance:`);
+    console.dir(AiApiServiceInstance, { depth: null });
+
+    // Setup IPC handlers (they can now safely access AiApiServiceInstance)
     setupIPCHandlers();
+    
+    // Create the main application window
+    // Assuming createWindow() assigns the created window to the global 'mainWindow' variable
+    createWindow(); // This function should set the 'mainWindow' variable
 
-    try {
-      // Initialize tool system with complete settings
-      const toolSystemResult = await toolSystem.initializeToolSystem();
+    // Check for API key AFTER the mainWindow is created and potentially shown
+    // Ensure mainWindow is ready before trying to show a dialog attached to it.
+    // mainWindow.on('ready-to-show', () => { // Or 'did-finish-load'
+    // Or simply use a timeout if createWindow shows the window immediately.
+    // The original setTimeout of 1000ms was likely to ensure mainWindow is fully ready.
 
-      // Check if API key is missing
-      if (toolSystemResult.AiApiService && toolSystemResult.AiApiService.apiKeyMissing) {
-        // Show notification after window is created
+    if (AiApiServiceInstance && AiApiServiceInstance.apiKeyMissing) {
+        // Wait for the main window to be ready before showing a dialog
+        // If createWindow shows the window, a short timeout might still be okay.
+        // A more robust way is to show it after mainWindow 'ready-to-show' or 'did-finish-load' event.
+        // For simplicity with the existing setTimeout:
         setTimeout(() => {
           if (mainWindow && !mainWindow.isDestroyed()) {
             dialog.showMessageBox(mainWindow, {
               type: 'warning',
               title: 'API Key Missing',
-              message: 'AI API key not found',
-              detail: "Please configure your AI API key in computer's environment before using AI tools.",
+              message: 'Gemini API key not found.', // Updated message
+              detail: "Please configure your GEMINI_API_KEY environment variable before using AI tools.",
               buttons: ['OK']
             });
           }
-        }, 1000);
-      }
-
-    } catch (toolError) {
-      console.error('>>> Warning: Tool system initialization failed:', toolError.message);
-      throw toolError;
+        }, 1000); // This delay helps ensure mainWindow is visible
     }
     
-    // Create the main window
-    createWindow();
-    
-    // Check if a project is selected, if not, show the project dialog
+    // Initial project dialog logic
     if (!appState.CURRENT_PROJECT && shouldShowProjectDialog) {
-      // Give the main window time to load first
+      // This timeout also ensures mainWindow is likely ready for a modal dialog
       setTimeout(() => {
-        showProjectDialog();
-      }, 500);
+        if (mainWindow && !mainWindow.isDestroyed()) { // Check if main window exists before showing modal
+            showProjectDialog();
+        }
+      }, 500); // Reduced timeout as project dialog is often first interaction
     }
+
   } catch (error) {
     console.error('Failed to initialize application:', error);
+    // Log to file as well
+    if (typeof global.logToFile === 'function') {
+        global.logToFile(`CRITICAL APP INIT ERROR: ${error.message}\n${error.stack}`);
+    }
     app.quit();
   }
 }
@@ -181,7 +245,6 @@ function getCompleteApiSettings() {
 }
 
 // Store references to windows
-let mainWindow = null;
 let projectDialogWindow = null;
 let apiSettingsWindow = null;
 let toolSetupRunWindow = null;
@@ -351,6 +414,34 @@ function setupProjectHandlers() {
           message: `Project directory does not exist: ${projectPath}`
         };
       }
+
+      // Unconditionally clear API files and caches whenever a project is selected or created.
+      console.log(`Project selected/created: ${projectName}. Clearing all API files and caches for the configured API key.`);
+
+      console.log(`\n\nAiApiServiceInstance:`);
+      console.dir(AiApiServiceInstance, { depth: null });
+      console.log(`..................\n\n`);
+
+      if (AiApiServiceInstance) {
+        try {
+          console.log(`Calling clearFilesAndCaches (global cleanup for API key)`);
+          await AiApiServiceInstance.clearFilesAndCaches(); // No argument needed
+        } catch (cleanupError) {
+          console.error('Error during global API files and caches cleanup:', cleanupError);
+          // Log this error but allow the project switch to continue
+          // You might want to show a dialog to the user if critical
+          dialog.showErrorBox('API Cleanup Error', `Failed to clear all API files and caches. Please check the logs. Reason: ${cleanupError.message}`);
+        }
+      } else {
+        console.warn('AiApiServiceInstance not available for API data cleanup. This may occur if API key is missing or initialization failed.');
+        // Optionally inform the user if this is unexpected
+        // dialog.showMessageBox(mainWindow, { // mainWindow should be accessible
+        //   type: 'warning',
+        //   title: 'API Service Unavailable',
+        //   message: 'The AI service is not available, so API files and caches could not be cleared.',
+        //   buttons: ['OK']
+        // });
+      }
       
       // Update application state
       appState.CURRENT_PROJECT = projectName;
@@ -394,7 +485,31 @@ function setupProjectHandlers() {
       
       // Create the project directory
       await fs.promises.mkdir(projectPath, { recursive: true });
-      
+
+      // Unconditionally clear API files and caches whenever a project is selected or created.
+      console.log(`Project selected/created: ${projectName}. Clearing all API files and caches for the configured API key.`);
+
+      if (AiApiServiceInstance) {
+        try {
+          console.log(`Calling clearFilesAndCaches (global cleanup for API key)`);
+          await AiApiServiceInstance.clearFilesAndCaches(); // No argument needed
+        } catch (cleanupError) {
+          console.error('Error during global API files and caches cleanup:', cleanupError);
+          // Log this error but allow the project switch to continue
+          // You might want to show a dialog to the user if critical
+          dialog.showErrorBox('API Cleanup Error', `Failed to clear all API files and caches. Please check the logs. Reason: ${cleanupError.message}`);
+        }
+      } else {
+        console.warn('AiApiServiceInstance not available for API data cleanup. This may occur if API key is missing or initialization failed.');
+        // Optionally inform the user if this is unexpected
+        // dialog.showMessageBox(mainWindow, { // mainWindow should be accessible
+        //   type: 'warning',
+        //   title: 'API Service Unavailable',
+        //   message: 'The AI service is not available, so API files and caches could not be cleared.',
+        //   buttons: ['OK']
+        // });
+      }
+
       // Update application state
       appState.CURRENT_PROJECT = projectName;
       appState.CURRENT_PROJECT_PATH = projectPath;

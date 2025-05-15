@@ -1284,7 +1284,8 @@ async function initializeToolSystem(settings) {
   
   try {
     // Create AI API service with the provided settings
-    const aiAPIService = new AiApiService(settings);
+    // const aiAPIService = new AiApiService(settings);
+    const aiAPIService = new AiApiService();
     console.log('Created AI API Service instance');
     
     // Define which tools are non-AI and don't need AI API service

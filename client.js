@@ -19,7 +19,8 @@ class AiApiService {
   constructor(config = {}) {
     // Store the configuration with defaults
     this.config = {
-      model_name: 'gemini-2.5-pro-preview-05-06', 
+      // model_name: 'gemini-2.5-pro-preview-05-06', 
+      model_name: 'gemini-2.5-flash-preview-04-17',
       ...config
     };
 
@@ -119,7 +120,7 @@ class AiApiService {
           file: manuscriptFile,
           config: {
             mimeType: 'text/plain',
-            displayName: `Manuscript: ${path.basename(manuscriptFile)}`
+            displayName: path.resolve(manuscriptFile)
           }
         });
         log(`Successfully uploaded file: ${uploadedFileMetadata.name}`);
@@ -237,6 +238,87 @@ DO NOT repeat any parts of the manuscript that are correct or do not have issues
   }
 
   /**
+   * Method to clear ALL uploaded files and ALL caches
+   * from the Gemini API associated with this API key.
+   * Called when switching projects in Writer's Toolkit.
+   */
+  async clearFilesAndCaches() {
+    if (!this.client || this.apiKeyMissing) {
+      console.warn('[WritersToolkit Gemini API] Client not initialized. Skipping API cleanup.');
+      return;
+    }
+
+    let anyErrors = false;
+    const operationDescription = "[WritersToolkit Gemini API]";
+
+    // Clear All Uploaded Files
+    if (this.client.files && typeof this.client.files.list === 'function' && typeof this.client.files.delete === 'function') {
+      console.log(`${operationDescription} Attempting to clear ALL uploaded API files.`);
+      let deletedFilesCount = 0;
+      try {
+        const fileListResponsePager = await this.client.files.list({}); // List all files
+        const filesToDelete = [];
+        for await (const file of fileListResponsePager) {
+            filesToDelete.push(file); // Collect all files
+        }
+
+        if (filesToDelete.length === 0) {
+            console.log(`${operationDescription} No API files found to delete.`);
+        } else {
+            console.log(`${operationDescription} Found ${filesToDelete.length} API file(s) to delete.`);
+            for (const file of filesToDelete) {
+                console.log(`${operationDescription} Deleting API file: ${file.name} (Display Name: ${file.displayName || 'N/A'})`);
+                await this.client.files.delete({ name: file.name });
+                deletedFilesCount++;
+            }
+            console.log(`${operationDescription} Deleted ${deletedFilesCount} API files.`);
+        }
+      } catch (error) {
+        console.error(`${operationDescription} Error clearing uploaded API files:`, error.message);
+        anyErrors = true;
+      }
+    } else {
+      console.warn(`${operationDescription} Files API (list/delete) not available. Skipping API file cleanup.`);
+    }
+
+    // Clear All API Caches
+    if (this.client.caches && typeof this.client.caches.list === 'function' && typeof this.client.caches.delete === 'function') {
+      console.log(`${operationDescription} Attempting to clear ALL API caches.`);
+      let deletedCachesCount = 0;
+      try {
+        const cacheListResponsePager = await this.client.caches.list({}); // List all caches
+        const cachesToDelete = [];
+        for await (const cache of cacheListResponsePager) {
+            cachesToDelete.push(cache); // Collect all caches
+        }
+        
+        if (cachesToDelete.length === 0) {
+            console.log(`${operationDescription} No API caches found to delete.`);
+        } else {
+            console.log(`${operationDescription} Found ${cachesToDelete.length} API cache(s) to delete.`);
+            for (const cache of cachesToDelete) {
+                console.log(`${operationDescription} Deleting API cache: ${cache.name} (Display Name: ${cache.displayName || 'N/A'})`);
+                await this.client.caches.delete({ name: cache.name });
+                deletedCachesCount++;
+            }
+            console.log(`${operationDescription} Deleted ${deletedCachesCount} API caches.`);
+        }
+      } catch (error) {
+        console.error(`${operationDescription} Error clearing API caches:`, error.message);
+        anyErrors = true;
+      }
+    } else {
+      console.warn(`${operationDescription} Caches API (list/delete) not available. Skipping API cache cleanup.`);
+    }
+
+    if (anyErrors) {
+        console.warn(`${operationDescription} Some errors occurred during the global API cleanup. Check logs.`);
+    } else {
+        console.log(`${operationDescription} Successfully completed global cleanup of API files and caches.`);
+    }
+  }
+
+  /**
    * Stream a response
    * @param {string} prompt - Prompt to complete
    * @param {Function} onText - Callback for response text
@@ -251,6 +333,22 @@ DO NOT repeat any parts of the manuscript that are correct or do not have issues
       const generationConfiguration = {
         responseMimeType: 'text/plain',
       };
+
+      const thinkingConfig = {
+        includeThoughts: true,
+        thinkingBudget: 24576
+      }
+      // export declare interface ThinkingConfig {
+      //   /** Indicates whether to include thoughts in the response. 
+      //    *  If true, thoughts are returned only if the model supports 
+      //    *  thought and thoughts are available.
+      //    */
+      //   includeThoughts?: boolean;
+      //   /** Indicates the thinking budget in tokens.
+      //    *  max is 24576
+      //    */
+      //   thinkingBudget?: number;
+      // }
 
       const safetySettings = [
         { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.OFF },
@@ -281,6 +379,7 @@ DO NOT repeat any parts of the manuscript that are correct or do not have issues
         contents: contentsForRequest,
         config: { 
           generationConfig: generationConfiguration,
+          thinkingConfig: thinkingConfig,
           safetySettings: safetySettings,
           cachedContent: this.aiApiCache.name
         }
@@ -304,6 +403,8 @@ DO NOT repeat any parts of the manuscript that are correct or do not have issues
         if (isLastChunk) {
           console.log("Full final chunk structure:");
           console.dir(chunk, { depth: null }); // show the complete object structure
+          // cost = (1.25 × promptTokenCount + 10 × completionTokenCount) / 1000000
+          // cost = (1.25 × 3336 + 10 × 2764) / 1000000
 
           // Extract metadata for the final chunk
           const metadata = {
