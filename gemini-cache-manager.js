@@ -318,13 +318,13 @@ Type 'sure' to confirm: `;
 async function showMenu() {
   console.log("\nGemini Cache Manager Menu:");
   console.log("1. List all caches");
-  console.log("2. Create a new cache");
-  console.log("3. Delete a specific cache");
-  console.log("4. Delete ALL project caches (USE WITH EXTREME CAUTION!)");
-  console.log("5. List all files (for reference)");
-  console.log("6. Exit");
+  // console.log("2. Create a new cache");
+  // console.log("3. Delete a specific cache");
+  console.log("2. Delete ALL project caches (be sure!)");
+  // console.log("5. List all files (for reference)");
+  console.log("3. Exit");
 
-  const choice = await askQuestion("Enter your choice (1-6): ");
+  const choice = await askQuestion("Enter your choice (1-3): ");
   return choice;
 }
 
@@ -338,23 +338,23 @@ async function runCacheManager() {
       case '1':
         await listCaches();
         break;
+      // case '2':
+      //   await createNewCache();
+      //   break;
+      // case '3':
+      //   await deleteSpecificCache();
+      //   break;
       case '2':
-        await createNewCache();
-        break;
-      case '3':
-        await deleteSpecificCache();
-        break;
-      case '4':
         await deleteAllCaches();
         break;
-      case '5':
-        await listFiles();
-        break;
-      case '6':
+      // case '5':
+      //   await listFiles();
+      //   break;
+      case '3':
         running = false;
         break;
       default:
-        console.log("Invalid choice. Please enter a number between 1 and 6.");
+        console.log("Invalid choice. Please enter a number between 1 and 3.");
     }
   }
   console.log("Exiting Gemini Cache Manager.");

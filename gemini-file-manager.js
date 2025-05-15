@@ -65,49 +65,49 @@ async function listFiles() {
   }
 }
 
-async function deleteSpecificFile() {
-  if (!ai || !ai.files || typeof ai.files.delete !== 'function') {
-    console.error("ERROR: AI client or ai.files.delete is not available.");
-    return;
-  }
-  console.log("\n--- Delete a Specific File ---");
-  const currentFiles = await listFiles();
-  if (currentFiles.length === 0) {
-    console.log("No files available to delete.");
-    return;
-  }
+// async function deleteSpecificFile() {
+//   if (!ai || !ai.files || typeof ai.files.delete !== 'function') {
+//     console.error("ERROR: AI client or ai.files.delete is not available.");
+//     return;
+//   }
+//   console.log("\n--- Delete a Specific File ---");
+//   const currentFiles = await listFiles();
+//   if (currentFiles.length === 0) {
+//     console.log("No files available to delete.");
+//     return;
+//   }
 
-  const fileNameToDelete = await askQuestion("Enter the full 'Name (ID)' of the file to delete (e.g., files/xxxxxxx): ");
-  if (!fileNameToDelete || !fileNameToDelete.startsWith('files/')) {
-    console.log("Invalid file name format. Must start with 'files/'. Aborting deletion.");
-    return;
-  }
+//   const fileNameToDelete = await askQuestion("Enter the full 'Name (ID)' of the file to delete (e.g., files/xxxxxxx): ");
+//   if (!fileNameToDelete || !fileNameToDelete.startsWith('files/')) {
+//     console.log("Invalid file name format. Must start with 'files/'. Aborting deletion.");
+//     return;
+//   }
 
-  // Verify the file exists in the list
-  const fileExists = currentFiles.some(f => f.name === fileNameToDelete);
-  if (!fileExists) {
-      console.log(`File with ID '${fileNameToDelete}' not found in the current list. Please check the ID and try again.`);
-      return;
-  }
+//   // Verify the file exists in the list
+//   const fileExists = currentFiles.some(f => f.name === fileNameToDelete);
+//   if (!fileExists) {
+//       console.log(`File with ID '${fileNameToDelete}' not found in the current list. Please check the ID and try again.`);
+//       return;
+//   }
 
-  const confirmation = await askQuestion(`Are you sure you want to delete the file '${fileNameToDelete}'? This cannot be undone. (yes/no): `);
-  if (confirmation.toLowerCase() !== 'yes') {
-    console.log("Deletion aborted by user.");
-    return;
-  }
+//   const confirmation = await askQuestion(`Are you sure you want to delete the file '${fileNameToDelete}'? This cannot be undone. (yes/no): `);
+//   if (confirmation.toLowerCase() !== 'yes') {
+//     console.log("Deletion aborted by user.");
+//     return;
+//   }
 
-  try {
-    const deleteParams = { name: fileNameToDelete };
-    console.log("Calling ai.files.delete() with params:", JSON.stringify(deleteParams));
-    await ai.files.delete(deleteParams);
-    console.log(`File ${fileNameToDelete} deleted successfully.`);
-  } catch (deleteError) {
-    console.error(`ERROR: Failed to delete file '${fileNameToDelete}'.`);
-    console.error("File deletion error details:", deleteError.message);
-    if (deleteError.stack) console.error("Deletion Stack:", deleteError.stack);
-  }
-  console.log(`--- End of Specific File Deletion Attempt ---`);
-}
+//   try {
+//     const deleteParams = { name: fileNameToDelete };
+//     console.log("Calling ai.files.delete() with params:", JSON.stringify(deleteParams));
+//     await ai.files.delete(deleteParams);
+//     console.log(`File ${fileNameToDelete} deleted successfully.`);
+//   } catch (deleteError) {
+//     console.error(`ERROR: Failed to delete file '${fileNameToDelete}'.`);
+//     console.error("File deletion error details:", deleteError.message);
+//     if (deleteError.stack) console.error("Deletion Stack:", deleteError.stack);
+//   }
+//   console.log(`--- End of Specific File Deletion Attempt ---`);
+// }
 
 async function deleteAllFiles() {
   if (!ai || !ai.files || typeof ai.files.delete !== 'function' || typeof ai.files.list !== 'function') {
@@ -160,11 +160,11 @@ Type 'sure' to confirm: `;
 async function showMenu() {
   console.log("\nGemini File Manager Menu:");
   console.log("1. List all files");
-  console.log("2. Delete a specific file");
-  console.log("3. Delete ALL project files (USE WITH EXTREME CAUTION!)");
-  console.log("4. Exit");
+  // console.log("2. Delete a specific file");
+  console.log("2. Delete ALL project files (be sure!)");
+  console.log("3. Exit");
 
-  const choice = await askQuestion("Enter your choice (1-4): ");
+  const choice = await askQuestion("Enter your choice (1-3): ");
   return choice;
 }
 
@@ -178,13 +178,13 @@ async function runFileManager() {
       case '1':
         await listFiles();
         break;
+      // case '2':
+      //   await deleteSpecificFile();
+      //   break;
       case '2':
-        await deleteSpecificFile();
-        break;
-      case '3':
         await deleteAllFiles();
         break;
-      case '4':
+      case '3':
         running = false;
         break;
       default:
