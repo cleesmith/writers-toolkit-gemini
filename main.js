@@ -68,63 +68,17 @@ app.whenReady().then(() => {
   // 3. Initialize the app
   initializeApp();
 });
-
-// async function initializeApp() {
-//   try {
-//     // Initialize AppState before using it
-//     await appState.initialize();
-
-//     // Set up IPC handlers first
-//     setupIPCHandlers();
-
-//     try {
-//       // Initialize tool system with complete settings
-//       const toolSystemResult = await toolSystem.initializeToolSystem();
-
-//       // Check if API key is missing
-//       if (toolSystemResult.AiApiService && toolSystemResult.AiApiService.apiKeyMissing) {
-//         // Show notification after window is created
-//         setTimeout(() => {
-//           if (mainWindow && !mainWindow.isDestroyed()) {
-//             dialog.showMessageBox(mainWindow, {
-//               type: 'warning',
-//               title: 'API Key Missing',
-//               message: 'AI API key not found',
-//               detail: "Please configure your AI API key in computer's environment before using AI tools.",
-//               buttons: ['OK']
-//             });
-//           }
-//         }, 1000);
-//       }
-//     } catch (toolError) {
-//       console.error('>>> Warning: Tool system initialization failed:', toolError.message);
-//       throw toolError;
-//     }
-    
-//     // Create the main window
-//     createWindow();
-    
-//     // Check if a project is selected, if not, show the project dialog
-//     if (!appState.CURRENT_PROJECT && shouldShowProjectDialog) {
-//       // Give the main window time to load first
-//       setTimeout(() => {
-//         showProjectDialog();
-//       }, 500);
-//     }
-//   } catch (error) {
-//     console.error('Failed to initialize application:', error);
-//     app.quit();
-//   }
-// }
 async function initializeApp() {
   try {
     await appState.initialize();
 
     // Initialize tool system and get the AiApiService instance
     const toolSystemResult = await toolSystem.initializeToolSystem(getCompleteApiSettings());
+
     AiApiServiceInstance = toolSystemResult.AiApiService;
-    console.log(`\nAiApiServiceInstance:`);
-    console.dir(AiApiServiceInstance, { depth: null });
+
+    // console.log(`\nAiApiServiceInstance:`);
+    // console.dir(AiApiServiceInstance, { depth: null });
 
     // Setup IPC handlers (they can now safely access AiApiServiceInstance)
     setupIPCHandlers();
@@ -418,9 +372,9 @@ function setupProjectHandlers() {
       // Unconditionally clear API files and caches whenever a project is selected or created.
       console.log(`Project selected/created: ${projectName}. Clearing all API files and caches for the configured API key.`);
 
-      console.log(`\n\nAiApiServiceInstance:`);
-      console.dir(AiApiServiceInstance, { depth: null });
-      console.log(`..................\n\n`);
+      // console.log(`\n\nAiApiServiceInstance:`);
+      // console.dir(AiApiServiceInstance, { depth: null });
+      // console.log(`..................\n\n`);
 
       if (AiApiServiceInstance) {
         try {

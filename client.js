@@ -24,6 +24,7 @@ class AiApiService {
     };
 
     const apiKeyFromEnv = process.env.GEMINI_API_KEY;
+    console.log(`\n\n\napiKeyFromEnv=${apiKeyFromEnv}\n`);
     if (!apiKeyFromEnv) {
       console.error('GEMINI_API_KEY environment variable not found');
       this.apiKeyMissing = true;
@@ -447,7 +448,7 @@ DO NOT repeat any parts of the manuscript that are correct or do not have issues
       return result.totalTokens;
     } catch (error) {
       console.error('Token counting error:', error);
-      return 0;
+      return -1;
     }
   }
 }
