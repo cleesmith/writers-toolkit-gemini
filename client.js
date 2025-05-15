@@ -19,8 +19,7 @@ class AiApiService {
   constructor(config = {}) {
     // Store the configuration with defaults
     this.config = {
-      // model_name: 'gemini-2.5-pro-preview-05-06', 
-      model_name: 'gemini-2.5-flash-preview-04-17',
+      model_name: 'gemini-2.5-pro-preview-05-06', 
       ...config
     };
 
@@ -31,10 +30,6 @@ class AiApiService {
       return; 
     }
 
-    // // Assert that cache is available - fail early if missing
-    // if (!config.aiApiCache) {
-    //   throw new Error('Requires AI Api Cache to be configured');
-    // }
     this.aiApiCache = null;
 
     this.client = new GoogleGenAI({
