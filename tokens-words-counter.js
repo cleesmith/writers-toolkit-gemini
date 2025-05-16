@@ -92,11 +92,11 @@ class TokensWordsCounter extends BaseTool {
           this.emitOutput('API connection failed. Unable to count tokens.\n');
           this.emitOutput('Please ensure your API key is correctly configured in your environment.\n');
         } else {
-          this.emitOutput(`Token count: ${tokenCount.toLocaleString()}\n\n`);
+          this.emitOutput(`Token count: ${totalTokens.toLocaleString()}\n\n`);
           
           // Calculate token:word ratio
-          wordsPerToken = (tokenCount / wordCount).toFixed(2);
-          this.emitOutput(`Token to word ratio: ${ratio}\n\n`);
+          wordsPerToken = (totalTokens / wordCount);
+          this.emitOutput(`Token to word ratio: ${wordsPerToken}\n\n`);
         }
 
       // const wordsPerToken = totalTokens > 0 ? wordCount / totalTokens : 0;
@@ -140,7 +140,7 @@ class TokensWordsCounter extends BaseTool {
         stats: {
           wordCount,
           tokenCount: totalTokens,
-          wordsPerToken: wordsPerToken.toFixed(2),
+          wordsPerToken: wordsPerToken,
         }
       };
     } catch (error) {
@@ -171,7 +171,7 @@ SUMMARY
 
 Total Human Words: ${wordCount.toLocaleString()}
 Total AI Tokens: ${totalTokens.toLocaleString()}
-Words per token ratio: ${wordsPerToken.toFixed(2)}
+Words per token ratio: ${wordsPerToken}
 `;
 
     return report;

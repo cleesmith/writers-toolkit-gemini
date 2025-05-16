@@ -93,11 +93,7 @@ async function initializeApp() {
     // Or simply use a timeout if createWindow shows the window immediately.
     // The original setTimeout of 1000ms was likely to ensure mainWindow is fully ready.
 
-    console.log(`\ncalling: AiApiServiceInstance.verifyAiAPI`);
     const verifiedAiAPI = await AiApiServiceInstance.verifyAiAPI();
-    console.log(`verifiedAiAPI=${verifiedAiAPI}`);
-    console.dir(verifiedAiAPI);
-    console.log(`calling: AiApiServiceInstance.verifyAiAPI\n`);
 
     if (!verifiedAiAPI) {
         // mainWindow should be defined and ready here as createWindow() is called before this check in initializeApp.

@@ -24,7 +24,7 @@ class AiApiService {
     };
 
     const apiKeyFromEnv = process.env.GEMINI_API_KEY;
-    console.log(`\n\n\napiKeyFromEnv=${apiKeyFromEnv}\n`);
+    // console.log(`\n\n\napiKeyFromEnv=${apiKeyFromEnv}\n`);
     if (!apiKeyFromEnv) {
       console.error('GEMINI_API_KEY environment variable not found');
       this.apiKeyMissing = true;
@@ -381,8 +381,8 @@ DO NOT repeat any parts of the manuscript that are correct or do not have issues
         }
       ];
 
-      console.log(`contentsForRequest:`);
-      console.dir(contentsForRequest, { depth: null });
+      // console.log(`contentsForRequest:`);
+      // console.dir(contentsForRequest, { depth: null });
 
       // console.log(`\naiApiCache.name:`);
       // console.log(this.aiApiCache.name);

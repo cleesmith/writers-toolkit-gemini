@@ -14,12 +14,12 @@ const textProcessor = require('./textProcessor');
 class ProofreaderPlotConsistency extends BaseTool {
   /**
    * Constructor
-   * @param {Object} GeminiAPIService - Claude API service
+   * @param {Object} apiService - AI API service
    * @param {Object} config - Tool configuration
    */
-  constructor(GeminiAPIService, config = {}) {
+  constructor(apiService, config = {}) {
     super('proofreader_plot_consistency', config);
-    this.GeminiAPIService = GeminiAPIService;
+    this.apiService = apiService;
   }
 
   /**
@@ -29,10 +29,6 @@ class ProofreaderPlotConsistency extends BaseTool {
    */
   async execute(options) {
     console.log('Executing Proofreader Plot Consistency with options:', options);
-    
-    // Clear the cache for this tool
-    const toolName = 'proofreader_plot_consistency';
-    fileCache.clear(toolName);
     
     // Extract options
     let manuscriptFile = options.manuscript_file;
@@ -50,49 +46,37 @@ class ProofreaderPlotConsistency extends BaseTool {
     manuscriptFile = this.ensureAbsolutePath(manuscriptFile, saveDir);
 
     const outputFiles = [];
+    let uploadedFileMetadata = null;
+    let existingCache = null;
     
     try {
       const manuscriptContent = await this.readInputFile(manuscriptFile);
       const manuscriptWordCount = this.countWords(manuscriptContent);
-      const manuscriptTokens = await this.GeminiAPIService.countTokens(manuscriptContent);
+      const manuscriptTokens = await this.apiService.countTokens(manuscriptContent);
       const manuscriptWithoutChapterHeaders = textProcessor.processText(manuscriptContent)
-      
-      // Create prompt using the template with language
-      const prompt = this.createPrompt(manuscriptWithoutChapterHeaders, language);
-      const promptTokens = await this.GeminiAPIService.countTokens(prompt);
 
-      // Call the shared token budget calculator
-      const tokenBudgets = this.GeminiAPIService.calculateTokenBudgets(promptTokens);
+      //                                          *******************
+      const prepareResult = await this.apiService.prepareFileAndCache(manuscriptFile);
+
+      // Output all the messages collected during File/Cache prep
+      prepareResult.messages.forEach(message => {
+        this.emitOutput(`${message}\n`);
+      });
+      if (prepareResult.errors.length > 0) {
+        this.emitOutput(`\n--- Errors encountered during preparation ---\n`);
+        prepareResult.errors.forEach(error => {
+          this.emitOutput(`ERROR: ${error}\n`);
+        });
+      }
+      
+      const prompt = this.createFullPrompt(manuscriptWithoutChapterHeaders, language);
+      const promptTokens = await this.apiService.countTokens(prompt);
 
       this.emitOutput(`Reading manuscript file: ${manuscriptFile}\n`);
-      this.emitOutput(`\nToken stats:\n`);
-      this.emitOutput(`Manuscript is ${manuscriptWordCount} words and ${manuscriptTokens} tokens.\n`);
-      this.emitOutput(`Input prompt tokens: [${tokenBudgets.promptTokens}]\n`);
-      this.emitOutput(`\n`);
-      this.emitOutput(`Max AI model context window: [${tokenBudgets.contextWindow}] tokens\n`);
-      this.emitOutput(`Available tokens: [${tokenBudgets.availableTokens}]  = ${tokenBudgets.contextWindow} - ${tokenBudgets.promptTokens} = context_window - prompt\n`);
-      this.emitOutput(`Desired output tokens: [${tokenBudgets.desiredOutputTokens}]\n`);
-      this.emitOutput(`AI model thinking budget: [${tokenBudgets.thinkingBudget}] tokens\n`);
-      this.emitOutput(`Max output tokens: [${tokenBudgets.maxTokens}] tokens\n`);
-
-      // Check for special conditions
-      if (tokenBudgets.capThinkingBudget) {
-        this.emitOutput(`Warning: thinking budget is larger than 32K, set to 32K.\n`);
-      }
-
-      // Check if the prompt is too large
-      if (tokenBudgets.isPromptTooLarge) {
-        this.emitOutput(`Error: prompt is too large to have a ${tokenBudgets.configuredThinkingBudget} thinking budget!\n`);
-        this.emitOutput(`Run aborted!\n`);
-        throw new Error(`Prompt is too large for ${tokenBudgets.configuredThinkingBudget} thinking budget - run aborted`);
-      }
       
-      // Call Claude API with streaming
-      this.emitOutput(`\nSending request to Claude API . . .\n`);
-      
-      // Add a message about waiting
+      this.emitOutput(`\nSending request to AI API . . .\n`);
       this.emitOutput(`\n****************************************************************************\n`);
-      this.emitOutput(`*  Proofreading manuscript for ${language} ...\n`);
+      this.emitOutput(`*  Proofreading manuscript for ${language} plot consistency...\n`);
       this.emitOutput(`*  \n`);
       this.emitOutput(`*  This process typically takes several minutes.\n`);
       this.emitOutput(`*                                                                          \n`);
@@ -111,40 +95,15 @@ class ProofreaderPlotConsistency extends BaseTool {
       // Create system prompt - more explicit guidance
       const systemPrompt = "You are a meticulous proofreader. Be thorough and careful. DO NOT use any Markdown formatting - no headers, bullets, numbering, asterisks, hyphens, or any formatting symbols. Plain text only. You must find and report ALL errors, even small ones.";
 
-      // Use the calculated values in the API call
       try {
-        await this.GeminiAPIService.streamWithThinkingAndMessageStart(
+        console.dir(this.apiService);
+        //                    ******************
+        await this.apiService.streamWithThinking(
           prompt,
-          {
-            model: "claude-3-7-sonnet-20250219",
-            system: systemPrompt,
-            max_tokens: tokenBudgets.maxTokens,
-            thinking: {
-              type: "enabled",
-              budget_tokens: tokenBudgets.thinkingBudget
-            },
-            betas: ["output-128k-2025-02-19"]
-          },
-          // callback for thinking content
-          (thinkingDelta) => {
-            thinkingContent += thinkingDelta;
-          },
-          // callback for response text
           (textDelta) => {
             fullResponse += textDelta;
-          },
-          // callback for message start with stats
-          (messageStart) => {
-            this.emitOutput(`${messageStart}\n`);
-          },
-          // callback for response headers
-          (responseHeaders) => {
-            this.emitOutput(`${responseHeaders}\n`);
-          },
-          // callback for status
-          (callStatus) => {
-            this.emitOutput(`${callStatus}\n`);
-          },
+            this.emitOutput(textDelta);
+          }
         );
       } catch (error) {
         this.emitOutput(`\nAPI Error: ${error.message}\n`);
@@ -162,20 +121,15 @@ class ProofreaderPlotConsistency extends BaseTool {
       this.emitOutput(`Report has approximately ${wordCount} words.\n`);
       
       // Count tokens in response
-      const responseTokens = await this.GeminiAPIService.countTokens(fullResponse);
+      const responseTokens = await this.apiService.countTokens(fullResponse);
       this.emitOutput(`Response token count: ${responseTokens}\n`);
 
-      // Remove any markdown formatting
-      fullResponse = this.removeMarkdown(fullResponse);
-
-      // Save the report
       const outputFile = await this.saveReport(
+        language,
         fullResponse,
-        thinkingContent,
         promptTokens,
         responseTokens,
-        saveDir,
-        language
+        saveDir
       );
       
       // Add the output files to the result
@@ -183,7 +137,7 @@ class ProofreaderPlotConsistency extends BaseTool {
       
       // Add files to the cache
       outputFiles.forEach(file => {
-        fileCache.addFile(toolName, file);
+        fileCache.addFile(this.name, file);
       });
       
       // Return the result
@@ -204,13 +158,9 @@ class ProofreaderPlotConsistency extends BaseTool {
    * @param {string} language - Language for proofreading (default: English)
    * @returns {string} - Prompt for Claude API
    */
-  createPrompt(manuscriptContent, language = 'English') {
+  createFullPrompt(manuscriptContent, language = 'English') {
     // Specialized prompt focused ONLY on plot consistency issues
     const template = `You are a professional ${language} plot consistency proofreader focused on analyzing this manuscript:
-
-=== MANUSCRIPT ===
-${manuscriptContent}
-=== END MANUSCRIPT ===
 
 CORE INSTRUCTION: Conduct a specialized review focusing EXCLUSIVELY on plot consistency issues. Thoroughly analyze story elements, important objects, character knowledge, fictional world rules, and narrative causality to identify contradictions, plot holes, or inconsistencies in how the story unfolds.
 
@@ -300,22 +250,20 @@ At the end, confirm you checked ONLY for plot consistency issues and ignored all
   }
   
   /**
-   * Save report and thinking content to files
+   * Save report to file
+   * @param {string} language - Language used for proofreading
    * @param {string} content - Response content
-   * @param {string} thinking - Thinking content
    * @param {number} promptTokens - Prompt token count
    * @param {number} responseTokens - Response token count
    * @param {string} saveDir - Directory to save to
-   * @param {string} language - Language used for proofreading
    * @returns {Promise<string[]>} - Array of paths to saved files
    */
   async saveReport(
+    language,
     content,
-    thinking,
     promptTokens,
     responseTokens,
-    saveDir,
-    language = 'English'
+    saveDir
   ) {
     try {
       const formatter = new Intl.DateTimeFormat('en-US', {
@@ -337,19 +285,14 @@ At the end, confirm you checked ONLY for plot consistency issues and ignored all
       
       // Array to collect all saved file paths
       const savedFilePaths = [];
-      
-      // Create stats for thinking file
-      const stats = `
-Details:  ${dateTimeStr}
-Language: ${language}
-Max request timeout: ${this.config.request_timeout} seconds
-Max AI model context window: ${this.config.context_window} tokens
-AI model thinking budget: ${this.config.thinking_budget_tokens} tokens
-Desired output tokens: ${this.config.desired_output_tokens} tokens
 
-Input tokens: ${promptTokens}
-Output tokens: ${responseTokens}
-`;
+      const reportWithStats = `=== PLOT CONSISTENCY REPORT (${language}) ===
+Date: ${dateTimeStr}
+Prompt tokens: ${promptTokens}
+Response tokens: ${responseTokens}
+
+${content}`;
+
       
       // Save full response
       const reportFilename = `${baseFilename}.txt`;
@@ -357,23 +300,6 @@ Output tokens: ${responseTokens}
       await this.writeOutputFile(content, saveDir, reportFilename);
       savedFilePaths.push(reportPath);
       this.emitOutput(`Report saved to: ${reportPath}\n`);
-
-      // Save thinking content if available
-      if (thinking) {
-        const thinkingFilename = `${baseFilename}_thinking.txt`;
-        const thinkingContent = `=== PROOFREADERPLOTCONSISTENCY THINKING ===
-
-${thinking}
-
-=== END PROOFREADERPLOTCONSISTENCY THINKING ===
-${stats}`;
-        
-        const thinkingReportPath = path.join(saveDir, thinkingFilename);
-        await this.writeOutputFile(thinkingContent, saveDir, thinkingFilename);
-        savedFilePaths.push(thinkingReportPath);
-        this.emitOutput(`AI thinking saved to: ${path.join(saveDir, thinkingFilename)}\n`);
-      }
-      
       return savedFilePaths;
     } catch (error) {
       console.error(`Error saving report:`, error);
