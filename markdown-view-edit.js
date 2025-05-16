@@ -1,3 +1,5 @@
+// run this:
+// npx electron markdown-view-edit.js
 const { app, BrowserWindow, globalShortcut, dialog, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
@@ -10,7 +12,7 @@ function createWindow() {
   win = new BrowserWindow({
     width: 800,
     height: 600,
-    title: 'Markdown Preview',
+    title: 'Markdown Editor',
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
@@ -101,18 +103,18 @@ function setupIPC() {
 }
 
 function loadEmptyEditor() {
-  const defaultContent = '# Welcome to Markdown Preview\n\nClick the Edit Mode button (eye icon) in the top-right corner to start editing.\n\nSupported features:\n- Headings\n- **Bold** and *italic* text\n- Lists and checkboxes\n- Code blocks\n- And more!';
+  const defaultContent = '# Welcome to Markdown Editor\n\nClick the Edit Mode button (eye icon) in the top-right corner to start editing.\n\nSupported features:\n- Headings\n- **Bold** and *italic* text\n- Lists and checkboxes\n- Code blocks\n- And more!';
   renderContent(defaultContent, 'Untitled');
 }
 
 function renderContent(content, fileName) {
-  win.setTitle(`Markdown Preview - ${fileName}`);
+  win.setTitle(`Markdown Editor - ${fileName}`);
   
   const htmlContent = `<!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
-  <title>Markdown Preview</title>
+  <title>Markdown Editor</title>
   <style>
     :root[data-theme="light"] { 
       --bg:#fff; 
