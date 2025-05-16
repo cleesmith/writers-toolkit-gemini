@@ -1127,10 +1127,17 @@ function setupIPCHandlers() {
   });
   
   // Close editor dialog
-  ipcMain.on('close-editor-dialog', () => {
-    if (editorDialogWindow && !editorDialogWindow.isDestroyed()) {
-      editorDialogWindow.destroy();
-      editorDialogWindow = null;
+  // ipcMain.on('close-editor-dialog', () => {
+  //   if (editorDialogWindow && !editorDialogWindow.isDestroyed()) {
+  //     editorDialogWindow.destroy();
+  //     editorDialogWindow = null;
+  //   }
+  // });
+  ipcMain.on('close-editor-dialog', (event) => {
+    console.log('close-editor-dialog event received!');
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win && !win.isDestroyed()) {
+      win.close(); // or win.destroy() if you don't want 'close' events to fire
     }
   });
 
