@@ -651,6 +651,51 @@ ipcMain.handle('open-file-in-editor', async (event, filePath) => {
 });
 
 // Handle saving files from the editor dialog
+// ipcMain.handle('save-file', async (event, data) => {
+//   try {
+//     const { filePath, content, saveAs } = data;
+//     let finalPath = filePath;
+    
+//     // If no path or saveAs is true, show save dialog
+//     if (!finalPath || saveAs) {
+//       try {
+//         // Get the current project path as the default save directory
+//         const projectPath = appState.CURRENT_PROJECT_PATH || path.join(os.homedir(), 'writing');
+        
+//         const { canceled, filePath: newPath } = await dialog.showSaveDialog(editorDialogWindow, {
+//           title: 'Save File',
+//           defaultPath: projectPath,
+//           filters: [
+//             { name: 'Text Files', extensions: ['txt'] },
+//             { name: 'All Files', extensions: ['*'] }
+//           ]
+//         });
+        
+//         if (canceled || !newPath) {
+//           return { success: false };
+//         }
+        
+//         finalPath = newPath;
+//       } catch (error) {
+//         console.error('Error showing save dialog:', error);
+//         return { success: false };
+//       }
+//     }
+    
+//     try {
+//       fs.writeFileSync(finalPath, content, 'utf8');
+//       console.log('File saved successfully to:', finalPath);
+//       return { success: true, filePath: finalPath };
+//     } catch (error) {
+//       console.error('Error saving file:', error);
+//       dialog.showErrorBox('Error', `Failed to save file: ${error.message}`);
+//       return { success: false };
+//     }
+//   } catch (error) {
+//     console.error('Error in save-file handler:', error);
+//     return { success: false };
+//   }
+// });
 ipcMain.handle('save-file', async (event, data) => {
   try {
     const { filePath, content, saveAs } = data;
@@ -662,13 +707,29 @@ ipcMain.handle('save-file', async (event, data) => {
         // Get the current project path as the default save directory
         const projectPath = appState.CURRENT_PROJECT_PATH || path.join(os.homedir(), 'writing');
         
+        // Determine if the content looks like markdown to set the default extension
+        const isMarkdown = content.includes('#') || 
+                          content.includes('**') || 
+                          content.includes('![') ||
+                          content.includes('[') && content.includes('](');
+        
+        // Set appropriate filters based on content
+        const filters = isMarkdown ? 
+          [
+            { name: 'Markdown Files', extensions: ['md'] },
+            { name: 'Text Files', extensions: ['txt'] },
+            { name: 'All Files', extensions: ['*'] }
+          ] : 
+          [
+            { name: 'Text Files', extensions: ['txt'] },
+            { name: 'Markdown Files', extensions: ['md'] },
+            { name: 'All Files', extensions: ['*'] }
+          ];
+        
         const { canceled, filePath: newPath } = await dialog.showSaveDialog(editorDialogWindow, {
           title: 'Save File',
           defaultPath: projectPath,
-          filters: [
-            { name: 'Text Files', extensions: ['txt'] },
-            { name: 'All Files', extensions: ['*'] }
-          ]
+          filters: filters
         });
         
         if (canceled || !newPath) {
@@ -676,6 +737,16 @@ ipcMain.handle('save-file', async (event, data) => {
         }
         
         finalPath = newPath;
+        
+        // Verify the selected path is within ~/writing directory
+        const writingPath = path.join(os.homedir(), 'writing');
+        if (!finalPath.startsWith(writingPath)) {
+          dialog.showErrorBox(
+            'Access Denied',
+            `Files can only be saved to the ${writingPath} directory.`
+          );
+          return { success: false };
+        }
       } catch (error) {
         console.error('Error showing save dialog:', error);
         return { success: false };
@@ -683,6 +754,11 @@ ipcMain.handle('save-file', async (event, data) => {
     }
     
     try {
+      // Ensure the directory exists
+      const dirPath = path.dirname(finalPath);
+      await fs.promises.mkdir(dirPath, { recursive: true });
+      
+      // Write the file
       fs.writeFileSync(finalPath, content, 'utf8');
       console.log('File saved successfully to:', finalPath);
       return { success: true, filePath: finalPath };
@@ -863,6 +939,79 @@ function setupToolHandlers() {
   });
 }
 
+// function createEditorDialog(fileToOpen = null) {
+//   // If there's already an editor window open, close it first
+//   if (editorDialogWindow && !editorDialogWindow.isDestroyed()) {
+//     editorDialogWindow.destroy();
+//     editorDialogWindow = null;
+//   }
+
+//   // Get the parent window - either the tool window or main window
+//   const parentWindow = toolSetupRunWindow || mainWindow;
+
+//   editorDialogWindow = new BrowserWindow({
+//     width: parentWindow.getSize()[0],
+//     height: parentWindow.getSize()[1],
+//     x: parentWindow.getPosition()[0],
+//     y: parentWindow.getPosition()[1],
+//     parent: parentWindow,
+//     modal: true,
+//     show: false,
+//     webPreferences: {
+//       nodeIntegration: false,
+//       contextIsolation: true,
+//       preload: path.join(__dirname, 'preload.js'),
+//       // Enable clipboard operations without spellcheck
+//       additionalArguments: ['--enable-clipboard-read', '--enable-clipboard-write']
+//     },
+//     backgroundColor: '#121212', // Dark background
+//     autoHideMenuBar: true, // Hide the menu bar
+//   });
+
+//   // Load the HTML file
+//   editorDialogWindow.loadFile(path.join(__dirname, 'editor-dialog.html'));
+
+//   // Show the window when ready
+//   editorDialogWindow.once('ready-to-show', () => {
+//     editorDialogWindow.show();
+    
+//     // Send the current theme as soon as the window is ready
+//     if (parentWindow) {
+//       parentWindow.webContents.executeJavaScript('document.body.classList.contains("light-mode")')
+//         .then(isLightMode => {
+//           if (editorDialogWindow && !editorDialogWindow.isDestroyed()) {
+//             editorDialogWindow.webContents.send('set-theme', isLightMode ? 'light' : 'dark');
+//           }
+//         })
+//         .catch(err => console.error('Error getting theme:', err));
+//     }
+    
+//     // If a file should be opened, send it to the window
+//     if (fileToOpen) {
+//       try {
+//         const content = fs.readFileSync(fileToOpen, 'utf8');
+//         editorDialogWindow.webContents.send('file-opened', { 
+//           filePath: fileToOpen, 
+//           content 
+//         });
+//       } catch (error) {
+//         console.error('Error loading file:', error);
+//         dialog.showErrorBox('Error', `Failed to load file: ${error.message}`);
+//       }
+//     }
+//   });
+
+//   // Track window destruction
+//   editorDialogWindow.on('closed', () => {
+//     editorDialogWindow = null;
+//   });
+  
+//   // Prevent the editor window from being resized or moved
+//   editorDialogWindow.setResizable(false);
+//   editorDialogWindow.setMovable(false);
+  
+//   return editorDialogWindow;
+// }
 function createEditorDialog(fileToOpen = null) {
   // If there's already an editor window open, close it first
   if (editorDialogWindow && !editorDialogWindow.isDestroyed()) {
@@ -904,7 +1053,9 @@ function createEditorDialog(fileToOpen = null) {
       parentWindow.webContents.executeJavaScript('document.body.classList.contains("light-mode")')
         .then(isLightMode => {
           if (editorDialogWindow && !editorDialogWindow.isDestroyed()) {
-            editorDialogWindow.webContents.send('set-theme', isLightMode ? 'light' : 'dark');
+            // Since we're using a data-theme attribute now, slightly adapt the theme message
+            const theme = isLightMode ? 'light' : 'dark';
+            editorDialogWindow.webContents.send('set-theme', theme);
           }
         })
         .catch(err => console.error('Error getting theme:', err));
@@ -913,6 +1064,23 @@ function createEditorDialog(fileToOpen = null) {
     // If a file should be opened, send it to the window
     if (fileToOpen) {
       try {
+        // Verify the file path is within the allowed directory
+        const homePath = os.homedir();
+        const writingPath = path.join(homePath, 'writing');
+        
+        if (!fileToOpen.startsWith(writingPath)) {
+          console.error('Attempted to open file outside allowed directory:', fileToOpen);
+          dialog.showErrorBox('Security Error', 'Cannot open files outside the writing directory.');
+          return;
+        }
+        
+        // Check if file exists
+        if (!fs.existsSync(fileToOpen)) {
+          console.error('File not found:', fileToOpen);
+          dialog.showErrorBox('File Error', `File not found: ${fileToOpen}`);
+          return;
+        }
+        
         const content = fs.readFileSync(fileToOpen, 'utf8');
         editorDialogWindow.webContents.send('file-opened', { 
           filePath: fileToOpen, 
@@ -986,6 +1154,73 @@ function setupIPCHandlers() {
   });
   
   // File selection dialog
+  // ipcMain.handle('select-file', async (event, options) => {
+  //   try {
+  //     // Ensure base directory is inside ~/writing
+  //     const homePath = os.homedir();
+  //     const writingPath = path.join(homePath, 'writing');
+  //     let startPath = options.defaultPath || appState.DEFAULT_SAVE_DIR || writingPath;
+      
+  //     // Force path to be within ~/writing
+  //     if (!startPath.startsWith(writingPath)) {
+  //       startPath = writingPath;
+  //     }
+      
+  //     // Set default filters to only show .txt files
+  //     const defaultFilters = [
+  //       { name: 'Text Files', extensions: ['txt'] },
+  //       { name: 'All Files', extensions: ['*'] }
+  //     ];
+      
+  //     // For tokens_words_counter.js, only allow .txt files
+  //     if (currentTool === 'tokens_words_counter') {
+  //       // Only use text files filter for this tool
+  //       options.filters = [{ name: 'Text Files', extensions: ['txt', 'md'] }];
+  //     }
+      
+  //     const dialogOptions = {
+  //       title: options.title || 'Select File',
+  //       defaultPath: startPath,
+  //       buttonLabel: options.buttonLabel || 'Select',
+  //       filters: options.filters || defaultFilters,
+  //       properties: ['openFile'],
+  //       // Restrict to ~/writing directory
+  //       message: 'Please select a file within your writing projects'
+  //     };
+      
+  //     const result = await dialog.showOpenDialog(
+  //       options.parentWindow || toolSetupRunWindow || mainWindow, 
+  //       dialogOptions
+  //     );
+      
+  //     if (result.canceled || result.filePaths.length === 0) {
+  //       return null;
+  //     }
+      
+  //     const selectedPath = result.filePaths[0];
+      
+  //     // Verify the selected path is within ~/writing directory
+  //     if (!selectedPath.startsWith(writingPath)) {
+  //       console.warn('Selected file is outside allowed directory:', selectedPath);
+        
+  //       // Show error dialog to user
+  //       await dialog.showMessageBox(toolSetupRunWindow || mainWindow, {
+  //         type: 'error',
+  //         title: 'Invalid File Selection',
+  //         message: 'File Selection Restricted',
+  //         detail: `You must select a file within the ~/writing directory. Please try again.`,
+  //         buttons: ['OK']
+  //       });
+        
+  //       return null;
+  //     }
+      
+  //     return selectedPath;
+  //   } catch (error) {
+  //     console.error('Error in file selection:', error);
+  //     throw error;
+  //   }
+  // });
   ipcMain.handle('select-file', async (event, options) => {
     try {
       // Ensure base directory is inside ~/writing
@@ -998,15 +1233,15 @@ function setupIPCHandlers() {
         startPath = writingPath;
       }
       
-      // Set default filters to only show .txt files
+      // Set default filters to include markdown files
       const defaultFilters = [
-        { name: 'Text Files', extensions: ['txt'] },
+        { name: 'Text Files', extensions: ['txt', 'md'] },
         { name: 'All Files', extensions: ['*'] }
       ];
       
-      // For tokens_words_counter.js, only allow .txt files
+      // For certain tools, we might need different filters
       if (currentTool === 'tokens_words_counter') {
-        // Only use text files filter for this tool
+        // Allow both text and markdown files for this tool
         options.filters = [{ name: 'Text Files', extensions: ['txt', 'md'] }];
       }
       

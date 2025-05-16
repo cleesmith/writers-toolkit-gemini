@@ -41,7 +41,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Get output files for a tool run
   getToolOutputFiles: (toolId) => ipcRenderer.invoke('get-tool-output-files', toolId),
 
-  // Open a file in the editor - UNCOMMENTED THIS LINE
+  // Open a file in the editor
   openFileInEditor: (filePath) => ipcRenderer.invoke('open-file-in-editor', filePath),  
   
   // Editor dialog functions
