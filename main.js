@@ -1,5 +1,5 @@
 // main.js - Writer's Toolkit main process
-const { app, BrowserWindow, Menu, ipcMain, dialog, screen } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, dialog, screen, shell } = require('electron');
 
 // Handle Squirrel events
 if (require('electron-squirrel-startup')) app.quit();
@@ -100,21 +100,76 @@ async function initializeApp() {
     console.log(`calling: AiApiServiceInstance.verifyAiAPI\n`);
 
     if (!verifiedAiAPI) {
-        // Wait for the main window to be ready before showing a dialog
-        // If createWindow shows the window, a short timeout might still be okay.
-        // A more robust way is to show it after mainWindow 'ready-to-show' or 'did-finish-load' event.
-        // For simplicity with the existing setTimeout:
-        setTimeout(() => {
-          if (mainWindow && !mainWindow.isDestroyed()) {
+        // mainWindow should be defined and ready here as createWindow() is called before this check in initializeApp.
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            const homeDir = os.homedir();
+            const envFilePath = path.join(homeDir, '.env');
+
             dialog.showMessageBox(mainWindow, {
-              type: 'warning',
-              title: 'API Key Missing',
-              message: 'Gemini API key not found.', // Updated message
-              detail: "Please configure your GEMINI_API_KEY environment variable before using AI tools.",
-              buttons: ['OK']
+                type: 'error',
+                title: 'Gemini API Key Issue',
+                message: 'Connecton failed: Gemini API key not found or invalid.',
+                detail: `To use AI-powered tools, your Gemini API key needs to be configured.\n\n` +
+                        `- click 'OK' to continue using Writer's Toolkit.\nAI features will be unavailable or may cause errors until the api key is set.\nHowever, non-AI based Tools are available for use.\n\n` +
+                        `- click 'Quit then Edit .env file' to open the .env configuration file.\nWriter's Toolkit will then quit.\nYour default text editor should appear.\nAfter adding/changing your key, please start the app again.\n` +
+                        `\nYou may do this manually:\nThe .env file must be located here:\n${envFilePath}\nOpen .env in a text editor (Notepad/Textedit), then add the line:\nGEMINI_API_KEY=your_actual_api_key\nand replace 'your_actual_api_key' with your actual api key, then save and quit the editor, then start the Writer's Toolkit again.`,
+                buttons: ['OK', 'Quit then Edit .env file'],
+                defaultId: 0,
+                cancelId: 0
+            }).then(async ({ response }) => {
+                if (response === 1) { // User clicked "Quit then Edit .env file"
+                    try {
+                        let envFileExisted = fs.existsSync(envFilePath);
+                        let currentEnvContent = "";
+                        if (envFileExisted) {
+                            currentEnvContent = await fs.promises.readFile(envFilePath, 'utf8');
+                        }
+
+                        const timestamp = new Date().toLocaleString();
+                        let newEnvContent = currentEnvContent;
+                        const instructionalComment = `\n# On ${timestamp}, Writer's Toolkit tried to use Gemini AI API key, but failed!\n# Please ensure the line below is correct and uncommented (remove any leading '#'):\n# GEMINI_API_KEY=your_actual_api_key_here\n... or change/update if this line already exists.\n\n`;
+
+                        if (!currentEnvContent.includes("# Writer's Toolkit tried to use Gemini AI API key, but failed!")) {
+                            newEnvContent = instructionalComment + currentEnvContent;
+                        }
+                        if (!newEnvContent.match(/^GEMINI_API_KEY=/m) && !newEnvContent.match(/^#\s*GEMINI_API_KEY=/m) ) {
+                            newEnvContent += (newEnvContent.endsWith('\n\n') ? '' : (newEnvContent.endsWith('\n') ? '\n' : '\n\n')) + 'GEMINI_API_KEY=\n\n';
+                        }
+                        
+                        await fs.promises.writeFile(envFilePath, newEnvContent, 'utf8');
+                        console.log(`Guidance comment potentially added/updated in .env file: ${envFilePath}`);
+
+                        // // to reveal .env in Finder/Explorer:
+                        // shell.showItemInFolder(envFilePath);
+
+                        // it is possible to not have a default text editor:
+                        const openError = await shell.openPath(envFilePath);
+                        if (openError) {
+                            console.error(`Error opening .env file with shell.openPath: ${openError}`);
+                            dialog.showErrorBox('File Access Error', `Could not automatically open the .env file at:\n${envFilePath}\n\nPlease open it manually. Writer's Toolkit will now quit.`);
+                        } else {
+                            console.log(`Attempted to open .env file: ${envFilePath}`);
+                        }
+                    } catch (err) {
+                        console.error(`Error preparing or opening .env file: ${err.message || err}`);
+                        dialog.showErrorBox('Configuration Error', `An error occurred while trying to prepare or open your .env file at:\n${envFilePath}\n\nPlease check it manually. Writer's Toolkit will now quit.`);
+                    } finally {
+                        console.log('Quitting application after "Setup Key & Quit" option.');
+                        app.quit();
+                    }
+                } else { 
+                    console.log('User acknowledged API key warning. AI tools will be unavailable or may error out if used. However, non-AI based Tools are available for use.');
+                }
+            }).catch(err => {
+                console.error('Error displaying API key dialog:', err);
             });
-          }
-        }, 1000); // this delay helps ensure mainWindow is visible
+        } else {
+            // This case should ideally not be reached if initializeApp is structured well.
+            // If mainWindow isn't available, critical functionality is missing.
+            console.error('Main window not available for API key dialog. This might indicate an initialization order issue. Quitting.');
+            dialog.showErrorBox('Application Error', 'Main window is not available. The application will now close.');
+            app.quit();
+        }
     }
     
     // Initial project dialog logic
