@@ -93,7 +93,13 @@ async function initializeApp() {
     // Or simply use a timeout if createWindow shows the window immediately.
     // The original setTimeout of 1000ms was likely to ensure mainWindow is fully ready.
 
-    if (AiApiServiceInstance && AiApiServiceInstance.apiKeyMissing) {
+    console.log(`\ncalling: AiApiServiceInstance.verifyAiAPI`);
+    const verifiedAiAPI = await AiApiServiceInstance.verifyAiAPI();
+    console.log(`verifiedAiAPI=${verifiedAiAPI}`);
+    console.dir(verifiedAiAPI);
+    console.log(`calling: AiApiServiceInstance.verifyAiAPI\n`);
+
+    if (!verifiedAiAPI) {
         // Wait for the main window to be ready before showing a dialog
         // If createWindow shows the window, a short timeout might still be okay.
         // A more robust way is to show it after mainWindow 'ready-to-show' or 'did-finish-load' event.
@@ -108,7 +114,7 @@ async function initializeApp() {
               buttons: ['OK']
             });
           }
-        }, 1000); // This delay helps ensure mainWindow is visible
+        }, 1000); // this delay helps ensure mainWindow is visible
     }
     
     // Initial project dialog logic

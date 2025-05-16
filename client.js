@@ -39,6 +39,25 @@ class AiApiService {
   }
 
   /**
+   * Verifies the AI API key and connection to the specified model.
+   * @returns {Promise<boolean>} True if the API key is valid and model is accessible, false otherwise.
+   */
+  async verifyAiAPI() {
+    if (this.apiKeyMissing || !this.client) {
+      return false;
+    }
+
+    try {
+      const modelInfo = await this.client.models.get({ model: this.config.model_name });
+      console.dir(modelInfo);
+      return true;
+    } catch (error) {
+      console.error(`API verification failed for model:\n${this.config.model_name}:\n${error.message}\n`);
+      return false; // API call failed
+    }
+  }
+
+  /**
    * Prepares file upload and caching for manuscript processing
    * @param {string} manuscriptFile - Path to the manuscript file
    * @param {string} baseInstructions - Base system instructions for caching
@@ -365,10 +384,10 @@ DO NOT repeat any parts of the manuscript that are correct or do not have issues
       console.log(`contentsForRequest:`);
       console.dir(contentsForRequest, { depth: null });
 
-      console.log(`\naiApiCache.name:`);
-      console.log(this.aiApiCache.name);
-      console.log(`\naiApiCache.name:`);
-      console.dir(this.aiApiCache, { depth: null });
+      // console.log(`\naiApiCache.name:`);
+      // console.log(this.aiApiCache.name);
+      // console.log(`\naiApiCache.name:`);
+      // console.dir(this.aiApiCache, { depth: null });
 
       const responseStream = await this.client.models.generateContentStream({
         model: this.config.model_name,
