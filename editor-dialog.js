@@ -1,4 +1,4 @@
-// editor-dialog.js
+// editor-dialog.js - Modified to set preview as default mode
 
 // DOM Elements - Reference these after DOM is fully loaded
 let editor;
@@ -31,8 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize DOM references
   initDomReferences();
   
-  // Set the editor to edit mode initially
-  htmlEl.classList.add('edit-mode');
+  // CHANGE: No longer setting edit mode as default
+  // Instead, we'll update the preview and tooltip for preview mode
   
   // Set up editor event listeners
   setupEditorEvents();
@@ -46,7 +46,15 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize word wrap
   updateWordWrap();
   
-  console.log('Editor initialization complete');
+  // CHANGE: Update the preview content for initial preview mode
+  updatePreview();
+  
+  // CHANGE: Set the mode tooltip to "Edit" since we start in preview mode
+  if (modeTooltip) {
+    modeTooltip.textContent = 'Edit';
+  }
+  
+  console.log('Editor initialization complete in preview mode');
 });
 
 // Initialize all DOM references
@@ -147,8 +155,47 @@ function setupControlEvents() {
   }
   
   // Remove Markdown button
+  // removeMarkdownButton.addEventListener('click', () => {
+  //   console.log('Remove Markdown button clicked');
+    
+  //   // Make sure we're in edit mode
+  //   if (!htmlEl.classList.contains('edit-mode')) {
+  //     htmlEl.classList.add('edit-mode');
+  //     modeTooltip.textContent = 'Preview';
+  //   }
+    
+  //   // Get the current content and remove markdown
+  //   const plainText = removeMarkdown(editor.value);
+    
+  //   // Update the editor with plain text
+  //   editor.value = plainText;
+  //   documentChanged = editor.value !== originalContent;
+    
+  //   // Update preview content (even though it's not visible in edit mode)
+  //   updatePreview();
+    
+  //   // Update position and stats
+  //   updatePositionAndStats();
+    
+  //   // Show notification
+  //   showNotification('Markdown removed');
+  // });
+  // Modified Remove Markdown button handler with confirmation dialog
   removeMarkdownButton.addEventListener('click', () => {
     console.log('Remove Markdown button clicked');
+    
+    // Show confirmation dialog
+    const confirmRemove = confirm(
+      'Warning: Removing Markdown formatting is permanent and cannot be undone.\n\n' +
+      'This will convert all formatting (headings, bold, links, etc.) to plain text.\n\n' +
+      'Do you want to proceed?'
+    );
+    
+    // Only proceed if user confirms
+    if (!confirmRemove) {
+      console.log('User cancelled Remove Markdown operation');
+      return;
+    }
     
     // Make sure we're in edit mode
     if (!htmlEl.classList.contains('edit-mode')) {
@@ -170,7 +217,7 @@ function setupControlEvents() {
     updatePositionAndStats();
     
     // Show notification
-    showNotification('Markdown removed');
+    showNotification('Markdown formatting removed');
   });
   
   // Save button
@@ -506,10 +553,8 @@ if (window.electronAPI && window.electronAPI.onFileOpened) {
       // Update stats
       updatePositionAndStats();
       
-      // Update preview if in preview mode
-      if (!htmlEl.classList.contains('edit-mode')) {
-        updatePreview();
-      }
+      // CHANGE: Always update preview since we start in preview mode
+      updatePreview();
     } else {
       console.error('Invalid data received from onFileOpened:', data);
     }
