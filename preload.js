@@ -17,7 +17,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   closeDialog: (action, data) => ipcRenderer.send('close-project-dialog', action, data),
   onProjectUpdated: (callback) => ipcRenderer.on('project-updated', (_, data) => callback(data)),
   // Launch the text editor
-  launchEditor: () => ipcRenderer.invoke('launch-editor'),
+  // launchEditor: () => ipcRenderer.invoke('launch-editor'),
   
   // File handling
   selectFile: (options) => ipcRenderer.invoke('select-file', options),

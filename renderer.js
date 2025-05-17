@@ -360,7 +360,7 @@ const openEditorBtn = document.getElementById('open-editor-btn');
 if (openEditorBtn) {
   openEditorBtn.addEventListener('click', async () => {
     try {
-      const success = await window.electronAPI.launchEditor();
+      const success = await window.electronAPI.showEditorDialog();
       if (!success) {
         console.error('Failed to launch editor');
         // You could show an error notification here if you have one

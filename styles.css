@@ -160,15 +160,6 @@ body.dark-mode .icon-button {
   margin-top: 20px;
 }
 
-#open-editor-btn {
-  margin-left: 10px;
-  background-color: #5c9ce6;
-}
-
-#open-editor-btn:hover {
-  background-color: #4a89dc;
-}
-
 .center-button {
   margin: 20px auto;
   display: block;
@@ -347,7 +338,7 @@ label {
   color: #888;
 }
 
-.action-button, #setup-run-btn, #open-editor-btn {
+.action-button, #setup-run-btn {
   width: 210px; /* Fixed width for all buttons */
   text-align: center;
   padding: 10px 0; /* Vertical padding only */
@@ -412,4 +403,44 @@ label {
 }
 #non-ai-setup-run-btn:hover {
   background-color: green;
+}
+
+#open-editor-btn {
+  margin-left: 10px;
+  background-color: #3b82f6; /* Blue color matching the Setup button */
+  color: white;
+  padding: 10px 15px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  width: auto; /* Allow button to size to content */
+  min-width: 0; /* Remove minimum width */
+  display: inline-block; /* Prevent full-width expansion */
+}
+
+#open-editor-btn:hover {
+  background-color: #4a89dc;
+}
+
+#quit-button.quit-button {
+  background-color: #dc4a4a; /* Slightly softer red than Force Quit */
+  color: white;
+  padding: 10px 15px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  width: auto;
+  min-width: 0;
+  display: inline-block;
+}
+
+/* Make this selector more specific to override other hover styles */
+#quit-button.quit-button:hover {
+  background-color: #e53935 !important; /* Darker red on hover with !important */
+}
+
+.quit-button:hover {
+  background-color: #e53935; /* Darker red on hover */
 }
