@@ -414,16 +414,15 @@ async function saveFile(saveAs = false) {
 
 // Close the editor dialog
 function closeEditor() {
-  console.log('Closing editor');
+  console.log('> > > Closing editor');
   if (documentChanged) {
     const confirmClose = confirm('You have unsaved changes. Close anyway?');
     if (!confirmClose) return;
   }
-  
+  console.dir(window.electronAPI);
+  console.dir(window.electronAPI.closeEditorDialog);
   if (window.electronAPI && window.electronAPI.closeEditorDialog) {
     window.electronAPI.closeEditorDialog();
-  } else {
-    console.error('closeEditorDialog API not available');
   }
 }
 

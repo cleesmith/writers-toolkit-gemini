@@ -1137,7 +1137,7 @@ function setupIPCHandlers() {
     console.log('close-editor-dialog event received!');
     const win = BrowserWindow.fromWebContents(event.sender);
     if (win && !win.isDestroyed()) {
-      win.close(); // or win.destroy() if you don't want 'close' events to fire
+      win.destroy(); // or win.close()
     }
   });
 
