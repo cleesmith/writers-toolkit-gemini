@@ -939,79 +939,6 @@ function setupToolHandlers() {
   });
 }
 
-// function createEditorDialog(fileToOpen = null) {
-//   // If there's already an editor window open, close it first
-//   if (editorDialogWindow && !editorDialogWindow.isDestroyed()) {
-//     editorDialogWindow.destroy();
-//     editorDialogWindow = null;
-//   }
-
-//   // Get the parent window - either the tool window or main window
-//   const parentWindow = toolSetupRunWindow || mainWindow;
-
-//   editorDialogWindow = new BrowserWindow({
-//     width: parentWindow.getSize()[0],
-//     height: parentWindow.getSize()[1],
-//     x: parentWindow.getPosition()[0],
-//     y: parentWindow.getPosition()[1],
-//     parent: parentWindow,
-//     modal: true,
-//     show: false,
-//     webPreferences: {
-//       nodeIntegration: false,
-//       contextIsolation: true,
-//       preload: path.join(__dirname, 'preload.js'),
-//       // Enable clipboard operations without spellcheck
-//       additionalArguments: ['--enable-clipboard-read', '--enable-clipboard-write']
-//     },
-//     backgroundColor: '#121212', // Dark background
-//     autoHideMenuBar: true, // Hide the menu bar
-//   });
-
-//   // Load the HTML file
-//   editorDialogWindow.loadFile(path.join(__dirname, 'editor-dialog.html'));
-
-//   // Show the window when ready
-//   editorDialogWindow.once('ready-to-show', () => {
-//     editorDialogWindow.show();
-    
-//     // Send the current theme as soon as the window is ready
-//     if (parentWindow) {
-//       parentWindow.webContents.executeJavaScript('document.body.classList.contains("light-mode")')
-//         .then(isLightMode => {
-//           if (editorDialogWindow && !editorDialogWindow.isDestroyed()) {
-//             editorDialogWindow.webContents.send('set-theme', isLightMode ? 'light' : 'dark');
-//           }
-//         })
-//         .catch(err => console.error('Error getting theme:', err));
-//     }
-    
-//     // If a file should be opened, send it to the window
-//     if (fileToOpen) {
-//       try {
-//         const content = fs.readFileSync(fileToOpen, 'utf8');
-//         editorDialogWindow.webContents.send('file-opened', { 
-//           filePath: fileToOpen, 
-//           content 
-//         });
-//       } catch (error) {
-//         console.error('Error loading file:', error);
-//         dialog.showErrorBox('Error', `Failed to load file: ${error.message}`);
-//       }
-//     }
-//   });
-
-//   // Track window destruction
-//   editorDialogWindow.on('closed', () => {
-//     editorDialogWindow = null;
-//   });
-  
-//   // Prevent the editor window from being resized or moved
-//   editorDialogWindow.setResizable(false);
-//   editorDialogWindow.setMovable(false);
-  
-//   return editorDialogWindow;
-// }
 function createEditorDialog(fileToOpen = null) {
   // If there's already an editor window open, close it first
   if (editorDialogWindow && !editorDialogWindow.isDestroyed()) {
@@ -1098,12 +1025,24 @@ function createEditorDialog(fileToOpen = null) {
     editorDialogWindow = null;
   });
   
-  // Prevent the editor window from being resized or moved
+  // Make the window resizable to improve usability
   editorDialogWindow.setResizable(false);
   editorDialogWindow.setMovable(false);
   
   return editorDialogWindow;
 }
+
+// Make sure we properly handle the IPC for closing the editor window
+ipcMain.on('close-editor-dialog', () => {
+  console.log("*** MAIN: Received close-editor-dialog IPC");
+  if (editorDialogWindow && !editorDialogWindow.isDestroyed()) {
+    editorDialogWindow.destroy();
+    editorDialogWindow = null;
+    console.log("MAIN: Editor window successfully destroyed");
+  } else {
+    console.log("MAIN: editorDialogWindow was missing or destroyed already.");
+  }
+});
 
 // Set up all IPC handlers
 function setupIPCHandlers() {
@@ -1128,16 +1067,26 @@ function setupIPCHandlers() {
   
   // Close editor dialog
   // ipcMain.on('close-editor-dialog', () => {
+  //   console.log('close-editor-dialog');
   //   if (editorDialogWindow && !editorDialogWindow.isDestroyed()) {
   //     editorDialogWindow.destroy();
   //     editorDialogWindow = null;
   //   }
   // });
-  ipcMain.on('close-editor-dialog', (event) => {
-    console.log('close-editor-dialog event received!');
-    const win = BrowserWindow.fromWebContents(event.sender);
-    if (win && !win.isDestroyed()) {
-      win.destroy(); // or win.close()
+  // ipcMain.on('close-editor-dialog', (event) => {
+  //   console.log('close-editor-dialog event received!');
+  //   const win = BrowserWindow.fromWebContents(event.sender);
+  //   if (win && !win.isDestroyed()) {
+  //     win.destroy(); // or win.close()
+  //   }
+  // });
+  ipcMain.on('close-editor-dialog', () => {
+    console.log("*** MAIN: Received close-editor-dialog IPC");
+    if (editorDialogWindow && !editorDialogWindow.isDestroyed()) {
+      editorDialogWindow.destroy();
+      editorDialogWindow = null;
+    } else {
+      console.log("MAIN: editorDialogWindow was missing or destroyed already.");
     }
   });
 

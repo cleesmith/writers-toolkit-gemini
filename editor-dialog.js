@@ -1,4 +1,4 @@
-// editor-dialog.js - Fixed UI alignment version
+// editor-dialog.js
 
 // DOM Elements - Reference these after DOM is fully loaded
 let editor;
@@ -117,32 +117,34 @@ function setupControlEvents() {
   modeToggle.addEventListener('click', toggleEditMode);
   
   // Open file button
-  openButton.addEventListener('click', () => {
-    console.log('Open button clicked');
-    if (documentChanged) {
-      const confirmOpen = confirm('You have unsaved changes. Open a different file anyway?');
-      if (!confirmOpen) return;
-    }
-    
-    if (window.electronAPI && window.electronAPI.selectFile) {
-      window.electronAPI.selectFile({
-        title: 'Open File',
-        filters: [
-          { name: 'Text Files', extensions: ['txt', 'md'] },
-          { name: 'All Files', extensions: ['*'] }
-        ]
-      }).then(filePath => {
-        if (filePath) {
-          openFile(filePath);
-        }
-      }).catch(err => {
-        console.error('Error selecting file:', err);
-        showNotification('Error selecting file: ' + err.message);
-      });
-    } else {
-      console.error('electronAPI not available or selectFile method not found');
-    }
-  });
+  if (openButton) {
+    openButton.addEventListener('click', () => {
+      console.log('Open button clicked');
+      if (documentChanged) {
+        const confirmOpen = confirm('You have unsaved changes. Open a different file anyway?');
+        if (!confirmOpen) return;
+      }
+      
+      if (window.electronAPI && window.electronAPI.selectFile) {
+        window.electronAPI.selectFile({
+          title: 'Open File',
+          filters: [
+            { name: 'Text Files', extensions: ['txt', 'md'] },
+            { name: 'All Files', extensions: ['*'] }
+          ]
+        }).then(filePath => {
+          if (filePath) {
+            openFile(filePath);
+          }
+        }).catch(err => {
+          console.error('Error selecting file:', err);
+          showNotification('Error selecting file: ' + err.message);
+        });
+      } else {
+        console.error('electronAPI not available or selectFile method not found');
+      }
+    });
+  }
   
   // Remove Markdown button
   removeMarkdownButton.addEventListener('click', () => {
@@ -183,11 +185,27 @@ function setupControlEvents() {
     saveFile(true);
   });
   
-  // Close button
-  closeButton.addEventListener('click', () => {
-    console.log('Close button clicked');
-    closeEditor();
-  });
+  // Close button - Make sure close button exists before adding listener
+  if (closeButton) {
+    console.log('Adding close button event listener');
+    closeButton.addEventListener('click', () => {
+      console.log("*** EDITOR: Close button clicked");
+      // Check if there are unsaved changes
+      if (documentChanged) {
+        const confirmClose = confirm('You have unsaved changes. Close anyway?');
+        if (!confirmClose) return;
+      }
+      
+      // Close the window via IPC
+      if (window.electronAPI && window.electronAPI.closeEditorDialog) {
+        window.electronAPI.closeEditorDialog();
+      } else {
+        console.error('electronAPI not available or closeEditorDialog method not found');
+      }
+    });
+  } else {
+    console.error('Close button element not found!');
+  }
   
   // Font size change
   fontSizeSelect.addEventListener('change', updateFontSize);
@@ -409,20 +427,6 @@ async function saveFile(saveAs = false) {
   } catch (error) {
     console.error('Error saving file:', error);
     showNotification('Error saving file: ' + error.message);
-  }
-}
-
-// Close the editor dialog
-function closeEditor() {
-  console.log('> > > Closing editor');
-  if (documentChanged) {
-    const confirmClose = confirm('You have unsaved changes. Close anyway?');
-    if (!confirmClose) return;
-  }
-  console.dir(window.electronAPI);
-  console.dir(window.electronAPI.closeEditorDialog);
-  if (window.electronAPI && window.electronAPI.closeEditorDialog) {
-    window.electronAPI.closeEditorDialog();
   }
 }
 

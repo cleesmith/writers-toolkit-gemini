@@ -1,3 +1,5 @@
+// preload.js
+
 const { contextBridge, ipcRenderer } = require('electron');
 
 // Expose protected methods that allow the renderer process to use
@@ -47,7 +49,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Editor dialog functions
   showEditorDialog: (filePath) => ipcRenderer.send('show-editor-dialog', filePath),
   saveFile: (data) => ipcRenderer.invoke('save-file', data),
-  closeEditorDialog: () => ipcRenderer.send('close-editor-dialog'),
+  closeEditorDialog: () => {
+    console.log("PRELOAD: Sending close-editor-dialog IPC");
+    ipcRenderer.send('close-editor-dialog');
+  },
+
   onFileOpened: (callback) => ipcRenderer.on('file-opened', (_, data) => callback(data)),
   
   onSetTheme: (callback) => ipcRenderer.on('set-theme', (_, theme) => callback(theme)),
