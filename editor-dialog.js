@@ -126,60 +126,96 @@ function setupControlEvents() {
   
   // Open file button
   if (openButton) {
+    // openButton.addEventListener('click', () => {
+    //   console.log('Open button clicked');
+    //   if (documentChanged) {
+    //     const confirmOpen = confirm('You have unsaved changes. Open a different file anyway?');
+    //     if (!confirmOpen) return;
+    //   }
+      
+    //   if (window.electronAPI && window.electronAPI.selectFile) {
+    //     window.electronAPI.selectFile({
+    //       title: 'Open File',
+    //       filters: [
+    //         { name: 'Text Files', extensions: ['txt', 'md'] },
+    //         { name: 'All Files', extensions: ['*'] }
+    //       ]
+    //     }).then(filePath => {
+    //       if (filePath) {
+    //         openFile(filePath);
+    //       }
+    //     }).catch(err => {
+    //       console.error('Error selecting file:', err);
+    //       showNotification('Error selecting file: ' + err.message);
+    //     });
+    //   } else {
+    //     console.error('electronAPI not available or selectFile method not found');
+    //   }
+    // });
+    // openButton.addEventListener('click', () => {
+    //   console.log('*** Open button clicked');
+    //   if (documentChanged) {
+    //     const confirmOpen = confirm('You have unsaved changes. Open a different file anyway?');
+    //     if (!confirmOpen) return;
+    //   }
+      
+    //   if (window.electronAPI && window.electronAPI.selectFile) {
+    //     window.electronAPI.selectFile({
+    //       title: 'Open File',
+    //       filters: [
+    //         { name: 'Text Files', extensions: ['txt', 'md'] }
+    //       ]
+    //     }).then(filePath => {
+    //       if (filePath) {
+    //         openFile(filePath);
+    //       }
+    //     }).catch(err => {
+    //       console.error('Error selecting file:', err);
+    //       showNotification('Error selecting file: ' + err.message);
+    //     });
+    //   } else {
+    //     console.error('electronAPI not available or selectFile method not found');
+    //     showNotification('Error: File selection API not available');
+    //   }
+    // });
     openButton.addEventListener('click', () => {
-      console.log('Open button clicked');
+      console.log('*** Open button clicked');
+      
       if (documentChanged) {
         const confirmOpen = confirm('You have unsaved changes. Open a different file anyway?');
         if (!confirmOpen) return;
       }
       
+      console.log('*** Checking for electronAPI.selectFile');
       if (window.electronAPI && window.electronAPI.selectFile) {
+        console.log('*** electronAPI.selectFile found, calling it now');
         window.electronAPI.selectFile({
           title: 'Open File',
           filters: [
-            { name: 'Text Files', extensions: ['txt', 'md'] },
-            { name: 'All Files', extensions: ['*'] }
+            { name: 'Text Files', extensions: ['txt', 'md'] }
           ]
-        }).then(filePath => {
+        })
+        .then(filePath => {
+          console.log('*** selectFile returned:', filePath);
           if (filePath) {
+            console.log('*** Calling openFile with:', filePath);
             openFile(filePath);
           }
-        }).catch(err => {
-          console.error('Error selecting file:', err);
+        })
+        .catch(err => {
+          console.error('*** Error selecting file:', err);
           showNotification('Error selecting file: ' + err.message);
         });
       } else {
-        console.error('electronAPI not available or selectFile method not found');
+        console.error('*** electronAPI not available or selectFile method not found');
+        console.log('electronAPI available?', !!window.electronAPI);
+        console.log('selectFile available?', !!(window.electronAPI && window.electronAPI.selectFile));
+        showNotification('Error: File selection API not available');
       }
     });
+
   }
   
-  // Remove Markdown button
-  // removeMarkdownButton.addEventListener('click', () => {
-  //   console.log('Remove Markdown button clicked');
-    
-  //   // Make sure we're in edit mode
-  //   if (!htmlEl.classList.contains('edit-mode')) {
-  //     htmlEl.classList.add('edit-mode');
-  //     modeTooltip.textContent = 'Preview';
-  //   }
-    
-  //   // Get the current content and remove markdown
-  //   const plainText = removeMarkdown(editor.value);
-    
-  //   // Update the editor with plain text
-  //   editor.value = plainText;
-  //   documentChanged = editor.value !== originalContent;
-    
-  //   // Update preview content (even though it's not visible in edit mode)
-  //   updatePreview();
-    
-  //   // Update position and stats
-  //   updatePositionAndStats();
-    
-  //   // Show notification
-  //   showNotification('Markdown removed');
-  // });
   // Modified Remove Markdown button handler with confirmation dialog
   removeMarkdownButton.addEventListener('click', () => {
     console.log('Remove Markdown button clicked');
@@ -422,6 +458,24 @@ function updatePreviewDebounced() {
 }
 
 // Open a file
+// async function openFile(filePath) {
+//   console.log('Opening file:', filePath);
+//   try {
+//     if (window.electronAPI && window.electronAPI.openFileInEditor) {
+//       const result = await window.electronAPI.openFileInEditor(filePath);
+//       if (!result.success) {
+//         console.error('Error in openFileInEditor:', result.error);
+//         showNotification('Error opening file: ' + (result.error || 'Unknown error'));
+//       }
+//     } else {
+//       console.error('electronAPI not available or openFileInEditor method not found');
+//     }
+//   } catch (error) {
+//     console.error('Error opening file:', error);
+//     showNotification('Error opening file: ' + error.message);
+//   }
+// }
+// Function to open a file
 async function openFile(filePath) {
   console.log('Opening file:', filePath);
   try {

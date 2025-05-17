@@ -1162,6 +1162,7 @@ function setupIPCHandlers() {
   //   }
   // });
   ipcMain.handle('select-file', async (event, options) => {
+    console.log('*** select-file handler called in main process with options:', options);
     try {
       // Ensure base directory is inside ~/writing
       const homePath = os.homedir();
@@ -1196,7 +1197,7 @@ function setupIPCHandlers() {
       };
       
       const result = await dialog.showOpenDialog(
-        options.parentWindow || toolSetupRunWindow || mainWindow, 
+        options.parentWindow || editorDialogWindow || toolSetupRunWindow || mainWindow, 
         dialogOptions
       );
       
