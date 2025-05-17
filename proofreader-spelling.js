@@ -92,7 +92,7 @@ class ProofreaderSpelling extends BaseTool {
       let fullResponse = "";
       
       try {
-        console.dir(this.apiService);
+        // console.dir(this.apiService);
         //                    ******************
         await this.apiService.streamWithThinking(
           prompt,

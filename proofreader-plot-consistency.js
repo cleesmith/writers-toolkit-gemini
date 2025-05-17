@@ -96,7 +96,7 @@ class ProofreaderPlotConsistency extends BaseTool {
       const systemPrompt = "You are a meticulous proofreader. Be thorough and careful. DO NOT use any Markdown formatting - no headers, bullets, numbering, asterisks, hyphens, or any formatting symbols. Plain text only. You must find and report ALL errors, even small ones.";
 
       try {
-        console.dir(this.apiService);
+        // console.dir(this.apiService);
         //                    ******************
         await this.apiService.streamWithThinking(
           prompt,
