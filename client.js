@@ -36,8 +36,8 @@ class AiApiService {
     this.client = new GoogleGenAI({
       apiKey: apiKeyFromEnv
     });
-    console.log(`AiApiService: config:`);
-    console.dir(this.config);
+    // console.log(`AiApiService: config:`);
+    // console.dir(this.config);
   }
 
   /**
@@ -51,7 +51,9 @@ class AiApiService {
 
     try {
       const modelInfo = await this.client.models.get({ model: this.config.model_name });
+      console.log(`\nthis.client.models.get:`);
       console.dir(modelInfo);
+      console.log(`\n`);
       return true;
     } catch (error) {
       console.error(`API verification failed for model:\n${this.config.model_name}:\n${error.message}\n`);

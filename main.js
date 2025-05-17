@@ -306,7 +306,7 @@ const menuTemplate = [
 // Set the application menu
 const menu = Menu.buildFromTemplate(menuTemplate);
 Menu.setApplicationMenu(menu);
-// cls: this removes the menu, but copy/paste fails:
+// cls: this removes the menu, but copy/paste fails = keep it:
 // Menu.setApplicationMenu(null);
 
 // Function to create project selection dialog
@@ -1049,7 +1049,6 @@ ipcMain.on('close-editor-dialog', () => {
   if (editorDialogWindow && !editorDialogWindow.isDestroyed()) {
     editorDialogWindow.destroy();
     editorDialogWindow = null;
-    console.log("MAIN: Editor window successfully destroyed");
   } else {
     console.log("MAIN: editorDialogWindow was missing or destroyed already.");
   }
@@ -1106,75 +1105,7 @@ function setupIPCHandlers() {
   });
   
   // File selection dialog
-  // ipcMain.handle('select-file', async (event, options) => {
-  //   try {
-  //     // Ensure base directory is inside ~/writing
-  //     const homePath = os.homedir();
-  //     const writingPath = path.join(homePath, 'writing');
-  //     let startPath = options.defaultPath || appState.DEFAULT_SAVE_DIR || writingPath;
-      
-  //     // Force path to be within ~/writing
-  //     if (!startPath.startsWith(writingPath)) {
-  //       startPath = writingPath;
-  //     }
-      
-  //     // Set default filters to only show .txt files
-  //     const defaultFilters = [
-  //       { name: 'Text Files', extensions: ['txt'] },
-  //       { name: 'All Files', extensions: ['*'] }
-  //     ];
-      
-  //     // For tokens_words_counter.js, only allow .txt files
-  //     if (currentTool === 'tokens_words_counter') {
-  //       // Only use text files filter for this tool
-  //       options.filters = [{ name: 'Text Files', extensions: ['txt', 'md'] }];
-  //     }
-      
-  //     const dialogOptions = {
-  //       title: options.title || 'Select File',
-  //       defaultPath: startPath,
-  //       buttonLabel: options.buttonLabel || 'Select',
-  //       filters: options.filters || defaultFilters,
-  //       properties: ['openFile'],
-  //       // Restrict to ~/writing directory
-  //       message: 'Please select a file within your writing projects'
-  //     };
-      
-  //     const result = await dialog.showOpenDialog(
-  //       options.parentWindow || toolSetupRunWindow || mainWindow, 
-  //       dialogOptions
-  //     );
-      
-  //     if (result.canceled || result.filePaths.length === 0) {
-  //       return null;
-  //     }
-      
-  //     const selectedPath = result.filePaths[0];
-      
-  //     // Verify the selected path is within ~/writing directory
-  //     if (!selectedPath.startsWith(writingPath)) {
-  //       console.warn('Selected file is outside allowed directory:', selectedPath);
-        
-  //       // Show error dialog to user
-  //       await dialog.showMessageBox(toolSetupRunWindow || mainWindow, {
-  //         type: 'error',
-  //         title: 'Invalid File Selection',
-  //         message: 'File Selection Restricted',
-  //         detail: `You must select a file within the ~/writing directory. Please try again.`,
-  //         buttons: ['OK']
-  //       });
-        
-  //       return null;
-  //     }
-      
-  //     return selectedPath;
-  //   } catch (error) {
-  //     console.error('Error in file selection:', error);
-  //     throw error;
-  //   }
-  // });
   ipcMain.handle('select-file', async (event, options) => {
-    console.log('*** select-file handler called in main process with options:', options);
     try {
       // Ensure base directory is inside ~/writing
       const homePath = os.homedir();
@@ -1452,6 +1383,7 @@ function setupIPCHandlers() {
       };
     }
   });
+
   // Convert TXT to DOCX - using minimal, version-compatible approach
   ipcMain.handle('convert-txt-to-docx', async (event, txtPath, outputFilename) => {
     try {
