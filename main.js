@@ -1034,7 +1034,6 @@ function createEditorDialog(fileToOpen = null) {
 
 // Make sure we properly handle the IPC for closing the editor window
 ipcMain.on('close-editor-dialog', () => {
-  console.log("*** MAIN: Received close-editor-dialog IPC");
   if (editorDialogWindow && !editorDialogWindow.isDestroyed()) {
     editorDialogWindow.destroy();
     editorDialogWindow = null;
@@ -1066,22 +1065,7 @@ function setupIPCHandlers() {
   });
   
   // Close editor dialog
-  // ipcMain.on('close-editor-dialog', () => {
-  //   console.log('close-editor-dialog');
-  //   if (editorDialogWindow && !editorDialogWindow.isDestroyed()) {
-  //     editorDialogWindow.destroy();
-  //     editorDialogWindow = null;
-  //   }
-  // });
-  // ipcMain.on('close-editor-dialog', (event) => {
-  //   console.log('close-editor-dialog event received!');
-  //   const win = BrowserWindow.fromWebContents(event.sender);
-  //   if (win && !win.isDestroyed()) {
-  //     win.destroy(); // or win.close()
-  //   }
-  // });
   ipcMain.on('close-editor-dialog', () => {
-    console.log("*** MAIN: Received close-editor-dialog IPC");
     if (editorDialogWindow && !editorDialogWindow.isDestroyed()) {
       editorDialogWindow.destroy();
       editorDialogWindow = null;
