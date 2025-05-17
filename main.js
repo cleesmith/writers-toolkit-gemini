@@ -51,7 +51,7 @@ if (isPackaged) {
   console.log(`Set global TOOLS_DIR to: ${global.TOOLS_DIR}`);
 }
 
-// Only one whenReady that does everything in proper sequence
+// The only one "whenReady" that does everything in proper sequence
 app.whenReady().then(() => {
   // 1. Set App User Model ID first
   app.setAppUserModelId("com.slipthetrap.writerstoolkit");
@@ -68,6 +68,7 @@ app.whenReady().then(() => {
   // 3. Initialize the app
   initializeApp();
 });
+
 async function initializeApp() {
   try {
     await appState.initialize();
@@ -227,30 +228,41 @@ if (isPackaged) {
   logToFile(`Resources path: ${path.join(app.getAppPath(), '..')}`);
 }
 
+// May 2025 = not needed for Gemini API:
 // Define Gemini API schema globally
-const GEMINI_API_SCHEMA = [
-  { name: 'max_retries',            label: 'Max Retries',                       type: 'number', default: 1,       required: true,  description: 'Maximum retry attempts if an API call fails.' },
-  { name: 'request_timeout',        label: 'Request Timeout (seconds)',         type: 'number', default: 300,     required: true,  description: 'Seconds to wait for the API to respond.' },
-  { name: 'model_name',             label: 'Model Name',                        type: 'text',   default: 'gemini-2.5-pro-preview-05-06', required: true, description: 'Exact model identifier.' },
-  { name: 'max_tokens',             label: 'Max Tokens',                   type: 'number', default: 128000,  required: true,  description: 'Absolute cap for output tokens.' }
-];
+// const GEMINI_API_SCHEMA = [
+//   { name: 'max_retries',            label: 'Max Retries',                       type: 'number', default: 1,       required: true,  description: 'Maximum retry attempts if an API call fails.' },
+//   { name: 'request_timeout',        label: 'Request Timeout (seconds)',         type: 'number', default: 300,     required: true,  description: 'Seconds to wait for the API to respond.' },
+//   { name: 'model_name',             label: 'Model Name',                        type: 'text',   default: 'gemini-2.5-pro-preview-05-06', required: true, description: 'Exact model identifier.' },
+//   { name: 'max_tokens',             label: 'Max Tokens',                   type: 'number', default: 128000,  required: true,  description: 'Absolute cap for output tokens.' }
+// ];
+// const GEMINI_API_SCHEMA = [
+//   { name: 'model_name',
+//     label: 'Model Name',
+//     type: 'text',
+//     default: 'gemini-2.5-pro-preview-05-06',
+//     required: true,
+//     description: 'Exact model identifier.' 
+//   },
+// ];
 
 // Global function to get complete settings 
 function getCompleteApiSettings() {
+  // cls: not needed for Gemini, so just a placeholder!
   // Start with an empty settings object
   const completeSettings = {};
   
-  // Add all default values from the schema
-  GEMINI_API_SCHEMA.forEach(setting => {
-    completeSettings[setting.name] = setting.default;
-  });
+  // // Add all default values from the schema
+  // GEMINI_API_SCHEMA.forEach(setting => {
+  //   completeSettings[setting.name] = setting.default;
+  // });
   
-  // Override with any existing user settings
-  if (appState.settings_ai_api_configuration) {
-    for (const key in appState.settings_ai_api_configuration) {
-      completeSettings[key] = appState.settings_ai_api_configuration[key];
-    }
-  }
+  // // Override with any existing user settings
+  // if (appState.settings_ai_api_configuration) {
+  //   for (const key in appState.settings_ai_api_configuration) {
+  //     completeSettings[key] = appState.settings_ai_api_configuration[key];
+  //   }
+  // }
   
   return completeSettings;
 }

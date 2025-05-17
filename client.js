@@ -36,6 +36,8 @@ class AiApiService {
     this.client = new GoogleGenAI({
       apiKey: apiKeyFromEnv
     });
+    console.log(`AiApiService: config:`);
+    console.dir(this.config);
   }
 
   /**

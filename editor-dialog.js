@@ -1,4 +1,4 @@
-// editor-dialog.js - Modified to set preview as default mode
+// editor-dialog.js
 
 // DOM Elements - Reference these after DOM is fully loaded
 let editor;
@@ -31,25 +31,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize DOM references
   initDomReferences();
   
-  // CHANGE: No longer setting edit mode as default
-  // Instead, we'll update the preview and tooltip for preview mode
-  
   // Set up editor event listeners
   setupEditorEvents();
   
   // Set up UI control event listeners
   setupControlEvents();
   
-  // Initialize the font size from select element
   updateFontSize();
-  
-  // Initialize word wrap
   updateWordWrap();
-  
-  // CHANGE: Update the preview content for initial preview mode
   updatePreview();
   
-  // CHANGE: Set the mode tooltip to "Edit" since we start in preview mode
+  // set the mode tooltip to "Edit" since we start in preview mode
   if (modeTooltip) {
     modeTooltip.textContent = 'Edit';
   }
@@ -126,69 +118,14 @@ function setupControlEvents() {
   
   // Open file button
   if (openButton) {
-    // openButton.addEventListener('click', () => {
-    //   console.log('Open button clicked');
-    //   if (documentChanged) {
-    //     const confirmOpen = confirm('You have unsaved changes. Open a different file anyway?');
-    //     if (!confirmOpen) return;
-    //   }
-      
-    //   if (window.electronAPI && window.electronAPI.selectFile) {
-    //     window.electronAPI.selectFile({
-    //       title: 'Open File',
-    //       filters: [
-    //         { name: 'Text Files', extensions: ['txt', 'md'] },
-    //         { name: 'All Files', extensions: ['*'] }
-    //       ]
-    //     }).then(filePath => {
-    //       if (filePath) {
-    //         openFile(filePath);
-    //       }
-    //     }).catch(err => {
-    //       console.error('Error selecting file:', err);
-    //       showNotification('Error selecting file: ' + err.message);
-    //     });
-    //   } else {
-    //     console.error('electronAPI not available or selectFile method not found');
-    //   }
-    // });
-    // openButton.addEventListener('click', () => {
-    //   console.log('*** Open button clicked');
-    //   if (documentChanged) {
-    //     const confirmOpen = confirm('You have unsaved changes. Open a different file anyway?');
-    //     if (!confirmOpen) return;
-    //   }
-      
-    //   if (window.electronAPI && window.electronAPI.selectFile) {
-    //     window.electronAPI.selectFile({
-    //       title: 'Open File',
-    //       filters: [
-    //         { name: 'Text Files', extensions: ['txt', 'md'] }
-    //       ]
-    //     }).then(filePath => {
-    //       if (filePath) {
-    //         openFile(filePath);
-    //       }
-    //     }).catch(err => {
-    //       console.error('Error selecting file:', err);
-    //       showNotification('Error selecting file: ' + err.message);
-    //     });
-    //   } else {
-    //     console.error('electronAPI not available or selectFile method not found');
-    //     showNotification('Error: File selection API not available');
-    //   }
-    // });
     openButton.addEventListener('click', () => {
-      console.log('*** Open button clicked');
       
       if (documentChanged) {
         const confirmOpen = confirm('You have unsaved changes. Open a different file anyway?');
         if (!confirmOpen) return;
       }
       
-      console.log('*** Checking for electronAPI.selectFile');
       if (window.electronAPI && window.electronAPI.selectFile) {
-        console.log('*** electronAPI.selectFile found, calling it now');
         window.electronAPI.selectFile({
           title: 'Open File',
           filters: [
@@ -196,14 +133,12 @@ function setupControlEvents() {
           ]
         })
         .then(filePath => {
-          console.log('*** selectFile returned:', filePath);
           if (filePath) {
-            console.log('*** Calling openFile with:', filePath);
             openFile(filePath);
           }
         })
         .catch(err => {
-          console.error('*** Error selecting file:', err);
+          console.error('Error selecting file:', err);
           showNotification('Error selecting file: ' + err.message);
         });
       } else {
@@ -218,8 +153,6 @@ function setupControlEvents() {
   
   // Modified Remove Markdown button handler with confirmation dialog
   removeMarkdownButton.addEventListener('click', () => {
-    console.log('Remove Markdown button clicked');
-    
     // Show confirmation dialog
     const confirmRemove = confirm(
       'Warning: Removing Markdown formatting is permanent and cannot be undone.\n\n' +
@@ -258,21 +191,17 @@ function setupControlEvents() {
   
   // Save button
   saveButton.addEventListener('click', () => {
-    console.log('Save button clicked');
     saveFile(false);
   });
   
   // Save As button
   saveAsButton.addEventListener('click', () => {
-    console.log('Save As button clicked');
     saveFile(true);
   });
   
   // Close button - Make sure close button exists before adding listener
   if (closeButton) {
-    console.log('Adding close button event listener');
     closeButton.addEventListener('click', () => {
-      console.log("*** EDITOR: Close button clicked");
       // Check if there are unsaved changes
       if (documentChanged) {
         const confirmClose = confirm('You have unsaved changes. Close anyway?');
@@ -299,7 +228,6 @@ function setupControlEvents() {
 
 // Toggle between edit and preview modes
 function toggleEditMode() {
-  console.log('Toggle edit mode');
   htmlEl.classList.toggle('edit-mode');
   const isEditMode = htmlEl.classList.contains('edit-mode');
   
@@ -314,7 +242,6 @@ function toggleEditMode() {
 
 // Update preview content with rendered markdown
 function updatePreview() {
-  console.log('Updating preview');
   try {
     // Simple markdown to HTML conversion
     const html = simpleMarkdownToHtml(editor.value);
@@ -327,8 +254,6 @@ function updatePreview() {
 
 // RemoveMarkdown function - Comprehensive markdown removal
 function removeMarkdown(md, options) {
-  console.log('Removing markdown from text');
-  
   // Set default options if none provided
   options = options || {};
   options.listUnicodeChar = options.hasOwnProperty('listUnicodeChar') ? options.listUnicodeChar : false;
@@ -458,26 +383,7 @@ function updatePreviewDebounced() {
 }
 
 // Open a file
-// async function openFile(filePath) {
-//   console.log('Opening file:', filePath);
-//   try {
-//     if (window.electronAPI && window.electronAPI.openFileInEditor) {
-//       const result = await window.electronAPI.openFileInEditor(filePath);
-//       if (!result.success) {
-//         console.error('Error in openFileInEditor:', result.error);
-//         showNotification('Error opening file: ' + (result.error || 'Unknown error'));
-//       }
-//     } else {
-//       console.error('electronAPI not available or openFileInEditor method not found');
-//     }
-//   } catch (error) {
-//     console.error('Error opening file:', error);
-//     showNotification('Error opening file: ' + error.message);
-//   }
-// }
-// Function to open a file
 async function openFile(filePath) {
-  console.log('Opening file:', filePath);
   try {
     if (window.electronAPI && window.electronAPI.openFileInEditor) {
       const result = await window.electronAPI.openFileInEditor(filePath);
@@ -496,7 +402,6 @@ async function openFile(filePath) {
 
 // Save file (save or save as)
 async function saveFile(saveAs = false) {
-  console.log('Saving file, saveAs:', saveAs);
   if (!window.electronAPI || !window.electronAPI.saveFile) {
     console.error('saveFile API not available');
     showNotification('Error: API not available');
@@ -505,8 +410,6 @@ async function saveFile(saveAs = false) {
   
   try {
     const content = editor.value;
-    
-    console.log('Calling saveFile IPC method');
     const result = await window.electronAPI.saveFile({
       filePath: currentFilePath,
       content,
@@ -514,7 +417,6 @@ async function saveFile(saveAs = false) {
     });
     
     if (result && result.success) {
-      console.log('File saved successfully:', result.filePath);
       currentFilePath = result.filePath;
       filepath.textContent = currentFilePath;
       filepath.title = currentFilePath; // For tooltip on hover
@@ -533,7 +435,6 @@ async function saveFile(saveAs = false) {
 
 // Show a notification popup
 function showNotification(message, duration = 2000) {
-  console.log('Showing notification:', message);
   notification.textContent = message;
   notification.classList.add('visible');
   
@@ -545,7 +446,6 @@ function showNotification(message, duration = 2000) {
 // Update font size
 function updateFontSize() {
   const fontSize = fontSizeSelect.value + 'px';
-  console.log('Setting font size:', fontSize);
   editor.style.fontSize = fontSize;
   preview.style.fontSize = fontSize;
 }
@@ -553,7 +453,6 @@ function updateFontSize() {
 // Toggle word wrap
 function toggleWordWrap() {
   isWordWrapEnabled = !isWordWrapEnabled;
-  console.log('Toggling word wrap, now:', isWordWrapEnabled ? 'ON' : 'OFF');
   updateWordWrap();
 }
 
@@ -591,9 +490,8 @@ function countWords(text) {
 
 // Handle file opened message from main process
 if (window.electronAPI && window.electronAPI.onFileOpened) {
-  console.log('Registering onFileOpened handler');
   window.electronAPI.onFileOpened((data) => {
-    console.log('File opened event received:', data.filePath);
+    // console.log('File opened event received:', data.filePath);
     if (data && data.filePath && data.content !== undefined) {
       currentFilePath = data.filePath;
       editor.value = data.content;
@@ -619,9 +517,7 @@ if (window.electronAPI && window.electronAPI.onFileOpened) {
 
 // Handle theme changes from main process
 if (window.electronAPI && window.electronAPI.onSetTheme) {
-  console.log('Registering onSetTheme handler');
   window.electronAPI.onSetTheme(theme => {
-    console.log('Theme change event received:', theme);
     if (theme === 'light') {
       htmlEl.setAttribute('data-theme', 'light');
     } else {
@@ -632,5 +528,4 @@ if (window.electronAPI && window.electronAPI.onSetTheme) {
   console.error('electronAPI not available or onSetTheme method not found');
 }
 
-// Log initialization
 console.log('Editor dialog script loaded');
