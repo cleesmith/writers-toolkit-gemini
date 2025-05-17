@@ -170,7 +170,7 @@ async function loadAiTools() {
   }
   
   // Define tool categories
-  const topTools = ["tokens_words_counter", "narrative_integrity", "developmental_editing", "line_editing", "copy_editing", "proofreader_spelling", "proofreader_plot_consistency", "manuscript_to_outline_characters_world"];
+  const topTools = ["tokens_words_counter", "narrative_integrity", "developmental_editing", "line_editing", "copy_editing", "proofreader_spelling", "punctuation_auditor", "proofreader_plot_consistency", "manuscript_to_outline_characters_world"];
   const roughDraftTools = ["brainstorm", "outline_writer", "world_writer", "chapter_writer"];
   
   // Track which tools have been added to avoid duplicates

@@ -4,7 +4,6 @@ const path = require('path');
 const fileCache = require('./file-cache');
 const appState = require('./state.js');
 const fs = require('fs/promises');
-const textProcessor = require('./textProcessor');
 
 /**
  * Proofreader Plot Consistency Tool
@@ -53,7 +52,6 @@ class ProofreaderPlotConsistency extends BaseTool {
       const manuscriptContent = await this.readInputFile(manuscriptFile);
       const manuscriptWordCount = this.countWords(manuscriptContent);
       const manuscriptTokens = await this.apiService.countTokens(manuscriptContent);
-      const manuscriptWithoutChapterHeaders = textProcessor.processText(manuscriptContent)
 
       //                                          *******************
       const prepareResult = await this.apiService.prepareFileAndCache(manuscriptFile);
@@ -69,7 +67,7 @@ class ProofreaderPlotConsistency extends BaseTool {
         });
       }
       
-      const prompt = this.createFullPrompt(manuscriptWithoutChapterHeaders, language);
+      const prompt = this.createFullPrompt(manuscriptContent, language);
       const promptTokens = await this.apiService.countTokens(prompt);
 
       this.emitOutput(`Reading manuscript file: ${manuscriptFile}\n`);
@@ -91,9 +89,6 @@ class ProofreaderPlotConsistency extends BaseTool {
       const startTime = Date.now();
       let fullResponse = "";
       let thinkingContent = "";
-      
-      // Create system prompt - more explicit guidance
-      const systemPrompt = "You are a meticulous proofreader. Be thorough and careful. DO NOT use any Markdown formatting - no headers, bullets, numbering, asterisks, hyphens, or any formatting symbols. Plain text only. You must find and report ALL errors, even small ones.";
 
       try {
         // console.dir(this.apiService);
@@ -292,12 +287,11 @@ Prompt tokens: ${promptTokens}
 Response tokens: ${responseTokens}
 
 ${content}`;
-
       
       // Save full response
       const reportFilename = `${baseFilename}.txt`;
       const reportPath = path.join(saveDir, reportFilename);
-      await this.writeOutputFile(content, saveDir, reportFilename);
+      await this.writeOutputFile(reportWithStats, saveDir, reportFilename);
       savedFilePaths.push(reportPath);
       this.emitOutput(`Report saved to: ${reportPath}\n`);
       return savedFilePaths;

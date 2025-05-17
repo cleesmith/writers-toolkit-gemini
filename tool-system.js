@@ -102,6 +102,7 @@ const DevelopmentalEditing = loadToolClass('developmental-editing');
 const LineEditing = loadToolClass('line-editing');
 const CopyEditing = loadToolClass('copy_editing');
 const ProofreaderSpelling = loadToolClass('proofreader-spelling');
+const PunctuationAuditor = loadToolClass('punctuation-auditor');
 const ProofreaderPlotConsistency = loadToolClass('proofreader-plot-consistency');
 const CharacterAnalyzer = loadToolClass('character-analyzer');
 const TenseConsistencyChecker = loadToolClass('tense-consistency-checker');
@@ -109,7 +110,6 @@ const AdjectiveAdverbOptimizer = loadToolClass('adjective-adverb-optimizer');
 const DanglingModifierChecker = loadToolClass('dangling-modifier-checker');
 const RhythmAnalyzer = loadToolClass('rhythm-analyzer');
 const CrowdingLeapingEvaluator = loadToolClass('crowding-leaping-evaluator');
-const PunctuationAuditor = loadToolClass('punctuation-auditor');
 const ConflictAnalyzer = loadToolClass('conflict-analyzer');
 const ForeshadowingTracker = loadToolClass('foreshadowing-tracker');
 const PlotThreadTracker = loadToolClass('plot-thread-tracker');
@@ -307,6 +307,17 @@ const TOOL_DEFS = [
       "required": false,
       "default": "English",
       "group": "Settings"
+    }
+  ]},
+  { id: 'punctuation_auditor', title: `Punctuation Auditor`, description: `Manuscript analysis focused on evaluating punctuation effectiveness.\nIt detects issues such as run-on sentences, missing commas, and irregular punctuation patterns that may hinder clarity and flow.\nConfigurable analysis levels, strictness settings, and selectable punctuation elements enable it to generate a detailed report with examples, explanations, and recommendations for enhancing punctuation and overall readability.`, Class: PunctuationAuditor, options: [
+    {
+      "name": "manuscript_file",
+      "label": "MANUSCRIPT_FILE",
+      "type": "file",
+      "description": "File containing the manuscript to analyze",
+      "required": true,
+      "default": "manuscript.txt",
+      "group": "Input Files"
     }
   ]},
   { id: 'proofreader_plot_consistency', title: `Proofreader Plot Consistency`, description: `Focused solely on plot inconsistencies.`, Class: ProofreaderPlotConsistency, options: [
@@ -641,44 +652,6 @@ const TOOL_DEFS = [
       "label": "sensitivity",
       "type": "text",
       "description": "Sensitivity level for pattern detection (default: medium)\nChoices: low, medium, high",
-      "required": false,
-      "default": "all",
-      "group": "Analysis Options"
-    }
-  ]},
-  { id: 'punctuation_auditor', title: `Punctuation Auditor`, description: `Manuscript analysis utility focused on evaluating punctuation effectiveness.\nIt detects issues such as run-on sentences, missing commas, and irregular punctuation patterns that may hinder clarity and flow.\nConfigurable analysis levels, strictness settings, and selectable punctuation elements enable it to generate a detailed report with examples, explanations, and recommendations for enhancing punctuation and overall readability.`, Class: PunctuationAuditor, options: [
-    {
-      "name": "manuscript_file",
-      "label": "MANUSCRIPT_FILE",
-      "type": "file",
-      "description": "File containing the manuscript to analyze",
-      "required": true,
-      "default": "manuscript.txt",
-      "group": "Input Files"
-    },
-    {
-      "name": "analysis_level",
-      "label": "analysis_level",
-      "type": "text",
-      "description": "Level of analysis detail (default: standard)\nChoices: basic, standard, detailed",
-      "required": false,
-      "default": "all",
-      "group": "Analysis Options"
-    },
-    {
-      "name": "elements",
-      "label": "elements",
-      "type": "text",
-      "description": "Specific punctuation elements to focus on (default: all elements)\nChoices: commas, periods, semicolons, dashes, parentheses, colons, run-ons",
-      "required": false,
-      "default": "all",
-      "group": "Analysis Options"
-    },
-    {
-      "name": "strictness",
-      "label": "strictness",
-      "type": "text",
-      "description": "Strictness level for punctuation analysis (default: medium)\nChoices: low, medium, high",
       "required": false,
       "default": "all",
       "group": "Analysis Options"
@@ -1354,103 +1327,6 @@ async function initializeToolSystem(settings) {
   }
 }
 
-/**
- * Execute a tool by ID
- * @param {string} toolId - Tool ID
- * @param {Object} options - Tool options
- * @returns {Promise<Object>} - Tool execution result
- */
-// async function executeToolById(toolId, options) {
-//   console.log(`Executing tool: ${toolId} with options:`, options);
-  
-//   // Get the tool implementation
-//   const tool = toolRegistry.getTool(toolId);
-  
-//   if (!tool) {
-//     console.error(`Tool not found: ${toolId}`);
-//     throw new Error(`Tool not found: ${toolId}`);
-//   }
-  
-//   // Store the original GeminiAPIService in case we need to restore it
-//   const originalGeminiAPIService = tool.GeminiAiAPIService;
-  
-//   try {
-//     // console.log('*** Client before recreate:', !!tool.GeminiAiAPIService?.client);
-//     // // Only try to recreate if tool has a GeminiAiAPIService
-//     // if (tool.GeminiAiAPIService && typeof tool.GeminiAiAPIService.recreate === 'function') {
-//     //   tool.GeminiAiAPIService.recreate();
-//     // } else {
-//     //   console.log(`Tool ${toolId} does not have a valid AI API service (has GeminiAiAPIService: ${!!tool.GeminiAiAPIService})`);
-//     // }
-    
-//     // console.log('*** Client after recreate:', !!tool.GeminiAiAPIService?.client);
-    
-//     // Execute the tool
-//     console.log(`Starting execution of tool: ${toolId}`);
-//     const result = await tool.execute(options);
-//     console.log(`Tool execution complete: ${toolId}`);
-    
-//     // Close the client after successful execution
-//     // if (tool.GeminiAiAPIService && typeof tool.GeminiAiAPIService.close === 'function') {
-//     //   try {
-//     //     tool.GeminiAiAPIService.close();
-//     //   } catch (error) {
-//     //     console.warn(`Error closing AI API service for tool ${toolId}:`, error);
-//     //   } finally {
-//     //     // Don't set to null here - this might be causing the problem!
-//     //     // tool.GeminiAiAPIService = null;
-//     //   }
-//     // }
-    
-//     return result;
-//   } catch (error) {
-//     console.error(`Error executing tool ${toolId}:`, error);
-    
-//     // Ensure the client is closed even if execution fails
-//     // if (tool && tool.GeminiAPIService && typeof tool.GeminiAPIService.close === 'function') {
-//     //   try {
-//     //     tool.GeminiAPIService.close();
-//     //   } catch (closeError) {
-//     //     console.warn(`Error closing AI API service after execution error:`, closeError);
-//     //   } finally {
-//     //     // Don't set to null here either
-//     //     // tool.GeminiAPIService = null;
-//     //   }
-//     // }
-    
-//     throw error;
-//   }
-// }
-/**
- * Execute a tool by ID
- * @param {string} toolId - Tool ID
- * @param {Object} options - Tool options
- * @param {string} runId - Optional run ID for tracking
- * @returns {Promise<Object>} - Tool execution result
- */
-// async function executeToolById(toolId, options, runId = null) {
-//   console.log(`Executing tool: ${toolId} with options:`, options);
-  
-//   // Get the tool implementation
-//   const tool = toolRegistry.getTool(toolId);
-  
-//   if (!tool) {
-//     console.error(`Tool not found: ${toolId}`);
-//     throw new Error(`Tool not found: ${toolId}`);
-//   }
-  
-//   try {
-//     // Execute the tool
-//     console.log(`Starting execution of tool: ${toolId}`);
-//     const result = await tool.execute(options);
-//     console.log(`Tool execution complete: ${toolId}`);
-    
-//     return result;
-//   } catch (error) {
-//     console.error(`Error executing tool ${toolId}:`, error);
-//     throw error;
-//   }
-// }
 /**
  * Execute a tool by ID
  * @param {string} toolId - Tool ID

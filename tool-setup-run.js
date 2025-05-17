@@ -35,37 +35,6 @@ let setupCompleted = false;
 let currentOptionValues = {};
 let canClose = true; // Flag to control whether the window can be closed
 
-// Initialize when the window loads
-// window.addEventListener('DOMContentLoaded', async () => {
-//   // Get tool info from main process
-//   try {
-//     toolData = await window.electronAPI.getCurrentTool();
-    
-//     if (toolData) {
-//       // Set tool name in both main view and dialog
-//       toolNameElement.textContent = toolData.title || toolData.name;
-//       dialogToolNameElement.textContent = toolData.title || toolData.name;
-//       document.title = `Writer's Toolkit - ${toolData.title || toolData.name}`;
-      
-//       // Get tool options
-//       currentToolOptions = await window.electronAPI.getToolOptions(toolData.name);
-//       console.log('Loaded tool options:', currentToolOptions);
-      
-//       // Disable Run button until setup is completed
-//       runBtn.disabled = true;
-//     } else {
-//       outputElement.textContent = 'Error: No tool selected!';
-//     }
-//   } catch (error) {
-//     console.error('Error loading tool data:', error);
-//     outputElement.textContent = `Error loading tool: ${error.message}`;
-//   }
-  
-//   // Apply theme if one is set
-//   window.electronAPI.onSetTheme((theme) => {
-//     document.body.className = theme === 'light' ? 'light-mode' : 'dark-mode';
-//   });
-// });
 window.addEventListener('DOMContentLoaded', async () => {
   // Get tool info from main process
   try {
