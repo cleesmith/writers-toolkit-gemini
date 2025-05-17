@@ -6,19 +6,19 @@ const appState = require('./state.js');
 const fs = require('fs/promises');
 
 /**
- * Punctuation Auditor Tool
+ * Punctuation Punctuation Tool
  * Analyzes manuscript for punctuation effectiveness using the Claude API.
  * Identifies issues like run-on sentences, missing commas, and odd punctuation patterns
  * that might hinder clarity and flow, following Ursula K. Le Guin's writing principles.
  */
-class PunctuationAuditor extends BaseTool {
+class ProofreaderPunctuation extends BaseTool {
   /**
    * Constructor
    * @param {Object} apiService - AI API service
    * @param {Object} config - Tool configuration
    */
   constructor(apiService, config = {}) {
-    super('punctuation_auditor', config);
+    super('proofreader_punctuation', config);
     this.apiService = apiService;
   }
 
@@ -72,8 +72,7 @@ class PunctuationAuditor extends BaseTool {
       const prompt = this.createFullPrompt(manuscriptContent);
       const promptTokens = await this.apiService.countTokens(prompt);
 
-      this.emitOutput(`>>> Sending request to Claude API (streaming)...\n`);
-
+      this.emitOutput(`\nSending request to AI API . . .\n`);
       this.emitOutput(`****************************************************************************\n`);
       this.emitOutput(`*  Analyzing punctuation effectiveness in your manuscript...               \n`);
       this.emitOutput(`*  This process typically takes several minutes.                           \n`);
@@ -130,7 +129,7 @@ class PunctuationAuditor extends BaseTool {
       outputFiles.push(...outputFile);
       
       // Add files to the cache
-      const toolName = 'punctuation_auditor';
+      const toolName = 'proofreader_punctuation';
       outputFiles.forEach(file => {
         fileCache.addFile(toolName, file);
       });
@@ -288,7 +287,7 @@ Be specific in your examples and suggestions, showing how punctuation can be imp
       const timestamp = new Date().toISOString().replace(/[-:.]/g, '').substring(0, 15);
       
       // Create descriptive filename
-      const baseFilename = `punctuation_auditor_${timestamp}`;
+      const baseFilename = `proofreader_punctuation_${timestamp}`;
       
       // Array to collect all saved file paths
       const savedFilePaths = [];
@@ -315,4 +314,4 @@ ${content}`;
   }
 }
 
-module.exports = PunctuationAuditor;
+module.exports = ProofreaderPunctuation;

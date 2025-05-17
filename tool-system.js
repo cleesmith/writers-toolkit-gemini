@@ -102,7 +102,7 @@ const DevelopmentalEditing = loadToolClass('developmental-editing');
 const LineEditing = loadToolClass('line-editing');
 const CopyEditing = loadToolClass('copy_editing');
 const ProofreaderSpelling = loadToolClass('proofreader-spelling');
-const PunctuationAuditor = loadToolClass('punctuation-auditor');
+const ProofreaderPunctuation = loadToolClass('proofreader-punctuation');
 const ProofreaderPlotConsistency = loadToolClass('proofreader-plot-consistency');
 const CharacterAnalyzer = loadToolClass('character-analyzer');
 const TenseConsistencyChecker = loadToolClass('tense-consistency-checker');
@@ -309,10 +309,10 @@ const TOOL_DEFS = [
       "group": "Settings"
     }
   ]},
-  { id: 'punctuation_auditor', title: `Punctuation Auditor`, description: `Manuscript analysis focused on evaluating punctuation effectiveness.\nIt detects issues such as run-on sentences, missing commas, and irregular punctuation patterns that may hinder clarity and flow.\nConfigurable analysis levels, strictness settings, and selectable punctuation elements enable it to generate a detailed report with examples, explanations, and recommendations for enhancing punctuation and overall readability.`, Class: PunctuationAuditor, options: [
+  { id: 'proofreader_punctuation', title: `Proofreader Punctuation`, description: `Manuscript analysis focused on evaluating punctuation effectiveness.\nIt detects issues such as run-on sentences, missing commas, and irregular punctuation patterns that may hinder clarity and flow.\nConfigurable analysis levels, strictness settings, and selectable punctuation elements enable it to generate a detailed report with examples, explanations, and recommendations for enhancing punctuation and overall readability.`, Class: ProofreaderPunctuation, options: [
     {
       "name": "manuscript_file",
-      "label": "MANUSCRIPT_FILE",
+      "label": "Manuscript File",
       "type": "file",
       "description": "File containing the manuscript to analyze",
       "required": true,
