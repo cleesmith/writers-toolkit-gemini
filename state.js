@@ -121,8 +121,7 @@ class AppState {
       return false;
     }
   }
-  
-  // ... other methods to manage state
+
 }
 
 // Create a singleton instance
@@ -130,3 +129,4 @@ const appStateInstance = new AppState();
 
 // Export the instance with an initialize method
 module.exports = appStateInstance;
+

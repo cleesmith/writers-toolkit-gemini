@@ -1,4 +1,4 @@
-// base-tool.js
+// tool-base.js
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -15,7 +15,6 @@ class BaseTool {
   constructor(name, config = {}) {
     this.name = name;
     this.config = config;
-    // console.log(`BaseTool initialized: ${name}`);
   }
   
   /**

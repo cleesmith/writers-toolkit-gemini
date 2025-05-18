@@ -1,5 +1,5 @@
 // tokens-words-counter.js
-const BaseTool = require('./base-tool');
+const BaseTool = require('./tool-base');
 const path = require('path');
 const fileCache = require('./file-cache');
 const appState = require('./state.js');
@@ -10,6 +10,7 @@ const fs = require('fs').promises;
  */
 class TokensWordsCounter extends BaseTool {
   constructor(apiService, config = {}) {
+    //     this.name              this.config
     super('tokens_words_counter', config);
     this.apiService = apiService;
     // // Assert that cache is available - fail early if missing

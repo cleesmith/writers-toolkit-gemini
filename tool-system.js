@@ -94,7 +94,7 @@ function loadToolClass(toolName) {
   }
 }
 
-// AI based tools:
+// AI tools (mostly editing):
 const TokensWordsCounter = loadToolClass('tokens-words-counter');
 const ManuscriptToOutlineCharactersWorld = loadToolClass('manuscript-to-outline-characters-world');
 const NarrativeIntegrity = loadToolClass('narrative-integrity');
@@ -114,7 +114,9 @@ const ConflictAnalyzer = loadToolClass('conflict-analyzer');
 const ForeshadowingTracker = loadToolClass('foreshadowing-tracker');
 const PlotThreadTracker = loadToolClass('plot-thread-tracker');
 const KdpPublishingPrep = loadToolClass('kdp-publishing-prep');
-const DrunkClaude = loadToolClass('drunk-claude');
+const Drunken = loadToolClass('drunken');
+
+// AI writing tools:
 const BrainstormTool = loadToolClass('brainstorm');
 const OutlineWriter = loadToolClass('outline-writer');
 const WorldWriter = loadToolClass('world-writer');
@@ -335,15 +337,6 @@ const TOOL_DEFS = [
         }
       ],
       "group": "Input Files"
-    },
-    {
-      "name": "language",
-      "label": "Language",
-      "type": "text",
-      "description": "Language for proofreading (e.g., English, Spanish, French)",
-      "required": false,
-      "default": "English",
-      "group": "Settings"
     }
   ]},
   { id: 'plot_thread_tracker', title: `Plot Thread Tracker`, description: `Manuscript analysis utility for identifying and tracking distinct plot threads\u2014revealing how they interconnect, converge, and diverge throughout the narrative.\n It uses text-based representations (with optional ASCII art visualization) and supports configurable analysis depth (basic, detailed, or comprehensive) to produce detailed reports with progression maps, thread connections, and narrative assessments, including manuscript excerpts and recommendations for strengthening the plot architecture.`, Class: PlotThreadTracker, options: [
@@ -795,7 +788,7 @@ const TOOL_DEFS = [
       "group": "Output Options"
     }
   ]},
-  { id: 'drunk_claude', title: `Drunk Claude`, description: `Claude pretends to be drunk while critiquing your manuscript. Sometimes insightful, other times just an annoying drunk.`, Class: DrunkClaude, options: [
+  { id: 'drunken', title: `Drunken`, description: `AI pretends to be drunk while critiquing your manuscript. Sometimes insightful, other times just an annoying drunk.`, Class: Drunken, options: [
     {
       "name": "manuscript_file",
       "label": "MANUSCRIPT_FILE",

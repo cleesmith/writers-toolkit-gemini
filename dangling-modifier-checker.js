@@ -1,5 +1,5 @@
 // dangling-modifier-checker.js
-const BaseTool = require('./base-tool');
+const BaseTool = require('./tool-base');
 const path = require('path');
 const util = require('util');
 const fileCache = require('./file-cache');

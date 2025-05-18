@@ -1,5 +1,5 @@
 // manuscript-to-outline-characters-world.js
-const BaseTool = require('./base-tool');
+const BaseTool = require('./tool-base');
 const path = require('path');
 const fileCache = require('./file-cache');
 const appState = require('./state.js');

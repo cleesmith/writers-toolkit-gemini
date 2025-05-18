@@ -1,5 +1,5 @@
 // epub-converter.js
-const BaseTool = require('./base-tool');
+const BaseTool = require('./tool-base');
 const path = require('path');
 const fs = require('fs');
 const fsPromises = require('fs/promises');

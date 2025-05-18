@@ -1,5 +1,5 @@
 // punctuation-auditor.js
-const BaseTool = require('./base-tool');
+const BaseTool = require('./tool-base');
 const path = require('path');
 const fileCache = require('./file-cache');
 const appState = require('./state.js');
@@ -18,6 +18,7 @@ class ProofreaderPunctuation extends BaseTool {
    * @param {Object} config - Tool configuration
    */
   constructor(apiService, config = {}) {
+    //     this.name                 this.config
     super('proofreader_punctuation', config);
     this.apiService = apiService;
   }
