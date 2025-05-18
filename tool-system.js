@@ -148,7 +148,7 @@ const TOOL_DEFS = [
   { id: 'manuscript_to_outline_characters_world', title: `Manuscript.txt to create: outline, characters, and world files`, description: `Works in reverse to create: outline, characters, and world files given a manuscript. May be useful for pantsers, and old manuscript files.`, Class: ManuscriptToOutlineCharactersWorld, options: [
     {
       "name": "manuscript_file",
-      "label": "MANUSCRIPT_FILE",
+      "label": "Manuscript File",
       "type": "file",
       "description": "File containing the manuscript/narrative to use",
       "required": true,
@@ -159,7 +159,7 @@ const TOOL_DEFS = [
   { id: 'narrative_integrity', title: `Narrative Integrity`, description: `Focused on consistency issues within the entire manuscript, or consistency between the manuscript and the world document and/or the outline.\nThis tool supports various consistency checks: world, internal, development, and unresolved.\nConfigurable options enable targeted analysis of character, setting, timeline, and thematic consistency, producing detailed reports with examples and recommendations for resolving discrepancies.`, Class: NarrativeIntegrity, options: [
     {
       "name": "manuscript_file",
-      "label": "MANUSCRIPT_FILE",
+      "label": "Manuscript File",
       "type": "file",
       "description": "File containing the manuscript/narrative to analyze",
       "required": true,
@@ -342,7 +342,7 @@ const TOOL_DEFS = [
   { id: 'plot_thread_tracker', title: `Plot Thread Tracker`, description: `Manuscript analysis utility for identifying and tracking distinct plot threads\u2014revealing how they interconnect, converge, and diverge throughout the narrative.\n It uses text-based representations (with optional ASCII art visualization) and supports configurable analysis depth (basic, detailed, or comprehensive) to produce detailed reports with progression maps, thread connections, and narrative assessments, including manuscript excerpts and recommendations for strengthening the plot architecture.`, Class: PlotThreadTracker, options: [
     {
       "name": "manuscript_file",
-      "label": "MANUSCRIPT_FILE",
+      "label": "Manuscript File",
       "type": "file",
       "description": "File containing the manuscript to analyze",
       "required": true,
@@ -389,7 +389,7 @@ const TOOL_DEFS = [
   { id: 'tense_consistency_checker', title: `Tense Consistency Checker`, description: `Examines the manuscript to evaluate verb tense consistency. It identifies shifts between past and present tense that might confuse readers, focusing on unintentional changes in narrative flow. With customizable analysis levels and configurable chapter markers, it generates a detailed report with examples, explanations, and suggestions for improving consistency.`, Class: TenseConsistencyChecker, options: [
     {
       "name": "manuscript_file",
-      "label": "MANUSCRIPT_FILE",
+      "label": "Manuscript File",
       "type": "file",
       "description": "File containing the manuscript to analyze (required)",
       "required": true,
@@ -418,7 +418,7 @@ const TOOL_DEFS = [
   { id: 'character_analyzer', title: `Character Analyzer`, description: `Analyzes manuscript, outline, and world files to identify and compare character appearances. It extracts a master character list that details which files each character appears in, examines consistency across documents, and highlights discrepancies in names, roles, or relationships. The analysis produces a detailed report with sections and recommendations to improve character coherence. This is needed because AI rough draft writing has a tendency to add new characters! AI just loves new characters, especially those that whisper and hear echoes.`, Class: CharacterAnalyzer, options: [
     {
       "name": "manuscript_file",
-      "label": "MANUSCRIPT_FILE",
+      "label": "Manuscript File",
       "type": "file",
       "description": "File containing the manuscript to analyze (required)",
       "required": true,
@@ -447,7 +447,7 @@ const TOOL_DEFS = [
   { id: 'adjective_adverb_optimizer', title: `Adjective Adverb Optimizer`, description: `Analyzes manuscript adjective and adverb usage to pinpoint unnecessary modifiers and overused qualifiers, offering specific suggestions for replacing weak descriptive patterns with stronger verbs and nouns, in line with Ursula K. Le Guin's guidance.`, Class: AdjectiveAdverbOptimizer, options: [
     {
       "name": "manuscript_file",
-      "label": "MANUSCRIPT_FILE",
+      "label": "Manuscript File",
       "type": "file",
       "description": "File containing the manuscript to analyze",
       "required": true,
@@ -476,7 +476,7 @@ const TOOL_DEFS = [
   { id: 'dangling_modifier_checker', title: `Dangling Modifier Checker`, description: `Manuscript analysis software that detects dangling and misplaced modifiers.\nIt examines text to pinpoint instances where descriptive phrases don\u2019t logically connect to their intended subjects, potentially causing confusion or unintended humor.\nWith customizable analysis level, sensitivity, and specific modifier types, it generates a detailed report complete with examples, explanations, and revision suggestions to enhance clarity and precision.`, Class: DanglingModifierChecker, options: [
     {
       "name": "manuscript_file",
-      "label": "Select Manuscript file",
+      "label": "Manuscript File",
       "type": "file",
       "description": "File containing the manuscript to analyze",
       "required": true,
@@ -568,7 +568,7 @@ const TOOL_DEFS = [
   { id: 'rhythm_analyzer', title: `Rhythm Analyzer`, description: `Manuscript analysis utility for evaluating the rhythm and flow of prose.\nIt measures sentence length variations, detects monotonous patterns, and highlights sections where the writing\u2019s rhythm doesn\u2019t match the intended mood.\n Configurable analysis levels, selectable scene types, and adjustable sensitivity settings allow it to generate a detailed report with examples, explanations, and suggestions for enhancing overall narrative rhythm.`, Class: RhythmAnalyzer, options: [
     {
       "name": "manuscript_file",
-      "label": "MANUSCRIPT_FILE",
+      "label": "Manuscript File",
       "type": "file",
       "description": "File containing the manuscript to analyze",
       "required": true,
@@ -606,7 +606,7 @@ const TOOL_DEFS = [
   { id: 'crowding_leaping_evaluator', title: `Crowding Leaping Evaluator`, description: `Manuscript pacing evaluator that examines narrative structure for pacing issues.\nIt identifies overly dense sections (crowding) and abrupt transitions or time jumps (leaping) based on concepts inspired by Ursula K. Le Guin.\n With configurable analysis levels and sensitivity settings, it produces a detailed report\u2014including optional text-based visualizations\u2014that offers feedback and suggestions for improving narrative rhythm and clarity.`, Class: CrowdingLeapingEvaluator, options: [
     {
       "name": "manuscript_file",
-      "label": "MANUSCRIPT_FILE",
+      "label": "Manuscript File",
       "type": "file",
       "description": "File containing the manuscript to analyze",
       "required": true,
@@ -653,7 +653,7 @@ const TOOL_DEFS = [
   { id: 'conflict_analyzer', title: `Conflict Analyzer`, description: `Manuscript conflict analysis utility that examines conflict patterns at different narrative levels.\nIt identifies conflict nature, escalation, and resolution at scene, chapter, and arc levels.\nWith customizable analysis levels and selectable conflict types, it produces a detailed report featuring examples, assessments, and recommendations for strengthening narrative tension and coherence.`, Class: ConflictAnalyzer, options: [
     {
       "name": "manuscript_file",
-      "label": "MANUSCRIPT_FILE",
+      "label": "Manuscript File",
       "type": "file",
       "description": "File containing the manuscript to analyze",
       "required": true,
@@ -691,7 +691,7 @@ const TOOL_DEFS = [
   { id: 'foreshadowing_tracker', title: `Foreshadowing Tracker`, description: `Manuscript analysis utility for identifying foreshadowing elements and tracking their payoffs.\n It pinpoints explicit clues, subtle hints, and Chekhov's Gun elements to evaluate how well narrative setups are resolved.\n With customizable options to select foreshadowing types and organization modes (chronological or by type), it generates detailed reports featuring examples, assessments, and recommendations for fulfilling narrative promises.`, Class: ForeshadowingTracker, options: [
     {
       "name": "manuscript_file",
-      "label": "MANUSCRIPT_FILE",
+      "label": "Manuscript File",
       "type": "file",
       "description": "File containing the manuscript to analyze",
       "required": true,
@@ -791,7 +791,7 @@ const TOOL_DEFS = [
   { id: 'drunken', title: `Drunken`, description: `AI pretends to be drunk while critiquing your manuscript. Sometimes insightful, other times just an annoying drunk.`, Class: Drunken, options: [
     {
       "name": "manuscript_file",
-      "label": "MANUSCRIPT_FILE",
+      "label": "Manuscript_File",
       "type": "file",
       "description": "File containing the manuscript to analyze",
       "required": true,
@@ -802,7 +802,7 @@ const TOOL_DEFS = [
   { id: 'brainstorm', title: `Brainstorm`, description: `Helps generate initial story ideas, prompts, and creative angles. Appends more ideas to the existing 'ideas.txt' file.`, Class: BrainstormTool, options: [
     {
       "name": "ideas_file",
-      "label": "IDEAS_FILE",
+      "label": "Ideas File",
       "type": "file",
       "description": "Path to ideas.txt file containing the concept and/or characters",
       "required": true,

@@ -109,21 +109,20 @@ class ToolBase {
       }
       
       const promptTokens = await this.apiService.countTokens(prompt);
-
-      this.emitOutput(`Reading manuscript file: ${manuscriptFile}\n`);
       
-      this.emitOutput(`\nSending request to AI API . . .\n`);
+      this.emitOutput(`\nSending request to AI API . . .`);
+      this.emitOutput(`*\n`);
       this.emitOutput(`\n****************************************************************************\n`);
-      this.emitOutput(`*  Standby running ${this.title} . . .\n`);
-      this.emitOutput(`*  \n`);
+      this.emitOutput(`*  Standby, running ${this.title} . . .\n`);
+      this.emitOutput(`*\n`);
       this.emitOutput(`*  This process typically takes several minutes.\n`);
-      this.emitOutput(`*                                                                          \n`);
+      this.emitOutput(`*\n`);
       this.emitOutput(`*  It's recommended to keep this window the sole 'focus'                   \n`);
       this.emitOutput(`*  and to avoid browsing online or running other apps, as these API        \n`);
       this.emitOutput(`*  network connections are often flakey, like delicate echoes of whispers. \n`);
-      this.emitOutput(`*                                                                          \n`);
+      this.emitOutput(`*\n`);
       this.emitOutput(`*  So breathe, remove eye glasses, stretch, relax, and be like water 🥋 🧘🏽‍♀️\n`);
-      this.emitOutput(`*  \n`);
+      this.emitOutput(`*\n`);
       this.emitOutput(`****************************************************************************\n\n`);
       
       const startTime = Date.now();
@@ -148,15 +147,12 @@ class ToolBase {
       
       this.emitOutput(`\nCompleted in: ⏰ ${minutes}m ${seconds.toFixed(2)}s.\n`);
       
-      // Count words in response
       const wordCount = this.countWords(fullResponse);
       this.emitOutput(`Report has approximately ${wordCount} words.\n`);
       
-      // Count tokens in response
       const responseTokens = await this.apiService.countTokens(fullResponse);
       this.emitOutput(`Response token count: ${responseTokens}\n`);
 
-      // Save the report
       const savedFiles = await this.saveReport(
         fullResponse,
         promptTokens,
