@@ -1,5 +1,5 @@
 // punctuation-auditor.js
-const BaseTool = require('./tool-base');
+const ToolBase = require('./tool-base');
 const path = require('path');
 const fileCache = require('./file-cache');
 const appState = require('./state.js');
@@ -11,7 +11,7 @@ const fs = require('fs/promises');
  * Identifies issues like run-on sentences, missing commas, and odd punctuation patterns
  * that might hinder clarity and flow, following Ursula K. Le Guin's writing principles.
  */
-class ProofreaderPunctuation extends BaseTool {
+class ProofreaderPunctuation extends ToolBase {
   /**
    * Constructor
    * @param {Object} apiService - AI API service

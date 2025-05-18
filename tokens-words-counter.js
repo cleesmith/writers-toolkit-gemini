@@ -1,5 +1,5 @@
 // tokens-words-counter.js
-const BaseTool = require('./tool-base');
+const ToolBase = require('./tool-base');
 const path = require('path');
 const fileCache = require('./file-cache');
 const appState = require('./state.js');
@@ -8,7 +8,7 @@ const fs = require('fs').promises;
 /**
  * Tokens & Words Counter Tool
  */
-class TokensWordsCounter extends BaseTool {
+class TokensWordsCounter extends ToolBase {
   constructor(apiService, config = {}) {
     //     this.name              this.config
     super('tokens_words_counter', config);

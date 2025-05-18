@@ -5,7 +5,7 @@ const path = require('path');
 /**
  * Base class for all tools
  */
-class BaseTool {
+class ToolBase {
 
   /**
    * Constructor
@@ -18,7 +18,7 @@ class BaseTool {
   }
   
   /**
-   * Execute the tool - must be implemented by subclasses
+   * Execute the tool
    * @param {object} options - Tool options
    * @returns {Promise<object>} - Tool execution result
    */
@@ -179,4 +179,4 @@ class BaseTool {
 
 }
 
-module.exports = BaseTool;
+module.exports = ToolBase;

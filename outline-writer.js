@@ -1,5 +1,5 @@
 // outline-writer.js
-const BaseTool = require('./tool-base');
+const ToolBase = require('./tool-base');
 const path = require('path');
 const fileCache = require('./file-cache');
 const appState = require('./state.js');
@@ -10,7 +10,7 @@ const fs = require('fs/promises');
  * Generates a plot outline from your brainstorming file.
  * You can provide your own outline skeleton and let the AI fill in details.
  */
-class OutlineWriter extends BaseTool {
+class OutlineWriter extends ToolBase {
   /**
    * Constructor
    * @param {Object} GeminiAPIService - Claude API service

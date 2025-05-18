@@ -1,5 +1,5 @@
 // epub-converter.js
-const BaseTool = require('./tool-base');
+const ToolBase = require('./tool-base');
 const path = require('path');
 const fs = require('fs');
 const fsPromises = require('fs/promises');
@@ -13,7 +13,7 @@ const xpath = require('xpath');
  * EpubConverter Tool
  * Converts EPUB files to plain text
  */
-class EpubConverter extends BaseTool {
+class EpubConverter extends ToolBase {
   /**
    * Constructor
    * @param {string} name - Tool name

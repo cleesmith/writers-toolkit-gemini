@@ -1,5 +1,5 @@
 // tense-consistency-checker.js
-const BaseTool = require('./tool-base');
+const ToolBase = require('./tool-base');
 const path = require('path');
 const fileCache = require('./file-cache');
 const appState = require('./state.js');
@@ -11,7 +11,7 @@ const fs = require('fs/promises');
  * Identifies shifts between past/present tense that might confuse readers.
  * Unlike character tools, this only analyzes the manuscript itself, not outline/world files.
  */
-class TenseConsistencyChecker extends BaseTool {
+class TenseConsistencyChecker extends ToolBase {
   /**
    * Constructor
    * @param {Object} GeminiAPIService - Claude API service

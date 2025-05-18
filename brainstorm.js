@@ -1,5 +1,5 @@
 // brainstorm.js
-const BaseTool = require('./tool-base');
+const ToolBase = require('./tool-base');
 const path = require('path');
 const fileCache = require('./file-cache');
 const appState = require('./state.js');
@@ -10,7 +10,7 @@ const fs = require('fs/promises');
  * Helps generate initial story ideas, prompts, and creative angles.
  * Appends more ideas to the existing 'ideas.txt' file.
  */
-class BrainstormTool extends BaseTool {
+class BrainstormTool extends ToolBase {
   /**
    * Constructor
    * @param {Object} GeminiAPIService - Claude API service

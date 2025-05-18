@@ -1,5 +1,5 @@
 // manuscript-extractor.js
-const BaseTool = require('./tool-base');
+const ToolBase = require('./tool-base');
 const path = require('path');
 const fileCache = require('./file-cache');
 const appState = require('./state.js');
@@ -10,7 +10,7 @@ const fs = require('fs/promises');
  * Analyzes an existing manuscript and extracts the outline, world elements, and character details
  * to help users transition into the Writer's Toolkit workflow with complete project files.
  */
-class ManuscriptExtractor extends BaseTool {
+class ManuscriptExtractor extends ToolBase {
   /**
    * Constructor
    * @param {Object} GeminiAPIService - Claude API service

@@ -1,5 +1,5 @@
 // plot-thread-tracker.js
-const BaseTool = require('./tool-base');
+const ToolBase = require('./tool-base');
 const path = require('path');
 const util = require('util');
 const fileCache = require('./file-cache');
@@ -11,7 +11,7 @@ const fs = require('fs/promises');
  * Analyzes manuscript to identify and track distinct plot threads using the Claude API.
  * Shows how plot threads interconnect, converge, and diverge throughout the narrative.
  */
-class PlotThreadTracker extends BaseTool {
+class PlotThreadTracker extends ToolBase {
   /**
    * Constructor
    * @param {Object} GeminiAPIService - Claude API service

@@ -1,5 +1,5 @@
 // manuscript-to-outline-characters-world.js
-const BaseTool = require('./tool-base');
+const ToolBase = require('./tool-base');
 const path = require('path');
 const fileCache = require('./file-cache');
 const appState = require('./state.js');
@@ -12,7 +12,7 @@ const fs = require('fs/promises');
  * 2. characters.txt - List of characters from the manuscript
  * 3. world.txt - Description of the world/setting in the manuscript
  */
-class ManuscriptToOutlineCharactersWorld extends BaseTool {
+class ManuscriptToOutlineCharactersWorld extends ToolBase {
   /**
    * Constructor
    * @param {Object} GeminiAPIService - Claude API service

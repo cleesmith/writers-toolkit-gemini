@@ -1,5 +1,5 @@
 // rhythm-analyzer.js
-const BaseTool = require('./tool-base');
+const ToolBase = require('./tool-base');
 const path = require('path');
 const fileCache = require('./file-cache');
 const appState = require('./state.js');
@@ -12,7 +12,7 @@ const fs = require('fs/promises');
  * and highlights passages where the sound doesn't match the intended mood,
  * following Ursula K. Le Guin's writing advice on prose rhythm.
  */
-class RhythmAnalyzer extends BaseTool {
+class RhythmAnalyzer extends ToolBase {
   /**
    * Constructor
    * @param {Object} GeminiAPIService - Claude API service

@@ -1,5 +1,5 @@
 // copy-editing.js
-const BaseTool = require('./tool-base');
+const ToolBase = require('./tool-base');
 const path = require('path');
 const fileCache = require('./file-cache');
 const appState = require('./state.js');
@@ -27,7 +27,7 @@ const textProcessor = require('./textProcessor');
   * "Inconsistent spelling: 'magic-user' (hyphenated) on p.45 but 'magic user' (two words) elsewhere."
   * "Dialogue formatting inconsistent: single quotes in chapter 2, double quotes elsewhere." 
  */
-class CopyEditing extends BaseTool {
+class CopyEditing extends ToolBase {
   /**
    * Constructor
    * @param {Object} GeminiAPIService - Claude API service

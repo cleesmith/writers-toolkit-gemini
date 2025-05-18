@@ -1,5 +1,5 @@
 // developmental-editing.js
-const BaseTool = require('./tool-base');
+const ToolBase = require('./tool-base');
 const path = require('path');
 const fileCache = require('./file-cache');
 const appState = require('./state.js');
@@ -11,7 +11,7 @@ const textProcessor = require('./textProcessor');
  * Analyzes a manuscript for structural foundation issues, including plot holes,
  * character arcs, pacing, narrative viewpoint, themes, worldbuilding, and more.
  */
-class DevelopmentalEditing extends BaseTool {
+class DevelopmentalEditing extends ToolBase {
   /**
    * Constructor
    * @param {Object} GeminiAPIService - Claude API service

@@ -1,5 +1,5 @@
 // adjective-adverb-optimizer.js
-const BaseTool = require('./tool-base');
+const ToolBase = require('./tool-base');
 const path = require('path');
 const fileCache = require('./file-cache');
 const appState = require('./state.js');
@@ -11,7 +11,7 @@ const fs = require('fs/promises');
  * Identifies unnecessary modifiers, overused qualifiers, and suggests stronger verbs/nouns
  * to replace adjective-heavy descriptions, following Ursula K. Le Guin's writing advice.
  */
-class AdjectiveAdverbOptimizer extends BaseTool {
+class AdjectiveAdverbOptimizer extends ToolBase {
   /**
    * Constructor
    * @param {Object} GeminiAPIService - Claude API service

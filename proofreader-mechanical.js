@@ -1,5 +1,5 @@
 // proofreader-mechanical.js
-const BaseTool = require('./tool-base');
+const ToolBase = require('./tool-base');
 const path = require('path');
 const fileCache = require('./file-cache');
 const appState = require('./state.js');
@@ -10,7 +10,7 @@ const fs = require('fs/promises');
  * Analyzes manuscript specifically for mechanical errors (spelling, grammar, punctuation, formatting)
  * without checking for any consistency issues. Designed to work efficiently with large manuscripts.
  */
-class ProofreaderMechanical extends BaseTool {
+class ProofreaderMechanical extends ToolBase {
   /**
    * Constructor
    * @param {Object} apiService - AI API service

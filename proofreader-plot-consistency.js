@@ -1,5 +1,5 @@
 // proofreader-plot-consistency.js
-const BaseTool = require('./tool-base');
+const ToolBase = require('./tool-base');
 const path = require('path');
 const fileCache = require('./file-cache');
 const appState = require('./state.js');
@@ -10,7 +10,7 @@ const fs = require('fs/promises');
  * Tracks narrative elements, world rules, and story logic
  * Utilizes Gemini's file and cache systems for efficient processing of large manuscripts.
  */
-class ProofreaderPlotConsistency extends BaseTool {
+class ProofreaderPlotConsistency extends ToolBase {
   /**
    * Constructor
    * @param {Object} apiService - AI API service

@@ -1,5 +1,5 @@
 // proofreader-spelling.js
-const BaseTool = require('./tool-base');
+const ToolBase = require('./tool-base');
 const path = require('path');
 const fileCache = require('./file-cache');
 const appState = require('./state.js');
@@ -11,7 +11,7 @@ const fs = require('fs/promises');
  * being sensitive to intentional stylistic choices like dialogue and character voice.
  * Utilizes Gemini's file and cache systems for efficient processing of large manuscripts.
  */
-class ProofreaderSpelling extends BaseTool {
+class ProofreaderSpelling extends ToolBase {
   /**
    * Constructor
    * @param {Object} apiService - AI API service

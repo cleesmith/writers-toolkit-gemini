@@ -1,5 +1,5 @@
 // chapter-writer.js
-const BaseTool = require('./tool-base');
+const ToolBase = require('./tool-base');
 const path = require('path');
 const fileCache = require('./file-cache');
 const appState = require('./state.js');
@@ -9,7 +9,7 @@ const fs = require('fs/promises');
  * ChapterWriter Tool
  * Uses the outline, chapters list, world document, and any existing manuscript to write rough draft chapters
  */
-class ChapterWriter extends BaseTool {
+class ChapterWriter extends ToolBase {
   /**
    * Constructor
    * @param {Object} GeminiAPIService - Claude API service

@@ -1,5 +1,5 @@
 // crowding-leaping-evaluator.js
-const BaseTool = require('./tool-base');
+const ToolBase = require('./tool-base');
 const path = require('path');
 const fileCache = require('./file-cache');
 const appState = require('./state.js');
@@ -11,7 +11,7 @@ const fs = require('fs/promises');
  * "crowding" (intense detail) and "leaping" (jumping over time or events).
  * Identifies dense paragraphs, abrupt transitions, and visualizes pacing patterns.
  */
-class CrowdingLeapingEvaluator extends BaseTool {
+class CrowdingLeapingEvaluator extends ToolBase {
   /**
    * Constructor
    * @param {Object} GeminiAPIService - Claude API service

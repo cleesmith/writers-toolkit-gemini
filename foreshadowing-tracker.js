@@ -1,5 +1,5 @@
 // foreshadowing-tracker.js
-const BaseTool = require('./tool-base');
+const ToolBase = require('./tool-base');
 const path = require('path');
 const fileCache = require('./file-cache');
 const appState = require('./state.js');
@@ -10,7 +10,7 @@ const fs = require('fs/promises');
  * Analyzes manuscript for foreshadowing elements, planted clues, and their payoffs using the Claude API.
  * Tracks setup and resolution of story elements, ensuring narrative promises are fulfilled.
  */
-class ForeshadowingTracker extends BaseTool {
+class ForeshadowingTracker extends ToolBase {
   /**
    * Constructor
    * @param {Object} GeminiAPIService - Claude API service

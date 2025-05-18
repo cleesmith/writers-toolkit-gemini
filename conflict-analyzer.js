@@ -1,5 +1,5 @@
 // conflict-analyzer.js
-const BaseTool = require('./tool-base');
+const ToolBase = require('./tool-base');
 const path = require('path');
 const fileCache = require('./file-cache');
 const appState = require('./state.js');
@@ -11,7 +11,7 @@ const fs = require('fs/promises');
  * using the Claude API. Identifies conflict nature, escalation, and resolution
  * at scene, chapter, and arc levels.
  */
-class ConflictAnalyzer extends BaseTool {
+class ConflictAnalyzer extends ToolBase {
   /**
    * Constructor
    * @param {Object} GeminiAPIService - Claude API service

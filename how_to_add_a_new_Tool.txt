@@ -2,11 +2,11 @@
 Complete Process for Adding a New Non-AI Tool
 
 1. Create the tool implementation file 
-   (e.g., `your-new-tool.js`) that extends BaseTool
+   (e.g., `your-new-tool.js`) that extends ToolBase
    // your-new-tool.js
-   const BaseTool = require('./base-tool');
+   const ToolBase = require('./base-tool');
    
-   class YourNewTool extends BaseTool {
+   class YourNewTool extends ToolBase {
      constructor(config = {}) {
        super('your_new_tool', config);
        // No GeminiAPIService needed for non-AI tools

@@ -99,7 +99,7 @@ The application features a main interface (`index.html`, `renderer.js`) where us
     * Previously supported Claude API, evident from `claude_client.js` and references in tool descriptions.
     * The `GeminiAPIService` in `client.js` includes methods for streaming responses with a simulated "thinking" step, counting tokens, and calculating token budgets to work within API limits. It also handles safety settings for content generation.
     * The `@google/genai` SDK is used for Gemini API interactions, as shown in `package.json` and `@google:genai.txt`.
-* **Modular Tool System:** Each tool is implemented as a class extending `BaseTool` (`base-tool.js`), promoting modularity. A `tool-system.js` and `registry.js` manage the loading and execution of these tools.
+* **Modular Tool System:** Each tool is implemented as a class extending `ToolBase` (`base-tool.js`), promoting modularity. A `tool-system.js` and `registry.js` manage the loading and execution of these tools.
 
 * **File Handling:**
     * `file-utils.js` likely provides common file reading/writing utilities.

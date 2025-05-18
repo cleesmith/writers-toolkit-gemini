@@ -1,5 +1,5 @@
 // docx-comments.js
-const BaseTool = require('./tool-base');
+const ToolBase = require('./tool-base');
 const path = require('path');
 const fs = require('fs');
 const fsPromises = require('fs/promises');
@@ -15,7 +15,7 @@ const os = require('os');
  * DocxComments Tool
  * Extracts comments from a Word DOCX file and saves them to a text file
  */
-class DocxComments extends BaseTool {
+class DocxComments extends ToolBase {
   /**
    * Constructor
    * @param {string} name - Tool name

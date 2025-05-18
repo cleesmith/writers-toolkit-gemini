@@ -1,5 +1,5 @@
 // kdp-publishing-prep.js
-const BaseTool = require('./tool-base');
+const ToolBase = require('./tool-base');
 const path = require('path');
 const fs = require('fs/promises');
 const fileCache = require('./file-cache');
@@ -10,7 +10,7 @@ const appState = require('./state.js');
  * Analyzes a manuscript and generates KDP publishing elements
  * including title suggestions, descriptions, categories, keywords, and more
  */
-class KdpPublishingPrep extends BaseTool {
+class KdpPublishingPrep extends ToolBase {
   /**
    * Constructor
    * @param {Object} GeminiAPIService - Claude API service

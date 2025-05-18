@@ -1,5 +1,5 @@
 // dangling-modifier-checker.js
-const BaseTool = require('./tool-base');
+const ToolBase = require('./tool-base');
 const path = require('path');
 const util = require('util');
 const fileCache = require('./file-cache');
@@ -13,7 +13,7 @@ const fs = require('fs/promises');
  * which can create unintended humor or confusion, following Ursula K. Le Guin's 
  * writing guidance on clarity and precision.
  */
-class DanglingModifierChecker extends BaseTool {
+class DanglingModifierChecker extends ToolBase {
   /**
    * Constructor
    * @param {Object} GeminiAPIService - Claude API service

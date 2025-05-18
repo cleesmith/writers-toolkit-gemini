@@ -1,5 +1,5 @@
 // character-analyzer.js
-const BaseTool = require('./tool-base');
+const ToolBase = require('./tool-base');
 const path = require('path');
 const fileCache = require('./file-cache');
 const appState = require('./state.js');
@@ -10,7 +10,7 @@ const fs = require('fs/promises');
  * Analyzes manuscript, outline, and world files to identify 
  * and compare character appearances across different story documents
  */
-class CharacterAnalyzer extends BaseTool {
+class CharacterAnalyzer extends ToolBase {
   /**
    * Constructor
    * @param {Object} GeminiAPIService - Claude API service
