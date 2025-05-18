@@ -110,8 +110,8 @@ class ToolBase {
       
       const promptTokens = await this.apiService.countTokens(prompt);
       
-      this.emitOutput(`\nSending request to AI API . . .`);
-      this.emitOutput(`*\n`);
+      this.emitOutput(`\nSending request to AI API . . .\n`);
+      this.emitOutput(`\n`);
       this.emitOutput(`\n****************************************************************************\n`);
       this.emitOutput(`*  Standby, running ${this.title} . . .\n`);
       this.emitOutput(`*\n`);

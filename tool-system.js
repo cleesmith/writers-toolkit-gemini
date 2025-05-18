@@ -612,42 +612,6 @@ const TOOL_DEFS = [
       "required": true,
       "default": "manuscript.txt",
       "group": "Input Files"
-    },
-    {
-      "name": "include_visualization",
-      "label": "include_visualization",
-      "type": "boolean",
-      "description": "Include a text-based visualization of pacing patterns",
-      "required": false,
-      "default": false,
-      "group": "Output Configuration"
-    },
-    {
-      "name": "analysis_level",
-      "label": "analysis_level",
-      "type": "text",
-      "description": "Level of analysis detail (default: standard)\nChoices: basic, standard, detailed",
-      "required": false,
-      "default": "all",
-      "group": "Analysis Options"
-    },
-    {
-      "name": "focus_areas",
-      "label": "focus_areas",
-      "type": "text",
-      "description": "Specific areas to focus on (default: all areas)\nChoices: crowding, leaping, transitions, pacing",
-      "required": false,
-      "default": "all",
-      "group": "Analysis Options"
-    },
-    {
-      "name": "sensitivity",
-      "label": "sensitivity",
-      "type": "text",
-      "description": "Sensitivity level for pattern detection (default: medium)\nChoices: low, medium, high",
-      "required": false,
-      "default": "all",
-      "group": "Analysis Options"
     }
   ]},
   { id: 'conflict_analyzer', title: `Conflict Analyzer`, description: `Manuscript conflict analysis utility that examines conflict patterns at different narrative levels.\nIt identifies conflict nature, escalation, and resolution at scene, chapter, and arc levels.\nWith customizable analysis levels and selectable conflict types, it produces a detailed report featuring examples, assessments, and recommendations for strengthening narrative tension and coherence.`, Class: ConflictAnalyzer, options: [
@@ -659,33 +623,6 @@ const TOOL_DEFS = [
       "required": true,
       "default": "manuscript.txt",
       "group": "Input Files"
-    },
-    {
-      "name": "outline_file",
-      "label": "outline_file",
-      "type": "file",
-      "description": "File containing the story outline (optional)",
-      "required": false,
-      "default": "",
-      "group": "Input Files"
-    },
-    {
-      "name": "analysis_level",
-      "label": "analysis_level",
-      "type": "text",
-      "description": "Level of conflict analysis to perform (default: all)\nChoices: scene, chapter, arc, all",
-      "required": false,
-      "default": "all",
-      "group": "Analysis Options"
-    },
-    {
-      "name": "conflict_types",
-      "label": "conflict_types",
-      "type": "text",
-      "description": "Specific conflict types to analyze (default: all main types)\nChoices: internal, interpersonal, environmental, societal, cosmic",
-      "required": false,
-      "default": "all",
-      "group": "Analysis Options"
     }
   ]},
   { id: 'foreshadowing_tracker', title: `Foreshadowing Tracker`, description: `Manuscript analysis utility for identifying foreshadowing elements and tracking their payoffs.\n It pinpoints explicit clues, subtle hints, and Chekhov's Gun elements to evaluate how well narrative setups are resolved.\n With customizable options to select foreshadowing types and organization modes (chronological or by type), it generates detailed reports featuring examples, assessments, and recommendations for fulfilling narrative promises.`, Class: ForeshadowingTracker, options: [
@@ -697,33 +634,6 @@ const TOOL_DEFS = [
       "required": true,
       "default": "manuscript.txt",
       "group": "Input Files"
-    },
-    {
-      "name": "outline_file",
-      "label": "outline_file",
-      "type": "file",
-      "description": "File containing the story outline (optional)",
-      "required": false,
-      "default": "",
-      "group": "Input Files"
-    },
-    {
-      "name": "chronological",
-      "label": "chronological",
-      "type": "boolean",
-      "description": "Sort foreshadowing elements chronologically rather than by type",
-      "required": false,
-      "default": false,
-      "group": "Output Configuration"
-    },
-    {
-      "name": "foreshadowing_type",
-      "label": "foreshadowing_type",
-      "type": "text",
-      "description": "Type of foreshadowing to analyze (default: all)\nChoices: explicit, implicit, chekhov, all",
-      "required": false,
-      "default": "all",
-      "group": "Analysis Options"
     }
   ]},
   { id: 'kdp_publishing_prep', title: `KDP Publishing Preparation`, description: `Analyzes manuscript in preparation for KDP publishing.`, Class: KdpPublishingPrep, options: [
@@ -1184,7 +1094,6 @@ const TOOL_DEFS = [
 ];
 
 module.exports = TOOL_DEFS;
-
 
 function getAbsoluteToolPath(toolName) {
   // Convert name variations (with underscore or hyphen)

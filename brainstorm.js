@@ -11,14 +11,9 @@ const fs = require('fs/promises');
  * Appends more ideas to the existing 'ideas.txt' file.
  */
 class BrainstormTool extends ToolBase {
-  /**
-   * Constructor
-   * @param {Object} GeminiAPIService - Claude API service
-   * @param {Object} config - Tool configuration
-   */
-  constructor(GeminiAPIService, config = {}) {
+  constructor(apiService, config = {}) {
     super('brainstorm', config);
-    this.GeminiAPIService = GeminiAPIService;
+    this.apiService = apiService;
   }
   
   /**
@@ -27,9 +22,7 @@ class BrainstormTool extends ToolBase {
    * @returns {Promise<Object>} - Execution result
    */
   async execute(options) {
-    // Clear the cache for this tool
-    const toolName = 'brainstorm';
-    fileCache.clear(toolName);
+    fileCache.clear(this.name);
     
     // Extract options
     const ideasFile = options.ideas_file;
@@ -53,7 +46,19 @@ class BrainstormTool extends ToolBase {
       // Read ideas file
       this.emitOutput(`Reading ideas file: ${absoluteIdeasFile}\n`);
       const ideasContent = await this.readIdeasFile(absoluteIdeasFile);
-      
+
+      // Prepare file and cache for API processing
+      const prepareResult = await this.apiService.prepareFileAndCache(ideasContent);
+      prepareResult.messages.forEach(message => {
+        this.emitOutput(`${message}\n`);
+      });
+      if (prepareResult.errors.length > 0) {
+        this.emitOutput(`\n--- Errors encountered during preparation ---\n`);
+        prepareResult.errors.forEach(error => {
+          this.emitOutput(`ERROR: ${error}\n`);
+        });
+      }
+
       // Generate concept and/or characters based on options
       if (charactersOnly) {
         const outputFile = await this.generateAndAppend("characters", ideasContent, absoluteIdeasFile, saveDir, options);
@@ -129,65 +134,21 @@ class BrainstormTool extends ToolBase {
 
     this.emitOutput(`\n*** Working on: ${promptType}.txt file...\n`);
 
-    // Count tokens in the prompt
-    this.emitOutput(`Counting tokens in prompt...\n`);
-    const promptTokens = await this.GeminiAPIService.countTokens(prompt);
-
-    // Call the shared token budget calculator
-    const tokenBudgets = this.GeminiAPIService.calculateTokenBudgets(promptTokens);
-
-    // Handle logging based on the returned values
-    this.emitOutput(`Token stats:\n`);
-    this.emitOutput(`Max AI model context window: [${tokenBudgets.contextWindow}] tokens\n`);
-    this.emitOutput(`Input prompt tokens: [${tokenBudgets.promptTokens}] ...\n`);
-    this.emitOutput(`Available tokens: [${tokenBudgets.availableTokens}]  = ${tokenBudgets.contextWindow} - ${tokenBudgets.promptTokens} = context_window - prompt\n`);
-    this.emitOutput(`Desired output tokens: [${tokenBudgets.desiredOutputTokens}]\n`);
-    this.emitOutput(`AI model thinking budget: [${tokenBudgets.thinkingBudget}] tokens\n`);
-    this.emitOutput(`Max output tokens: [${tokenBudgets.maxTokens}] tokens\n`);
-
-    // Check for special conditions
-    if (tokenBudgets.capThinkingBudget) {
-      this.emitOutput(`Warning: thinking budget is larger than 32K, set to 32K.\n`);
-    }
-
-    // Check if the prompt is too large
-    if (tokenBudgets.isPromptTooLarge) {
-      this.emitOutput(`Error: prompt is too large to have a ${tokenBudgets.configuredThinkingBudget} thinking budget!\n`);
-      this.emitOutput(`Run aborted!\n`);
-      throw new Error(`Prompt is too large for ${tokenBudgets.configuredThinkingBudget} thinking budget - run aborted`);
-    }
+    const promptTokens = await this.apiService.countTokens(prompt);
     
-    // Call Claude API with streaming
-    this.emitOutput(`Sending request to Claude API (streaming)...\n`);
+    this.emitOutput(`\nSending request to AI API . . .\n`);
+    this.emitOutput(`\n`);
     
     const startTime = Date.now();
     let fullResponse = "";
     let thinkingContent = "";
-    
-    // Create system prompt to avoid markdown
-    const systemPrompt = "NO Markdown! Never respond with Markdown formatting, plain text only.";
 
-    // Use the calculated values in the API call
     try {
-      await this.GeminiAPIService.streamWithThinking(
+      await this.apiService.streamWithThinking(
         prompt,
-        {
-          model: "claude-3-7-sonnet-20250219",
-          system: systemPrompt,
-          max_tokens: tokenBudgets.maxTokens,
-          thinking: {
-            type: "enabled",
-            budget_tokens: tokenBudgets.thinkingBudget
-          },
-          betas: ["output-128k-2025-02-19"]
-        },
-        // Callback for thinking content
-        (thinkingDelta) => {
-          thinkingContent += thinkingDelta;
-        },
-        // Callback for response text
         (textDelta) => {
           fullResponse += textDelta;
+          this.emitOutput(textDelta);
         }
       );
     } catch (error) {
@@ -204,12 +165,10 @@ class BrainstormTool extends ToolBase {
     // No need to remove markdown formatting - trust the API response directly
     const cleanedResponse = fullResponse;
     
-    // Count words in response
     const wordCount = this.countWords(cleanedResponse);
     this.emitOutput(`Generated ${promptType} has approximately ${wordCount} words.\n`);
     
-    // Count tokens in response
-    const responseTokens = await this.GeminiAPIService.countTokens(cleanedResponse);
+    const responseTokens = await this.apiService.countTokens(cleanedResponse);
     this.emitOutput(`Response token count: ${responseTokens}\n`);
     
     // Append to ideas file
@@ -225,42 +184,6 @@ class BrainstormTool extends ToolBase {
     
     // Add to the file cache
     fileCache.addFile('brainstorm', backupPath);
-    
-    // Save thinking content if not skipped
-    if (thinkingContent) {
-      const thinkingFilename = `${promptType}_thinking_${timestamp}.txt`;
-      const thinkingPath = path.join(saveDir, thinkingFilename);
-      
-      // Stats for thinking file
-      const stats = `
-Details:
-Max request timeout: ${this.config.request_timeout} seconds
-Max AI model context window: ${this.config.context_window} tokens
-AI model thinking budget: ${this.config.thinking_budget_tokens} tokens
-Desired output tokens: ${this.config.desired_output_tokens} tokens
-
-Input tokens: ${promptTokens}
-Output tokens: ${responseTokens}
-Elapsed time: ${minutes}m ${seconds.toFixed(2)}s
-Output has ${wordCount} words
-`;
-      
-      const thinkingContentWithPrompt = `=== PROMPT USED ===
-${prompt}
-
-=== AI'S THINKING PROCESS ===
-
-${thinkingContent}
-
-=== END AI'S THINKING PROCESS ===
-${stats}`;
-      
-      await this.writeOutputFile(thinkingContentWithPrompt, saveDir, thinkingFilename);
-      this.emitOutput(`AI thinking saved to: ${thinkingPath}\n`);
-      
-      // Add thinking file to the cache too
-      fileCache.addFile('brainstorm', thinkingPath);
-    }
     
     return backupPath;
   }
