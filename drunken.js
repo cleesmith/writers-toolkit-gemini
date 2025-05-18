@@ -183,7 +183,7 @@ class Drunken extends ToolBase {
         });
       }
       
-      const prompt = this.createFullPrompt(manuscriptContent);
+      const prompt = this.createFullPrompt();
       const promptTokens = await this.apiService.countTokens(prompt);
 
       this.emitOutput(`Reading manuscript file: ${manuscriptFile}\n`);
@@ -266,7 +266,7 @@ class Drunken extends ToolBase {
    * @param {string} manuscriptContent - Manuscript content
    * @returns {string} - prompt
    */
-  createFullPrompt(manuscriptContent) {
+  createFullPrompt() {
     return `Let's pretend you are a very drunk AI, a bard at a local author/writer's pub, and 
 you're working on your second bottle of really good wine. 
 So you are very loose and very honest, more so than usual.

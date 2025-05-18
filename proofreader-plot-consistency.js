@@ -68,7 +68,7 @@ class ProofreaderPlotConsistency extends ToolBase {
         });
       }
       
-      const prompt = this.createFullPrompt(manuscriptContent);
+      const prompt = this.createFullPrompt();
       const promptTokens = await this.apiService.countTokens(prompt);
 
       this.emitOutput(`Reading manuscript file: ${manuscriptFile}\n`);
@@ -150,7 +150,7 @@ class ProofreaderPlotConsistency extends ToolBase {
    * @param {string} manuscriptContent - Manuscript content
    * @returns {string} - Prompt for Claude API
    */
-  createFullPrompt(manuscriptContent) {
+  createFullPrompt() {
     const template = `You are a professional plot consistency proofreader focused on analyzing this manuscript:
 
 CORE INSTRUCTION: Conduct a specialized review focusing EXCLUSIVELY on plot consistency issues. Thoroughly analyze story elements, important objects, character knowledge, fictional world rules, and narrative causality to identify contradictions, plot holes, or inconsistencies in how the story unfolds.
