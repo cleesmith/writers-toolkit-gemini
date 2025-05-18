@@ -404,11 +404,22 @@ function setupProjectHandlers() {
       // List all directories in the projects folder
       const items = await fs.promises.readdir(appState.PROJECTS_DIR);
       
-      // Filter to only include directories and exclude hidden directories
+      // Define specific folders to exclude from project list
+      const EXCLUDED_FOLDERS = ['tools', 'images', 'tool-prompts'];
+      
+      // Filter to only include directories and exclude hidden directories and special folders
       const projects = [];
       for (const item of items) {
+        // Skip hidden items (starting with .)
         if (item.startsWith('.')) {
-          continue; // Skip hidden items
+          // console.log(`Skipping hidden directory: ${item}`);
+          continue;
+        }
+        
+        // Skip specifically excluded folders
+        if (EXCLUDED_FOLDERS.includes(item)) {
+          // console.log(`Skipping excluded folder: ${item}`);
+          continue;
         }
         
         const itemPath = path.join(appState.PROJECTS_DIR, item);
@@ -424,7 +435,7 @@ function setupProjectHandlers() {
       return [];
     }
   });
-  
+
   // Open an existing project
   ipcMain.handle('open-project', async (event, projectName) => {
     try {
@@ -439,11 +450,7 @@ function setupProjectHandlers() {
       }
 
       // Unconditionally clear API files and caches whenever a project is selected or created.
-      console.log(`Project selected/created: ${projectName}. Clearing all API files and caches for the configured API key.`);
-
-      // console.log(`\n\nAiApiServiceInstance:`);
-      // console.dir(AiApiServiceInstance, { depth: null });
-      // console.log(`..................\n\n`);
+      console.log(`Project selected/created: ${projectName}.\nClearing all API files and caches for the configured API key.`);
 
       if (AiApiServiceInstance) {
         try {

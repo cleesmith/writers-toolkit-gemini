@@ -1,9 +1,13 @@
 // tool-base.js
 const fs = require('fs/promises');
 const path = require('path');
+const fileCache = require('./file-cache');
+const appState = require('./state.js');
 
 /**
- * Base class for all tools
+ * Enhanced Base class for all tools
+ * Provides common functionality for AI-based tools
+ * Utilizes API's file and cache systems for efficient processing of large manuscripts.
  */
 class ToolBase {
 
@@ -15,15 +19,168 @@ class ToolBase {
   constructor(name, config = {}) {
     this.name = name;
     this.config = config;
+    
+    // Create title from name (capitalize words and replace underscores with spaces)
+    this.title = this.name.split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   }
   
   /**
-   * Execute the tool
+   * Execute the tool - enhanced with common AI tool workflow
    * @param {object} options - Tool options
    * @returns {Promise<object>} - Tool execution result
    */
   async execute(options) {
-    throw new Error(`Tool ${this.name} must implement execute method`);
+    console.log(`Executing ${this.title} with options:`, options);
+    
+    // Make sure we have an API service (required for AI tools)
+    if (!this.apiService) {
+      const errorMsg = `Error: ${this.title} requires an API service but none was provided.\n`;
+      this.emitOutput(errorMsg);
+      throw new Error('No API service available');
+    }
+    
+    let manuscriptFile = options.manuscript_file;
+    const saveDir = options.save_dir || appState.CURRENT_PROJECT_PATH;
+    
+    if (!saveDir) {
+      const errorMsg = 'Error: No save directory specified and no current project selected.\n' +
+                      'Please select a project or specify a save directory.';
+      this.emitOutput(errorMsg);
+      throw new Error('No save directory available');
+    }
+
+    manuscriptFile = this.ensureAbsolutePath(manuscriptFile, saveDir);
+
+    const outputFiles = [];
+    
+    try {
+      const manuscriptContent = await this.readInputFile(manuscriptFile);
+      const manuscriptWordCount = this.countWords(manuscriptContent);
+      const manuscriptTokens = await this.apiService.countTokens(manuscriptContent);
+
+      // Prepare file and cache for API processing
+      const prepareResult = await this.apiService.prepareFileAndCache(manuscriptFile);
+      prepareResult.messages.forEach(message => {
+        this.emitOutput(`${message}\n`);
+      });
+      if (prepareResult.errors.length > 0) {
+        this.emitOutput(`\n--- Errors encountered during preparation ---\n`);
+        prepareResult.errors.forEach(error => {
+          this.emitOutput(`ERROR: ${error}\n`);
+        });
+      }
+      
+      // Get the tool-specific prompt - subclasses must implement this
+      const prompt = await this.getPrompt();
+      
+      // Check if prompt was found
+      if (prompt === null) {
+        // Create helpful error message with dynamic paths
+        const os = require('os');
+        const path = require('path');
+        const homeDir = os.homedir();
+        const writingDir = path.join(homeDir, 'writing');
+        const promptsDir = path.join(writingDir, 'tool-prompts');
+        const promptFilename = `${this.name}.txt`;
+        const customPromptPath = path.join(promptsDir, promptFilename);
+        
+        let errorMessage = `\n`;
+        errorMessage += `⛔️ PROMPT FILE NOT FOUND ⛔️\n\n`;
+        errorMessage += `A custom prompt file is required to run this tool.\n\n`;
+        errorMessage += `You need to create or edit the prompt file at:\n`;
+        errorMessage += `${customPromptPath}\n\n`;
+        errorMessage += `Here's how to fix this:\n`;
+        errorMessage += `1. The application uses a folder called 'tool-prompts' in your writing directory.\n`;
+        errorMessage += `2. Each tool needs its own text file with the AI instructions.\n`;
+        errorMessage += `3. For the '${this.title}' tool, create: "${promptFilename}"\n\n`;
+        errorMessage += `You can use the built-in editor to create this file.\n`;
+        
+        // Emit error to UI
+        this.emitOutput(errorMessage);
+        
+        // Return with success=false but don't throw an error
+        return {
+          success: false,
+          errorType: 'missing_prompt',
+          outputFiles: []
+        };
+      }
+      
+      const promptTokens = await this.apiService.countTokens(prompt);
+
+      this.emitOutput(`Reading manuscript file: ${manuscriptFile}\n`);
+      
+      this.emitOutput(`\nSending request to AI API . . .\n`);
+      this.emitOutput(`\n****************************************************************************\n`);
+      this.emitOutput(`*  Standby running ${this.title} . . .\n`);
+      this.emitOutput(`*  \n`);
+      this.emitOutput(`*  This process typically takes several minutes.\n`);
+      this.emitOutput(`*                                                                          \n`);
+      this.emitOutput(`*  It's recommended to keep this window the sole 'focus'                   \n`);
+      this.emitOutput(`*  and to avoid browsing online or running other apps, as these API        \n`);
+      this.emitOutput(`*  network connections are often flakey, like delicate echoes of whispers. \n`);
+      this.emitOutput(`*                                                                          \n`);
+      this.emitOutput(`*  So breathe, remove eye glasses, stretch, relax, and be like water 🥋 🧘🏽‍♀️\n`);
+      this.emitOutput(`*  \n`);
+      this.emitOutput(`****************************************************************************\n\n`);
+      
+      const startTime = Date.now();
+      let fullResponse = "";
+
+      try {
+        await this.apiService.streamWithThinking(
+          prompt,
+          (textDelta) => {
+            fullResponse += textDelta;
+            this.emitOutput(textDelta);
+          }
+        );
+      } catch (error) {
+        this.emitOutput(`\nAPI Error: ${error.message}\n`);
+        throw error;
+      }
+
+      const elapsed = (Date.now() - startTime) / 1000;
+      const minutes = Math.floor(elapsed / 60);
+      const seconds = elapsed % 60;
+      
+      this.emitOutput(`\nCompleted in: ⏰ ${minutes}m ${seconds.toFixed(2)}s.\n`);
+      
+      // Count words in response
+      const wordCount = this.countWords(fullResponse);
+      this.emitOutput(`Report has approximately ${wordCount} words.\n`);
+      
+      // Count tokens in response
+      const responseTokens = await this.apiService.countTokens(fullResponse);
+      this.emitOutput(`Response token count: ${responseTokens}\n`);
+
+      // Save the report
+      const savedFiles = await this.saveReport(
+        fullResponse,
+        promptTokens,
+        responseTokens,
+        saveDir
+      );
+      
+      // Add the output files to the result
+      outputFiles.push(...savedFiles);
+      
+      // Add files to the cache
+      outputFiles.forEach(file => {
+        fileCache.addFile(this.name, file);
+      });
+      
+      return {
+        success: true,
+        outputFiles
+      };
+    } catch (error) {
+      console.error(`Error in ${this.title}: ${error.message}`);
+      this.emitOutput(`\nError: ${error.message}\n`);
+      throw error;
+    }
   }
   
   /**
@@ -95,6 +252,85 @@ class ToolBase {
    */
   emitOutput(text) {
     // console.log(text);
+  }
+  
+  /**
+   * Count words in text
+   * @param {string} text - Text to count words in
+   * @returns {number} - Word count
+   */
+  countWords(text) {
+    return text.split(/\s+/).filter(word => word.length > 0).length;
+  }
+  
+  /**
+   * Ensure file path is absolute
+   * @param {string} filePath - File path (may be relative or absolute)
+   * @param {string} basePath - Base path to prepend for relative paths
+   * @returns {string} - Absolute file path
+   */
+  ensureAbsolutePath(filePath, basePath) {
+    if (!filePath) return filePath;
+    
+    // Check if the path is already absolute
+    if (path.isAbsolute(filePath)) {
+      return filePath;
+    }
+    
+    // Make the path absolute by joining with the base path
+    return path.join(basePath, filePath);
+  }
+  
+  /**
+   * Save report to file
+   * @param {string} content - Response content
+   * @param {number} promptTokens - Prompt token count
+   * @param {number} responseTokens - Response token count
+   * @param {string} saveDir - Directory to save to
+   * @returns {Promise<string[]>} - Array of paths to saved files
+   */
+  async saveReport(
+    content,
+    promptTokens,
+    responseTokens,
+    saveDir
+  ) {
+    try {
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+      const dateTimeStr = formatter.format(new Date());
+      const timestamp = new Date().toISOString().replace(/[-:.]/g, '').substring(0, 15);
+      const baseFilename = `${this.name.toLowerCase()}_${timestamp}`;
+      
+      // Array to collect all saved file paths
+      const savedFilePaths = [];
+
+      const reportWithStats = `=== ${this.title.toUpperCase()} REPORT ===
+Date: ${dateTimeStr}
+Prompt tokens: ${promptTokens}
+Response tokens: ${responseTokens}
+
+${content}`;
+      
+      // Save full response
+      const reportFilename = `${baseFilename}.txt`;
+      const reportPath = path.join(saveDir, reportFilename);
+      await this.writeOutputFile(reportWithStats, saveDir, reportFilename);
+      savedFilePaths.push(reportPath);
+      this.emitOutput(`Report saved to: ${reportPath}\n`);
+      return savedFilePaths;
+    } catch (error) {
+      console.error(`Error saving report:`, error);
+      this.emitOutput(`Error saving report: ${error.message}\n`);
+      throw error;
+    }
   }
 
   /**
@@ -175,6 +411,33 @@ class ToolBase {
       return text;
     }
     return output;
+  }
+
+  async getPrompt() {
+    const os = require('os');
+    const path = require('path');
+    const fs = require('fs/promises');
+    
+    // Get paths dynamically using app state
+    const homeDir = os.homedir();
+    const writingDir = path.join(homeDir, 'writing');
+    const promptsDir = path.join(writingDir, 'tool-prompts');
+    const promptFilename = `${this.name}.txt`;
+    const customPromptPath = path.join(promptsDir, promptFilename);
+    
+    try {
+      // Try to read custom prompt
+      const customPrompt = await fs.readFile(customPromptPath, 'utf-8');
+      console.log(`Using custom prompt for ${this.name}`);
+      this.emitOutput(`Using custom prompt from: ${customPromptPath}\n`);
+      return customPrompt;
+    } catch (error) {
+      // Log a simple message without stack trace
+      console.log(`Custom prompt not found for ${this.name}`);
+      
+      // Return null instead of throwing an error
+      return null;
+    }
   }
 
 }
