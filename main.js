@@ -111,7 +111,7 @@ if (!gotTheLock) {
   });
 }
 
-// The only one "whenReady" that does everything in proper sequence
+// The ONLY ONE "whenReady" that does everything in proper sequence
 app.whenReady().then(() => {
   // 1. Set App User Model ID first
   app.setAppUserModelId("com.slipthetrap.writerstoolkit");
