@@ -52,18 +52,39 @@ if (isPackaged) {
   console.log(`Set global TOOLS_DIR to: ${global.TOOLS_DIR}`);
 }
 
-// Add this near the beginning of main.js, before any app.whenReady() calls
-// This code ensures only one instance of your application can run at a time
 
 // Request to be the single instance of the app
 const gotTheLock = app.requestSingleInstanceLock();
 
+/* 
+=== PLATFORM BEHAVIOR NOTES ===
+
+- WINDOWS: This is especially important on Windows, where users can easily 
+  launch multiple instances through normal GUI interactions. Windows has 
+  no built-in protection against multiple instances.
+
+- MACOS: While macOS automatically prevents multiple instances when 
+  launched through Finder, Dock or Spotlight, this code is still needed 
+  to handle launches from Terminal or scripts.
+
+- LINUX: On Linux, behavior varies by desktop environment, so this 
+  provides consistent behavior across all Linux distributions.
+
+This code provides a consistent experience across all platforms by 
+ensuring only one instance of Writer's Toolkit can run at a time, 
+preventing potential data conflicts when multiple instances try to 
+access the same prompt files.
+*/
+
 if (!gotTheLock) {
   // We're not the first instance, so quit immediately
   console.log('Another instance of Writer\'s Toolkit is already running. Exiting this instance.');
-  app.quit();
+  //  ****
+  app.quit(); // kills the 2nd instance immediately!!!
+  //  ****
 } else {
-  // We are the first instance - set up a handler for when someone tries to run a second instance
+  // We are the first instance 
+  //  - set up a handler for when someone tries to run a second instance
   app.on('second-instance', (event, commandLine, workingDirectory) => {
     // Someone tried to run a second instance, focus our window instead
     if (mainWindow) {
@@ -88,35 +109,7 @@ if (!gotTheLock) {
       }
     }
   });
-
-  // Continue with normal app initialization
-  // Your existing app.whenReady() code and other initialization should remain below this point
-  
-  // For example:
-  app.whenReady().then(() => {
-    // Your existing initialization code
-    // This stays the same, just make sure it's inside this else block
-  });
 }
-
-/* 
-=== PLATFORM BEHAVIOR NOTES ===
-
-- WINDOWS: This is especially important on Windows, where users can easily launch multiple
-  instances through normal GUI interactions. Windows has no built-in protection against
-  multiple instances.
-
-- MACOS: While macOS automatically prevents multiple instances when launched through Finder,
-  Dock or Spotlight, this code is still needed to handle launches from Terminal or scripts.
-
-- LINUX: On Linux, behavior varies by desktop environment, so this provides consistent 
-  behavior across all Linux distributions.
-
-This code provides a consistent experience across all platforms by ensuring only
-one instance of Writer's Toolkit can run at a time, preventing potential data conflicts
-when multiple instances try to access the same prompt files.
-*/
-
 
 // The only one "whenReady" that does everything in proper sequence
 app.whenReady().then(() => {
