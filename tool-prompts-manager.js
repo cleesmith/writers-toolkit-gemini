@@ -18,7 +18,6 @@ class PromptManager {
   async ensurePromptsDirectory() {
     try {
       await fs.mkdir(this.promptsDir, { recursive: true });
-      console.log(`Prompts directory ensured at: ${this.promptsDir}`);
       return true;
     } catch (error) {
       console.error('Error creating prompts directory:', error);

@@ -7,19 +7,12 @@ const fs = require('fs/promises');
 
 /**
  * OutlineWriter Tool
- * Generates a plot outline from your brainstorming file.
- * You can provide your own outline skeleton and let the AI fill in details.
+ * Generates a plot outline from your brainstorming.
  */
 class OutlineWriter extends ToolBase {
-  /**
-   * Constructor
-   * @param {Object} GeminiAPIService - Claude API service
-   * @param {Object} config - Tool configuration
-   */
-  constructor(GeminiAPIService, config = {}) {
+  constructor(apiService, config = {}) {
     super('outline_writer', config);
-    this.GeminiAPIService = GeminiAPIService;
-    // console.log('OutlineWriter Tool initialized with config:', config);
+    this.apiService = apiService;
   }
   
   /**
@@ -28,25 +21,12 @@ class OutlineWriter extends ToolBase {
    * @returns {Promise<Object>} - Execution result
    */
   async execute(options) {
-    console.log('Executing OutlineWriter with options:', options);
-    
     // Clear the cache for this tool
-    const toolName = 'outline_writer';
-    fileCache.clear(toolName);
+    fileCache.clear(this.name);
     
-    // Extract options
-    const premiseFile = options.premise_file;
-    const conceptFile = options.concept_file || null;
-    const charactersFile = options.characters_file || null;
-    const exampleOutline = options.example_outline || null;
-    const sections = options.sections || 5;
-    const chapters = options.chapters || 25;
-    const language = options.lang || 'English';
-    const title = options.title || null;
-    const genre = options.genre || null;
-    const detailed = options.detailed || false;
-    
+    const conceptFile = options.concept_file;
     const saveDir = options.save_dir || appState.CURRENT_PROJECT_PATH;
+
     const outputFiles = [];
     
     // Validate save directory
@@ -58,103 +38,39 @@ class OutlineWriter extends ToolBase {
     }
     
     try {
-      // Read premise file (required)
-      this.emitOutput(`Reading premise file: ${premiseFile}\n`);
-      const premiseContent = await this.readInputFile(this.ensureAbsolutePath(premiseFile, saveDir));
-      
-      // Read concept file if provided
       let conceptContent = "";
-      if (conceptFile) {
-        try {
-          this.emitOutput(`Reading concept file: ${conceptFile}\n`);
-          conceptContent = await this.readInputFile(this.ensureAbsolutePath(conceptFile, saveDir));
-        } catch (error) {
-          this.emitOutput(`Note: Concept file not found or couldn't be read: ${error.message}\n`);
-          this.emitOutput("Continuing with just the premise description.\n");
-        }
+    
+      // Ensure file paths are absolute
+      const absoluteConceptFile = this.ensureAbsolutePath(conceptFile, saveDir);
+
+      try {
+        conceptContent = await this.readInputFile(absoluteConceptFile);
+      } catch (error) {
+        this.emitOutput(`Note: Concept file not found or couldn't be read: ${error.message}\n`);
+        throw new Error('Concept file is required!');
       }
       
-      // Read characters file if provided
-      let charactersContent = "";
-      if (charactersFile) {
-        try {
-          this.emitOutput(`Reading characters file: ${charactersFile}\n`);
-          charactersContent = await this.readInputFile(this.ensureAbsolutePath(charactersFile, saveDir));
-        } catch (error) {
-          this.emitOutput(`Note: Characters file not found or couldn't be read: ${error.message}\n`);
-          this.emitOutput("Continuing without characters information.\n");
-        }
-      }
-      
-      // Read example outline if provided
-      let exampleOutlineContent = "";
-      if (exampleOutline) {
-        try {
-          this.emitOutput(`Reading example outline: ${exampleOutline}\n`);
-          exampleOutlineContent = await this.readInputFile(this.ensureAbsolutePath(exampleOutline, saveDir));
-        } catch (error) {
-          this.emitOutput(`Note: Example outline file not found or couldn't be read: ${error.message}\n`);
-          this.emitOutput("Continuing without example outline.\n");
-        }
-      }
-      
-      // Create prompt
       const prompt = this.createPrompt(
-        premiseContent,
-        conceptContent,
-        charactersContent,
-        exampleOutlineContent,
-        sections,
-        chapters,
-        language,
-        title,
-        genre,
-        detailed
+        conceptContent
       );
-      
-      // Count tokens in prompt
-      this.emitOutput(`Counting tokens in prompt...\n`);
-      const promptTokens = await this.GeminiAPIService.countTokens(prompt);
-      
-      // Calculate available tokens after prompt
-      const contextWindow = this.config.context_window || 200000;
-      const desiredOutputTokens = this.config.desired_output_tokens || 12000;
-      const configuredThinkingBudget = this.config.thinking_budget_tokens || 32000;
-      
-      const availableTokens = contextWindow - promptTokens;
-      
-      // For API call, max_tokens must respect the API limit
-      const maxTokens = Math.min(availableTokens, 128000); // Limited by beta feature
-      
-      // Thinking budget must be LESS than max_tokens to leave room for visible output
-      let thinkingBudget = maxTokens - desiredOutputTokens;
-      if (thinkingBudget > 32000) {
-        this.emitOutput("Warning: thinking budget is larger than 32K, set to 32K.\n");
-        thinkingBudget = 32000;
+
+      // Prepare file and cache for API processing
+      const prepareResult = await this.apiService.prepareFileAndCache(absoluteConceptFile);
+      prepareResult.messages.forEach(message => {
+        this.emitOutput(`${message}\n`);
+      });
+      if (prepareResult.errors.length > 0) {
+        this.emitOutput(`\n--- Errors encountered during preparation ---\n`);
+        prepareResult.errors.forEach(error => {
+          this.emitOutput(`ERROR: ${error}\n`);
+        });
       }
       
-      // Display token stats
-      this.emitOutput(`\nToken stats:\n`);
-      this.emitOutput(`Max AI model context window: [${contextWindow}] tokens\n`);
-      this.emitOutput(`Input prompt tokens: [${promptTokens}] ...\n`);
-      this.emitOutput(`                     = premise + concept + characters + example outline + prompt instructions\n`);
-      this.emitOutput(`Available tokens: [${availableTokens}]  = ${contextWindow} - ${promptTokens} = context_window - prompt\n`);
-      this.emitOutput(`Desired output tokens: [${desiredOutputTokens}]\n`);
-      this.emitOutput(`AI model thinking budget: [${thinkingBudget}] tokens  = ${maxTokens} - ${desiredOutputTokens}\n`);
-      this.emitOutput(`Max output tokens (max_tokens): [${maxTokens}] tokens  = min(${availableTokens}, 128000)\n`);
-      this.emitOutput(`                                = can not exceed: 'betas=["output-128k-2025-02-19"]'\n`);
+      const promptTokens = await this.apiService.countTokens(prompt);
+
+      this.emitOutput(`\nSending request to AI API . . .\n`);
+      this.emitOutput(`\n`);
       
-      // Check if prompt is too large for the configured thinking budget
-      if (thinkingBudget < configuredThinkingBudget) {
-        this.emitOutput(`Error: prompt is too large to have a ${configuredThinkingBudget} thinking budget!\n`);
-        this.emitOutput(`Run aborted!\n`);
-        throw new Error(`Prompt is too large for ${configuredThinkingBudget} thinking budget - run aborted`);
-      }
-      
-      // Call Claude API with streaming
-      this.emitOutput(`\nSending request to Claude API (streaming)...\n`);
-      
-      // Add a message about waiting
       this.emitOutput(`****************************************************************************\n`);
       this.emitOutput(`*  This usually takes a few minutes...\n`);
       this.emitOutput(`*  \n`);
@@ -167,32 +83,13 @@ class OutlineWriter extends ToolBase {
       
       const startTime = Date.now();
       let fullResponse = "";
-      let thinkingContent = "";
-      
-      // Create system prompt to avoid markdown
-      const systemPrompt = "NO Markdown! Never respond with Markdown formatting, plain text only.";
       
       try {
-        // Use streaming API call
-        await this.GeminiAPIService.streamWithThinking(
+        await this.apiService.streamWithThinking(
           prompt,
-          {
-            model: "claude-3-7-sonnet-20250219",
-            system: systemPrompt,
-            max_tokens: maxTokens,
-            thinking: {
-              type: "enabled",
-              budget_tokens: thinkingBudget
-            },
-            betas: ["output-128k-2025-02-19"]
-          },
-          // Callback for thinking content
-          (thinkingDelta) => {
-            thinkingContent += thinkingDelta;
-          },
-          // Callback for response text
           (textDelta) => {
             fullResponse += textDelta;
+            this.emitOutput(textDelta);
           }
         );
       } catch (error) {
@@ -207,15 +104,10 @@ class OutlineWriter extends ToolBase {
       
       this.emitOutput(`\nCompleted in ${minutes}m ${seconds.toFixed(2)}s.\n`);
       
-      // Process response - remove markdown formatting if any
-      const cleanedResponse = this.removeMarkdownFormat(fullResponse);
-      
-      // Count words in response
-      const wordCount = this.countWords(cleanedResponse);
+      const wordCount = this.countWords(fullResponse);
       this.emitOutput(`Outline has approximately ${wordCount} words.\n`);
       
-      // Count tokens in response
-      const responseTokens = await this.GeminiAPIService.countTokens(cleanedResponse);
+      const responseTokens = await this.apiService.countTokens(fullResponse);
       this.emitOutput(`Outline token count: ${responseTokens}\n`);
       
       // Save the outline to a file
@@ -223,68 +115,15 @@ class OutlineWriter extends ToolBase {
       const outlineFilename = `outline_${timestamp}.txt`;
       const outlinePath = path.join(saveDir, outlineFilename);
       
-      await this.writeOutputFile(cleanedResponse, saveDir, outlineFilename);
+      await this.writeOutputFile(fullResponse, saveDir, outlineFilename);
       this.emitOutput(`Outline saved to: ${outlinePath}\n`);
       
       // Add to output files list
       outputFiles.push(outlinePath);
       
       // Add to the file cache
-      fileCache.addFile(toolName, outlinePath);
+      fileCache.addFile(this.name, outlinePath);
       
-      // Save thinking content if available and not skipped
-      if (thinkingContent) {
-        const thinkingFilename = `outline_thinking_${timestamp}.txt`;
-        
-        // Create stats for thinking file
-        const stats = `
-Details:
-Max request timeout: ${this.config.request_timeout || 300} seconds
-Max AI model context window: ${this.config.context_window || 200000} tokens
-AI model thinking budget: ${this.config.thinking_budget_tokens || 32000} tokens
-Desired output tokens: ${this.config.desired_output_tokens || 12000} tokens
-
-Estimated input/prompt tokens: ${promptTokens}
-Setting max_tokens to: ${maxTokens}
-
-elapsed time: ${minutes} minutes, ${seconds.toFixed(2)} seconds
-Outline has ${wordCount} words
-Outline token count: ${responseTokens}
-Outline saved to: ${outlinePath}
-`;
-        
-        // Create a prompt log without the full content
-        const promptForLogging = this.createPromptForLogging(
-          sections,
-          chapters,
-          language,
-          title,
-          genre,
-          detailed
-        );
-        
-        const thinkingContent2 = `=== PROMPT USED (EXCLUDING REFERENCE CONTENT) ===
-${promptForLogging}
-
-note: The actual prompt included any example outline, characters, and concept which are not logged here to save space.
-
-=== AI'S THINKING PROCESS ===
-
-${thinkingContent}
-
-=== END AI'S THINKING PROCESS ===
-${stats}`;
-        
-        await this.writeOutputFile(thinkingContent2, saveDir, thinkingFilename);
-        const thinkingPath = path.join(saveDir, thinkingFilename);
-        this.emitOutput(`AI thinking saved to: ${thinkingPath}\n`);
-        
-        // Add thinking file to output files and cache
-        outputFiles.push(thinkingPath);
-        fileCache.addFile(toolName, thinkingPath);
-      }
-      
-      // Return the result
       return {
         success: true,
         outputFiles,
@@ -296,7 +135,7 @@ ${stats}`;
       };
       
     } catch (error) {
-      console.error('Error in OutlineWriter:', error);
+      console.error('Error in Outline Writer:', error);
       this.emitOutput(`\nError: ${error.message}\n`);
       throw error;
     }
@@ -304,65 +143,143 @@ ${stats}`;
   
   /**
    * Create prompt based on input content
-   * @param {string} premiseContent - Premise content
    * @param {string} conceptContent - Concept content
-   * @param {string} charactersContent - Characters content
-   * @param {string} exampleOutlineContent - Example outline content
-   * @param {number} sections - Number of sections
-   * @param {number} chapters - Number of chapters
-   * @param {string} language - Language
-   * @param {string} title - Title
-   * @param {string} genre - Genre
-   * @param {boolean} detailed - Whether to generate detailed outline
-   * @returns {string} - Prompt for Claude API
+   * @returns {string} - Prompt for AI API
    */
   createPrompt(
-    premiseContent,
-    conceptContent,
-    charactersContent,
-    exampleOutlineContent,
-    sections,
-    chapters,
-    language,
-    title,
-    genre,
-    detailed
+    conceptContent
   ) {
-    // Title and genre placeholders
-    const titleSuggestion = title ? 
-      `Suggested title: ${title}` : 
-      "Please create an appropriate title for this novel.";
-    
-    const genreSuggestion = genre ? `Genre: ${genre}` : "";
-    
-    let prompt = `You are a skilled novelist and story architect helping to create a detailed novel outline in fluent, authentic ${language}.
+let prompt = `You are a skilled novelist and story architect helping to create a detailed novel outline in fluent, authentic English.
 Draw upon your knowledge of worldwide literary traditions, narrative structure, and plot development approaches from across cultures,
-while expressing everything in natural, idiomatic ${language} that honors its unique linguistic character.
+while expressing everything in natural, idiomatic English that honors its unique linguistic character.
 
-=== PREMISE ===
-${premiseContent}
-=== END PREMISE ===
+=== OUTLINE SAMPLE ===
 
-=== CONCEPT ===
-${conceptContent}
-=== END CONCEPT ===
+OUTLINE: THE JOURNEY WITHIN
 
-=== CHARACTERS ===
-${charactersContent}
-=== END CHARACTERS ===
+PART I: BEGINNINGS
 
-=== EXAMPLE OUTLINE FORMAT ===
-${exampleOutlineContent}
-=== END EXAMPLE OUTLINE FORMAT ===
 
-Create a detailed novel outline with approximately ${chapters} chapters organized into ${sections} main parts or sections.
-${titleSuggestion}
-${genreSuggestion}
-Your outline should follow the general format and level of detail shown in the example (if provided), while being completely original.
+Chapter 1: First Steps
+   - Main character discovers an unexpected talent during a routine activity
+   - A minor conflict arises with a family member who doesn't understand
+   - Introduction to the primary setting and its unique characteristics
+   - Character meets a mentor figure who recognizes their potential
+   - Seeds of the main theme are planted through symbolic imagery
+
+
+Chapter 2: The Call
+   - Character faces a decision point that will change their trajectory
+   - An inciting incident forces the character out of their comfort zone
+   - A supporting character provides necessary information about the challenge ahead
+   - The rules and limitations of the world/system are established
+   - Character makes a commitment that drives the rest of the story
+
+
+Chapter 3: Crossing Thresholds
+   - Character leaves familiar territory for the first time
+   - First encounter with minor antagonistic forces
+   - A new ally joins the journey, bringing complementary skills
+   - Character experiences initial doubt about their abilities
+   - A small victory boosts confidence but reveals bigger challenges ahead
+
+
+PART II: CHALLENGES
+
+
+Chapter 4: The First Test
+   - Character faces their first significant obstacle
+   - A weakness or flaw in the character is exposed
+   - The mentor provides crucial guidance or training
+   - Character learns a new skill or approach
+   - The stakes are raised when the consequences of failure become clear
+
+
+Chapter 5: Unexpected Allies
+   - Character meets someone from an opposing faction
+   - Initial distrust evolves into a tentative alliance
+   - New information challenges the character's assumptions
+   - A secret is revealed about the mentor or the mission
+   - Character must reconcile conflicting viewpoints
+
+
+Chapter 6: The Betrayal
+   - A trusted ally acts against the character's interests
+   - Character faces a moment of crisis and self-doubt
+   - The original plan falls apart, requiring adaptation
+   - A personal sacrifice is required to move forward
+   - The true nature of the antagonist begins to emerge
+
+
+PART III: TRANSFORMATION
+
+
+Chapter 7: Into the Darkness
+   - Character reaches their lowest point emotionally or physically
+   - All external support systems are removed or compromised
+   - Character confronts inner demons or past traumas
+   - A revelation provides new context for the entire journey
+   - Character makes a difficult choice that defines their values
+
+
+Chapter 8: The Lesson
+   - Character gains deeper understanding of themselves
+   - A new approach or philosophy emerges from their struggles
+   - Character reconciles with someone they've hurt or misunderstood
+   - The mentor's teachings are seen in a new light
+   - Character develops a plan to overcome the main obstacle
+
+
+Chapter 9: Renewed Purpose
+   - Character emerges with strengthened resolve
+   - New allies are gathered based on shared values
+   - Character demonstrates growth by handling a familiar situation differently
+   - Preparations are made for the final confrontation
+   - A moment of calm before the storm allows for reflection
+
+PART IV: RESOLUTION
+
+
+Chapter 10: The Approach
+    - Character and allies journey to the final confrontation
+    - Last-minute complications threaten the plan
+    - Character applies lessons learned throughout their journey
+    - A final test of faith or commitment occurs
+    - The true cost of victory becomes clear
+
+
+Chapter 11: The Confrontation
+    - Character faces the main antagonist or challenge
+    - Early efforts fail, forcing the character to dig deeper
+    - The character's unique perspective or talent proves crucial
+    - A surprising twist changes the nature of the conflict
+    - Character achieves victory but not in the way expected
+
+
+Chapter 12: Return and Renewal
+    - Character returns to where they began, changed by experience
+    - The impact of their journey on others becomes apparent
+    - Unresolved relationships reach new understanding
+    - Character establishes a new role that honors their growth
+    - Final image echoes but transforms the opening scene
+
+
+Chapter 13: Epilogue: Seeds of Change
+    - Brief glimpse of the world some time after the main events
+    - Evidence of lasting impact from the character's actions
+    - Hint at new challenges or adventures on the horizon
+    - Thematic statement embodied in a final image or moment
+    - Conclusion that brings emotional closure while suggesting life continues
+
+=== END OUTLINE SAMPLE ===
+
+
+Create a detailed novel outline with at least 13 chapters, more if needed, and organized into 3 main acts or parts, see sample outline.
+
+Your outline should follow the general format and level of detail shown in the sample, while being completely original.
 
 Consider the following in your thinking:
-- Refer to the included CHARACTERS, if provided
-- Follow the structure of the EXAMPLE OUTLINE, if provided, but make proper adjustments for this novel
+- Follow the structure of the OUTLINE SAMPLE provided, but make proper adjustments for this novel
 - Do NOT create new characters unless incidental ones like: cashiers, passers-by, if any, and these should remain without names
 - Create a compelling narrative arc with rising tension, climax, and resolution
 - Develop character arcs that show growth and change
@@ -371,137 +288,40 @@ Consider the following in your thinking:
 - Ensure that each chapter has a clear purpose in advancing the story
 
 IMPORTANT FORMATTING INSTRUCTIONS:
-1. DO NOT use Markdown formatting (no #, ##, ###, *, **, etc.)
-2. Start with "OUTLINE:" followed by the novel title on the next line
-3. For parts/sections, use plain text like: "PART I: THE BEGINNING"
-4. For chapters, use ONLY simple numbering like: "1. Chapter Title" (no "Chapter" word, just the number and title)
-5. DO NOT include POV markers like "POV: Character"
-6. For each chapter, include 4-6 bullet points describing key events and developments
-7. Format each bullet point starting with "- " (dash followed by space)
-8. Each bullet point should describe a single key event, character moment, or plot development
-9. Make bullet points substantive but concise, focusing on important elements
-10. Include an optional brief epilogue with bullet points if appropriate for the story
-`;
-
-    if (detailed) {
-      prompt += `
-11. For each chapter, include additional bullet points (up to 7-8 total) covering:
+1. Start with "OUTLINE:" followed by the novel title on the next line
+2. For parts/sections, use plain text like: "PART I: THE BEGINNING"
+3. For chapters, use format: "Chapter #: Title" (example: "Chapter 1: First Steps")
+4. DO NOT include POV markers like "POV: Character"
+5. For each chapter, include 4-6 bullet points describing key events and developments
+6. Format each bullet point starting with "- " (dash followed by space) - NEVER USE ASTERISKS (*) FOR BULLET POINTS
+7. Each bullet point should describe a single key event, character moment, or plot development
+8. Make bullet points substantive but concise, focusing on important elements
+9. Include an optional brief epilogue with bullet points if appropriate for the story
+10. For each chapter, include additional bullet points (up to 7-8 total) covering:
     - Key plot developments
     - Important character moments or revelations
     - Setting details
     - Thematic elements being developed
-12. Keep all bullet points in the same format with "- " at the start of each point
-`;
-    }
-    
+11. Keep all bullet points in the same format with "- " at the start of each point
+12. DO NOT add separate labeled sections for "Setting:", "Theme:", "Character:", etc. - just use simple bullet points as shown in the sample
+
+CRITICAL FORMATTING REMINDER:
+- All bullet points MUST use dash (-) and space, NEVER asterisks (*)
+- Follow EXACTLY the same formatting shown in the sample outline
+- Do not add any extra formatting or section labels not shown in the sample outline
+
+Note: "=== OUTLINE SAMPLE ===" should only be used:
+as a guide to layout and style and not for it's content
+
+VERY IMPORTANT:
+All chapters in the outline must be in this format:
+newline
+newline
+Chapter #: Title
+... for example:
+Chapter 1: In the Beginning
+`;    
     return prompt;
-  }
-  
-  /**
-   * Create a logging version of the prompt without file contents
-   * @param {number} sections - Number of sections
-   * @param {number} chapters - Number of chapters
-   * @param {string} language - Language
-   * @param {string} title - Title
-   * @param {string} genre - Genre
-   * @param {boolean} detailed - Whether to generate detailed outline
-   * @returns {string} - Prompt for logging
-   */
-  createPromptForLogging(
-    sections,
-    chapters,
-    language,
-    title,
-    genre,
-    detailed
-  ) {
-    // Title and genre placeholders
-    const titleSuggestion = title ? 
-      `Suggested title: ${title}` : 
-      "Please create an appropriate title for this novel.";
-    
-    const genreSuggestion = genre ? `Genre: ${genre}` : "";
-    
-    let prompt = `You are a skilled novelist and story architect helping to create a detailed novel outline in fluent, authentic ${language}.
-Draw upon your knowledge of worldwide literary traditions, narrative structure, and plot development approaches from across cultures,
-while expressing everything in natural, idiomatic ${language} that honors its unique linguistic character.
-
-Create a detailed novel outline with approximately ${chapters} chapters organized into ${sections} main parts or sections.
-${titleSuggestion}
-${genreSuggestion}
-Your outline should follow the general format and level of detail shown in the example (if provided), while being completely original.
-
-Consider the following in your thinking:
-- Refer to the included CHARACTERS, if provided
-- Follow the structure of the EXAMPLE OUTLINE if provided
-- Do NOT create new characters unless incidental ones like: cashiers, passers-by, if any, and these should remain without names
-- Create a compelling narrative arc with rising tension, climax, and resolution
-- Develop character arcs that show growth and change
-- Include key plot points, conflicts, and important scenes
-- Balance external plot with internal character development
-- Ensure that each chapter has a clear purpose in advancing the story
-
-IMPORTANT FORMATTING INSTRUCTIONS:
-1. DO NOT use Markdown formatting (no #, ##, ###, *, **, etc.)
-2. Start with "OUTLINE:" followed by the novel title on the next line
-3. For parts/sections, use plain text like: "PART I: THE BEGINNING"
-4. For chapters, use ONLY simple numbering like: "1. Chapter Title" (no "Chapter" word, just the number and title)
-5. DO NOT include POV markers like "POV: Character"
-6. For each chapter, include 4-6 bullet points describing key events and developments
-7. Format each bullet point starting with "- " (dash followed by space)
-8. Each bullet point should describe a single key event, character moment, or plot development
-9. Make bullet points substantive but concise, focusing on important elements
-10. Include an optional brief epilogue with bullet points if appropriate for the story
-`;
-
-    if (detailed) {
-      prompt += `
-11. For each chapter, include additional bullet points (up to 7-8 total) covering:
-    - Key plot developments
-    - Important character moments or revelations
-    - Setting details
-    - Thematic elements being developed
-12. Keep all bullet points in the same format with "- " at the start of each point
-`;
-    }
-    
-    return prompt;
-  }
-  
-  /**
-   * Remove Markdown formatting from text
-   * @param {string} text - Text with possible Markdown
-   * @returns {string} - Cleaned text
-   */
-  removeMarkdownFormat(text) {
-    // Replace Markdown headers with plain text format
-    let cleaned = text.replace(/^#{1,6}\s+Chapter\s+(\d+):\s+(.*?)$/gm, '$1. $2');
-    cleaned = cleaned.replace(/^#{1,6}\s+PART\s+([IVXLCDM]+):\s+(.*?)$/gm, 'PART $1: $2');
-    cleaned = cleaned.replace(/^#{1,6}\s+(.*?)$/gm, '$1');
-    
-    // Remove POV markers
-    cleaned = cleaned.replace(/POV:\s+\w+\s*$/gm, '');
-    cleaned = cleaned.replace(/POV:\s+\w+\s*\n/gm, '\n');
-    
-    // Replace special quotes with regular quotes
-    cleaned = cleaned.replace(/[""]/g, '"');
-    cleaned = cleaned.replace(/['']/g, "'");
-    
-    // Remove Markdown formatting
-    cleaned = cleaned.replace(/\*\*(.*?)\*\*/g, '$1');  // Bold
-    cleaned = cleaned.replace(/\*(.*?)\*/g, '$1');      // Italic
-    cleaned = cleaned.replace(/`(.*?)`/g, '$1');        // Code
-    cleaned = cleaned.replace(/^\s*[-*+]\s+/gm, '- ');  // Standardize bullet points
-    
-    // Clean up any extra spaces but preserve line breaks
-    cleaned = cleaned.replace(/ +/g, ' ');
-    cleaned = cleaned.replace(/ +\n/g, '\n');
-    cleaned = cleaned.replace(/\n +/g, '\n');
-    
-    // Ensure consistent chapter formatting when numbers are present
-    cleaned = cleaned.replace(/^Chapter\s+(\d+):\s+(.*?)$/gm, '$1. $2');
-    
-    return cleaned;
   }
   
   /**

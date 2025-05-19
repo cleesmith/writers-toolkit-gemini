@@ -446,94 +446,13 @@ const TOOL_DEFS = [
   ]},
   { id: 'outline_writer', title: `Outline Writer`, description: `Generates a plot outline from your brainstorming file.  You can provide your own outline skeleton and let the AI fill in details.`, Class: OutlineWriter, options: [
     {
-      "name": "premise_file",
-      "label": "PREMISE_FILE",
-      "type": "file",
-      "description": "File containing the story premise (required)",
-      "required": true,
-      "default": "ideas.txt",
-      "group": "Input Files"
-    },
-    {
-      "name": "example_outline",
-      "label": "EXAMPLE_OUTLINE",
-      "type": "text",
-      "description": "Example outline for reference",
-      "required": false,
-      "default": null,
-      "group": "Input Files"
-    },
-    {
       "name": "concept_file",
-      "label": "CONCEPT_FILE",
+      "label": "Concept File",
       "type": "file",
       "description": "File containing detailed concept information (optional)",
-      "required": false,
-      "default": null,
+      "required": true,
+      "default": "concept.txt",
       "group": "Input Files"
-    },
-    {
-      "name": "characters_file",
-      "label": "CHARACTERS_FILE",
-      "type": "file",
-      "description": "File containing character descriptions (optional)",
-      "required": false,
-      "default": null,
-      "group": "Input Files"
-    },
-    {
-      "name": "sections",
-      "label": "SECTIONS",
-      "type": "number",
-      "description": "Number of main parts/sections in the outline (default: 5)",
-      "required": false,
-      "default": 5,
-      "group": "Output Configuration"
-    },
-    {
-      "name": "chapters",
-      "label": "CHAPTERS",
-      "type": "number",
-      "description": "Number of chapters in the outline (default: 25)",
-      "required": false,
-      "default": 25,
-      "group": "Output Configuration"
-    },
-    {
-      "name": "lang",
-      "label": "LANG",
-      "type": "text",
-      "description": "Language for writing (default: English)",
-      "required": false,
-      "default": "English",
-      "group": "Output Configuration"
-    },
-    {
-      "name": "title",
-      "label": "TITLE",
-      "type": "text",
-      "description": "Suggested title for the novel (optional)",
-      "required": false,
-      "default": null,
-      "group": "Output Configuration"
-    },
-    {
-      "name": "genre",
-      "label": "GENRE",
-      "type": "text",
-      "description": "Suggested genre for the novel (optional)",
-      "required": false,
-      "default": null,
-      "group": "Output Configuration"
-    },
-    {
-      "name": "detailed",
-      "label": "DETAILED",
-      "type": "boolean",
-      "description": "Generate a more detailed outline with chapter summaries",
-      "required": false,
-      "default": false,
-      "group": "Output Configuration"
     }
   ]},
   { id: 'world_writer', title: `World Writer`, description: `Extract and develop characters and world elements from a novel outline.  It requires: title, POV, and characters.txt and outline.txt.`, Class: WorldWriter, options: [

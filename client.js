@@ -24,7 +24,6 @@ class AiApiService {
     };
 
     const apiKeyFromEnv = process.env.GEMINI_API_KEY;
-    // console.log(`\n\n\napiKeyFromEnv=${apiKeyFromEnv}\n`);
     if (!apiKeyFromEnv) {
       console.error('GEMINI_API_KEY environment variable not found');
       this.apiKeyMissing = true;
@@ -36,8 +35,6 @@ class AiApiService {
     this.client = new GoogleGenAI({
       apiKey: apiKeyFromEnv
     });
-    // console.log(`AiApiService: config:`);
-    // console.dir(this.config);
   }
 
   /**
@@ -71,6 +68,9 @@ class AiApiService {
     if (!this.client || this.apiKeyMissing) {
       throw new Error('Gemini API client not initialized - API key missing');
     }
+
+    console.log(`\nmanuscriptFile=${manuscriptFile}`);
+    console.log(`\nbaseInstructions=${baseInstructions}`);
 
     const path = require('path');
     let uploadedFileMetadata = null;

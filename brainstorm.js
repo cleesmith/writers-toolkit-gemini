@@ -48,7 +48,7 @@ class BrainstormTool extends ToolBase {
       const ideasContent = await this.readIdeasFile(absoluteIdeasFile);
 
       // Prepare file and cache for API processing
-      const prepareResult = await this.apiService.prepareFileAndCache(ideasContent);
+      const prepareResult = await this.apiService.prepareFileAndCache(absoluteIdeasFile);
       prepareResult.messages.forEach(message => {
         this.emitOutput(`${message}\n`);
       });
