@@ -1,4 +1,4 @@
-// main.js - Writer's Toolkit main process
+// main.js
 const { app, BrowserWindow, Menu, ipcMain, dialog, screen, shell } = require('electron');
 
 // Handle Squirrel events
@@ -14,6 +14,7 @@ const { v4: uuidv4 } = require('uuid');
 const appState = require('./state.js');
 const toolSystem = require('./tool-system');
 const fileCache = require('./file-cache');
+const promptManager = require('./tool-prompts-manager');
 
 let mainWindow = null;
 
@@ -77,9 +78,21 @@ async function initializeApp() {
     const toolSystemResult = await toolSystem.initializeToolSystem(getCompleteApiSettings());
 
     AiApiServiceInstance = toolSystemResult.AiApiService;
-
     // console.log(`\nAiApiServiceInstance:`);
     // console.dir(AiApiServiceInstance, { depth: null });
+
+    // Initialize tool-prompts manager and create default prompts
+    try {
+      await promptManager.ensurePromptsDirectory();
+      console.log('Tool prompts directory initialized');
+      // Optionally pre-create all prompt files with default content
+      // This will silently skip any prompts that don't have 
+      // content in the tool-prompts.js file
+      await promptManager.initializeAllPrompts();
+    } catch (err) {
+      console.error('Error initializing tool prompts directory:', err);
+      // Non-fatal error, continue app initialization
+    }
 
     // Setup IPC handlers (they can now safely access AiApiServiceInstance)
     setupIPCHandlers();

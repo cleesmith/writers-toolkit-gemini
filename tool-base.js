@@ -3,6 +3,7 @@ const fs = require('fs/promises');
 const path = require('path');
 const fileCache = require('./file-cache');
 const appState = require('./state.js');
+const promptManager = require('./tool-prompts-manager');
 
 /**
  * Enhanced Base class for all tools
@@ -24,6 +25,45 @@ class ToolBase {
     this.title = this.name.split('_')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
+  }
+
+  async getPrompt() {
+    try {
+      // Try to get prompt from the manager (it will create the prompt if needed)
+      const prompt = await promptManager.getPrompt(this.name);
+      
+      if (prompt) {
+        this.emitOutput(`Using prompt for ${this.name}\n`);
+        return prompt;
+      } else {
+        // If we still couldn't get a prompt, show the error message
+        const os = require('os');
+        const path = require('path');
+        const homeDir = os.homedir();
+        const writingDir = path.join(homeDir, 'writing');
+        const promptsDir = path.join(writingDir, 'tool-prompts');
+        const promptFilename = `${this.name}.txt`;
+        const customPromptPath = path.join(promptsDir, promptFilename);
+        
+        let errorMessage = `\n`;
+        errorMessage += `⛔️ PROMPT FILE NOT FOUND ⛔️\n\n`;
+        errorMessage += `A custom prompt file is required to run this tool.\n\n`;
+        errorMessage += `You need to create or edit the prompt file at:\n`;
+        errorMessage += `${customPromptPath}\n\n`;
+        errorMessage += `Here's how to fix this:\n`;
+        errorMessage += `1. The application uses a folder called 'tool-prompts' in your writing directory.\n`;
+        errorMessage += `2. Each tool needs its own text file with the AI instructions.\n`;
+        errorMessage += `3. For the '${this.title}' tool, create: "${promptFilename}"\n\n`;
+        errorMessage += `You can use the built-in editor to create this file.\n`;
+        
+        // Emit error to UI
+        this.emitOutput(errorMessage);
+        return null;
+      }
+    } catch (error) {
+      console.error(`Error getting prompt for ${this.name}:`, error);
+      return null;
+    }
   }
   
   /**
@@ -407,33 +447,6 @@ ${content}`;
       return text;
     }
     return output;
-  }
-
-  async getPrompt() {
-    const os = require('os');
-    const path = require('path');
-    const fs = require('fs/promises');
-    
-    // Get paths dynamically using app state
-    const homeDir = os.homedir();
-    const writingDir = path.join(homeDir, 'writing');
-    const promptsDir = path.join(writingDir, 'tool-prompts');
-    const promptFilename = `${this.name}.txt`;
-    const customPromptPath = path.join(promptsDir, promptFilename);
-    
-    try {
-      // Try to read custom prompt
-      const customPrompt = await fs.readFile(customPromptPath, 'utf-8');
-      console.log(`Using custom prompt for ${this.name}`);
-      this.emitOutput(`Using custom prompt from: ${customPromptPath}\n`);
-      return customPrompt;
-    } catch (error) {
-      // Log a simple message without stack trace
-      console.log(`Custom prompt not found for ${this.name}`);
-      
-      // Return null instead of throwing an error
-      return null;
-    }
   }
 
 }

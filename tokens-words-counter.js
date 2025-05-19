@@ -10,14 +10,8 @@ const fs = require('fs').promises;
  */
 class TokensWordsCounter extends ToolBase {
   constructor(apiService, config = {}) {
-    //     this.name              this.config
     super('tokens_words_counter', config);
     this.apiService = apiService;
-    // // Assert that cache is available - fail early if missing
-    // if (!config.aiApiCache) {
-    //   throw new Error('Requires AI Api Cache to be configured');
-    // }
-    // this.aiApiCache = config.aiApiCache;
   }
   
   /**
@@ -56,10 +50,8 @@ class TokensWordsCounter extends ToolBase {
 
     try {
       // Clear the cache for this tool
-      const toolName = 'tokens_words_counter';
-      fileCache.clear(toolName);
+      fileCache.clear(this.name);
 
-      // Extract options
       let inputFile = options.input_file;
 
       const outputFiles = [];
@@ -78,10 +70,8 @@ class TokensWordsCounter extends ToolBase {
         inputFile = path.join(saveDir, inputFile);
       }
 
-      // Read the input file
       const text = await this.readInputFile(inputFile);
       
-      // Basic token and word counting
       const wordCount = this.countWords(text);
       this.emitOutput(`Word count: ${wordCount.toLocaleString()}\n`);
       
@@ -99,10 +89,7 @@ class TokensWordsCounter extends ToolBase {
           wordsPerToken = (totalTokens / wordCount);
           this.emitOutput(`Token to word ratio: ${wordsPerToken}\n\n`);
         }
-
-      // const wordsPerToken = totalTokens > 0 ? wordCount / totalTokens : 0;
       
-      // Generate the full report
       let reportContent = this.generateReport(
         inputFile, 
         wordCount, 
@@ -111,7 +98,7 @@ class TokensWordsCounter extends ToolBase {
       );
       
       // Output the summary report to the console
-      this.emitOutput('\n' + reportContent + '\n');
+      this.emitOutput(reportContent + '\n');
       
       // Save the report to a file
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -130,11 +117,10 @@ class TokensWordsCounter extends ToolBase {
       outputFiles.push(outputFile);
       
       // Add to the shared file cache
-      fileCache.addFile(toolName, outputFile);
+      fileCache.addFile(this.name, outputFile);
       
       this.emitOutput('Analysis complete!\n');
       
-      // Return the result
       return {
         success: true,
         outputFiles,
@@ -160,12 +146,11 @@ class TokensWordsCounter extends ToolBase {
    * @returns {string} Formatted report
    */
   generateReport(filePath, wordCount, totalTokens, wordsPerToken) {
-    let report = `Tokens & Words Counter Tool
+    let report = `
 
-MANUSCRIPT ANALYSIS REPORT  ${new Date().toLocaleString()}
+TOKENS & WORDS COUNTER REPORT  ${new Date().toLocaleString()}
 
 File: ${filePath}
-
 
 -------
 SUMMARY
