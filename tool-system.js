@@ -218,15 +218,6 @@ const TOOL_DEFS = [
         }
       ],
       "group": "Input Files"
-    },
-    {
-      "name": "language",
-      "label": "Language",
-      "type": "text",
-      "description": "Language for proofreading (e.g., English, Spanish, French)",
-      "required": false,
-      "default": "English",
-      "group": "Settings"
     }
   ]},
   { id: 'line_editing', title: `Line Editing`, description: `Performs line editing for a specified chapter in your manuscript, as this can be an intensive task.`, Class: LineEditing, options: [
@@ -274,15 +265,6 @@ const TOOL_DEFS = [
         }
       ],
       "group": "Input Files"
-    },
-    {
-      "name": "language",
-      "label": "Language",
-      "type": "text",
-      "description": "Language for proofreading (e.g., English, Spanish, French)",
-      "required": false,
-      "default": "English",
-      "group": "Settings"
     }
   ]},
   { id: 'proofreader_spelling', title: `Proofreader Spelling`, description: `Performs spell checking for an entire manuscript.`, Class: ProofreaderSpelling, options: [
@@ -300,15 +282,6 @@ const TOOL_DEFS = [
         }
       ],
       "group": "Input Files"
-    },
-    {
-      "name": "language",
-      "label": "Language",
-      "type": "text",
-      "description": "Language for proofreading (e.g., English, Spanish, French)",
-      "required": false,
-      "default": "English",
-      "group": "Settings"
     }
   ]},
   { id: 'proofreader_punctuation', title: `Proofreader Punctuation`, description: `Manuscript analysis focused on evaluating punctuation effectiveness.\nIt detects issues such as run-on sentences, missing commas, and irregular punctuation patterns that may hinder clarity and flow.\nConfigurable analysis levels, strictness settings, and selectable punctuation elements enable it to generate a detailed report with examples, explanations, and recommendations for enhancing punctuation and overall readability.`, Class: ProofreaderPunctuation, options: [
@@ -348,42 +321,6 @@ const TOOL_DEFS = [
       "required": true,
       "default": "manuscript.txt",
       "group": "Input Files"
-    },
-    {
-      "name": "outline_file",
-      "label": "outline_file",
-      "type": "file",
-      "description": "File containing the story outline (optional)",
-      "required": false,
-      "default": "",
-      "group": "Input Files"
-    },
-    {
-      "name": "ascii_art",
-      "label": "ascii_art",
-      "type": "boolean",
-      "description": "Include simple ASCII art visualization in the output",
-      "required": false,
-      "default": false,
-      "group": "Output Configuration"
-    },
-    {
-      "name": "analysis_depth",
-      "label": "analysis_depth",
-      "type": "text",
-      "description": "Depth of plot thread analysis to perform (default: comprehensive)",
-      "required": false,
-      "default": "comprehensive",
-      "group": "Analysis Options"
-    },
-    {
-      "name": "thread_focus",
-      "label": "thread_focus",
-      "type": "text",
-      "description": "Optional list of specific plot threads to focus on (e.g., 'romance' 'mystery'). \nAlternative default: [\"romance\", \"mystery\"]",
-      "required": false,
-      "default": null,
-      "group": "Output Configuration"
     }
   ]},
   { id: 'tense_consistency_checker', title: `Tense Consistency Checker`, description: `Examines the manuscript to evaluate verb tense consistency. It identifies shifts between past and present tense that might confuse readers, focusing on unintentional changes in narrative flow. With customizable analysis levels and configurable chapter markers, it generates a detailed report with examples, explanations, and suggestions for improving consistency.`, Class: TenseConsistencyChecker, options: [
@@ -395,24 +332,6 @@ const TOOL_DEFS = [
       "required": true,
       "default": "manuscript.txt",
       "group": "Input Files"
-    },
-    {
-      "name": "analysis_level",
-      "label": "analysis_level",
-      "type": "text",
-      "description": "Level of tense analysis detail:\nbasic, standard, detailed",
-      "required": false,
-      "default": "detailed",
-      "group": "Analysis Options"
-    },
-    {
-      "name": "chapter_markers",
-      "label": "CHAPTER_MARKERS",
-      "type": "text",
-      "description": "Text that marks the start of chapters (default: 'Chapter')",
-      "required": false,
-      "default": "Chapter",
-      "group": "Analysis Options"
     }
   ]},
   { id: 'character_analyzer', title: `Character Analyzer`, description: `Analyzes manuscript, outline, and world files to identify and compare character appearances. It extracts a master character list that details which files each character appears in, examines consistency across documents, and highlights discrepancies in names, roles, or relationships. The analysis produces a detailed report with sections and recommendations to improve character coherence. This is needed because AI rough draft writing has a tendency to add new characters! AI just loves new characters, especially those that whisper and hear echoes.`, Class: CharacterAnalyzer, options: [
@@ -423,24 +342,6 @@ const TOOL_DEFS = [
       "description": "File containing the manuscript to analyze (required)",
       "required": true,
       "default": "manuscript.txt",
-      "group": "Input Files"
-    },
-    {
-      "name": "outline_file",
-      "label": "OUTLINE_FILE",
-      "type": "file",
-      "description": "File containing the story outline (optional)",
-      "required": false,
-      "default": "",
-      "group": "Input Files"
-    },
-    {
-      "name": "world_file",
-      "label": "WORLD_FILE",
-      "type": "file",
-      "description": "File containing the story world/lore information (optional)",
-      "required": false,
-      "default": "",
       "group": "Input Files"
     }
   ]},
@@ -453,24 +354,6 @@ const TOOL_DEFS = [
       "required": true,
       "default": "manuscript.txt",
       "group": "Input Files"
-    },
-    {
-      "name": "analysis_level",
-      "label": "analysis_level",
-      "type": "text",
-      "description": "Level of analysis detail (default: standard)\nChoices: basic, standard, detailed",
-      "required": false,
-      "default": "all",
-      "group": "Analysis Options"
-    },
-    {
-      "name": "focus_areas",
-      "label": "focus_areas",
-      "type": "text",
-      "description": "Specific areas to focus analysis on (default: all areas)\nChoices: qualifiers, adverbs, adjectives, imagery",
-      "required": false,
-      "default": "all",
-      "group": "Analysis Options"
     }
   ]},
   { id: 'dangling_modifier_checker', title: `Dangling Modifier Checker`, description: `Manuscript analysis software that detects dangling and misplaced modifiers.\nIt examines text to pinpoint instances where descriptive phrases don\u2019t logically connect to their intended subjects, potentially causing confusion or unintended humor.\nWith customizable analysis level, sensitivity, and specific modifier types, it generates a detailed report complete with examples, explanations, and revision suggestions to enhance clarity and precision.`, Class: DanglingModifierChecker, options: [
@@ -482,87 +365,6 @@ const TOOL_DEFS = [
       "required": true,
       "default": "manuscript.txt",
       "group": "Input Files"
-    },
-    {
-      "name": "analysis_level",
-      "label": "Select Analysis Level",
-      "type": "select",
-      "description": "Level of analysis detail (default: all)",
-      "required": true,
-      "default": "all",
-      "group": "Analysis Options",
-      "choices": [
-        {
-          "value": "basic",
-          "label": "basic"
-        },
-        {
-          "value": "standard",
-          "label": "standard"
-        },
-        {
-          "value": "detailed",
-          "label": "detailed"
-        },
-        {
-          "value": "all",
-          "label": "all"
-        }
-      ]
-    },
-    {
-      "name": "modifier_types",
-      "label": "Select Modifier Types",
-      "type": "select",
-      "description": "Specific modifier types to focus on (default: all types)",
-      "required": true,
-      "default": "all",
-      "group": "Analysis Options",
-      "choices": [
-        {
-          "value": "dangling",
-          "label": "dangling"
-        },
-        {
-          "value": "misplaced",
-          "label": "misplaced"
-        },
-        {
-          "value": "squinting",
-          "label": "squinting"
-        },
-        {
-          "value": "limiting",
-          "label": "limiting"
-        },
-        {
-          "value": "all",
-          "label": "all"
-        }
-      ]
-    },
-    {
-      "name": "sensitivity",
-      "label": "Select Sensitivity Level",
-      "type": "select",
-      "description": "Sensitivity level for modifier detection (default: medium)",
-      "required": true,
-      "default": "medium",
-      "group": "Analysis Options",
-      "choices": [
-        {
-          "value": "low",
-          "label": "low"
-        },
-        {
-          "value": "medium",
-          "label": "medium"
-        },
-        {
-          "value": "high",
-          "label": "high"
-        }
-      ]
     }
   ]},
   { id: 'rhythm_analyzer', title: `Rhythm Analyzer`, description: `Manuscript analysis utility for evaluating the rhythm and flow of prose.\nIt measures sentence length variations, detects monotonous patterns, and highlights sections where the writing\u2019s rhythm doesn\u2019t match the intended mood.\n Configurable analysis levels, selectable scene types, and adjustable sensitivity settings allow it to generate a detailed report with examples, explanations, and suggestions for enhancing overall narrative rhythm.`, Class: RhythmAnalyzer, options: [
@@ -574,33 +376,6 @@ const TOOL_DEFS = [
       "required": true,
       "default": "manuscript.txt",
       "group": "Input Files"
-    },
-    {
-      "name": "analysis_level",
-      "label": "analysis_level",
-      "type": "text",
-      "description": "Level of analysis detail (default: standard)\nChoices: basic, standard, detailed",
-      "required": false,
-      "default": "all",
-      "group": "Analysis Options"
-    },
-    {
-      "name": "scene_types",
-      "label": "scene_types",
-      "type": "text",
-      "description": "Specific scene types to focus analysis on (default: all types)\nChoices: action, dialogue, description, exposition",
-      "required": false,
-      "default": "all",
-      "group": "Analysis Options"
-    },
-    {
-      "name": "rhythm_sensitivity",
-      "label": "rhythm_sensitivity",
-      "type": "text",
-      "description": "Sensitivity level for rhythm analysis (default: medium)\nChoices: low, medium, high",
-      "required": false,
-      "default": "medium",
-      "group": "Analysis Options"
     }
   ]},
   { id: 'crowding_leaping_evaluator', title: `Crowding Leaping Evaluator`, description: `Manuscript pacing evaluator that examines narrative structure for pacing issues.\nIt identifies overly dense sections (crowding) and abrupt transitions or time jumps (leaping) based on concepts inspired by Ursula K. Le Guin.\n With configurable analysis levels and sensitivity settings, it produces a detailed report\u2014including optional text-based visualizations\u2014that offers feedback and suggestions for improving narrative rhythm and clarity.`, Class: CrowdingLeapingEvaluator, options: [
@@ -645,57 +420,6 @@ const TOOL_DEFS = [
       "required": true,
       "default": "manuscript.txt",
       "group": "Input Files"
-    },
-    {
-      "name": "book_type",
-      "label": "Book Type",
-      "type": "select",
-      "description": "Select the type of book",
-      "required": true,
-      "default": "fiction",
-      "choices": [
-        {
-          "value": "fiction",
-          "label": "Fiction"
-        },
-        {
-          "value": "nonfiction",
-          "label": "Non-Fiction"
-        }
-      ],
-      "group": "Book Information"
-    },
-    {
-      "name": "existing_title",
-      "label": "Existing Title (Optional)",
-      "type": "text",
-      "description": "If you already have a title, enter it here for evaluation",
-      "required": false,
-      "group": "Book Information"
-    },
-    {
-      "name": "title_ideas",
-      "label": "Title Ideas/Concepts (Optional)",
-      "type": "text",
-      "description": "Any title themes or concepts you want incorporated",
-      "required": false,
-      "group": "Book Information"
-    },
-    {
-      "name": "target_audience",
-      "label": "Target Audience (Optional)",
-      "type": "text",
-      "description": "Describe your intended audience (age group, interests, etc.)",
-      "required": false,
-      "group": "Book Information"
-    },
-    {
-      "name": "include_html",
-      "label": "Include HTML Description",
-      "type": "boolean",
-      "description": "Generate an HTML-formatted description for KDP",
-      "default": true,
-      "group": "Output Options"
     }
   ]},
   { id: 'drunken', title: `Drunken`, description: `AI pretends to be drunk while critiquing your manuscript. Sometimes insightful, other times just an annoying drunk.`, Class: Drunken, options: [
@@ -718,96 +442,6 @@ const TOOL_DEFS = [
       "required": true,
       "default": "ideas.txt",
       "group": "Input Files"
-    },
-    {
-      "name": "continue",
-      "label": "CONTINUE",
-      "type": "boolean",
-      "description": "Continue building on existing ideas in the ideas file",
-      "required": false,
-      "default": false,
-      "group": "Operation Mode"
-    },
-    {
-      "name": "lang",
-      "label": "LANG",
-      "type": "text",
-      "description": "Language for writing (default: English)",
-      "required": false,
-      "default": "English",
-      "group": "Content Configuration"
-    },
-    {
-      "name": "title",
-      "label": "TITLE",
-      "type": "text",
-      "description": "Suggested title for the writing (optional)",
-      "required": false,
-      "default": null,
-      "group": "Content Configuration"
-    },
-    {
-      "name": "genre",
-      "label": "GENRE",
-      "type": "text",
-      "description": "Suggested genre for the writing (optional)",
-      "required": false,
-      "default": null,
-      "group": "Content Configuration"
-    },
-    {
-      "name": "num_characters",
-      "label": "NUM_CHARACTERS",
-      "type": "number",
-      "description": "Number of main characters to generate (default: 5)",
-      "required": false,
-      "default": 5,
-      "group": "Content Configuration"
-    },
-    {
-      "name": "worldbuilding_depth",
-      "label": "WORLDBUILDING_DEPTH",
-      "type": "number",
-      "description": "Depth of worldbuilding detail (1-5, where 5 is most detailed) (default: 3)",
-      "required": false,
-      "default": 3,
-      "group": "Content Configuration"
-    },
-    {
-      "name": "character_relationships",
-      "label": "CHARACTER_RELATIONSHIPS",
-      "type": "boolean",
-      "description": "Include detailed character relationships",
-      "required": false,
-      "default": false,
-      "group": "Content Configuration"
-    },
-    {
-      "name": "concept_only",
-      "label": "CONCEPT_ONLY",
-      "type": "boolean",
-      "description": "Generate only the concept file",
-      "required": false,
-      "default": false,
-      "group": "Operation Mode"
-    },
-    {
-      "name": "characters_only",
-      "label": "CHARACTERS_ONLY",
-      "type": "boolean",
-      "description": "Generate only the characters file",
-      "required": false,
-      "default": false,
-      "group": "Operation Mode"
-    },
-    {
-      "name": "allow_new_characters",
-      "label": "ALLOW_NEW_CHARACTERS",
-      "type": "boolean",
-      "description": "Allow creation of new characters not in the ideas file",
-      "required": false,
-      "default": false,
-      "group": "Content Configuration"
     }
   ]},
   { id: 'outline_writer', title: `Outline Writer`, description: `Generates a plot outline from your brainstorming file.  You can provide your own outline skeleton and let the AI fill in details.`, Class: OutlineWriter, options: [
