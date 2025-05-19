@@ -80,9 +80,7 @@ class BrainstormTool extends ToolBase {
       
       this.emitOutput("\nGeneration complete!\n");
       this.emitOutput(`All content has been appended to: ${absoluteIdeasFile}\n`);
-      this.emitOutput(`To continue developing this story, use the --continue option with this tool.\n`);
       
-      // Return the result
       return {
         success: true,
         outputFiles,
