@@ -341,7 +341,7 @@ DO NOT repeat any parts of the manuscript that are correct or do not have issues
    * @param {boolean} [noCache=false] - Whether to skip using cached content
    * @returns {Promise<void>}
    */
-  async streamWithThinking(prompt, onText, noCache = false, options = {}) {
+  async streamWithThinking(prompt, onText, noCache = false, includeMetaData = true, options = {}) {
     if (!this.client || this.apiKeyMissing) {
       throw new Error('Gemini API client not initialized - API key missing');
     }
@@ -417,9 +417,13 @@ DO NOT repeat any parts of the manuscript that are correct or do not have issues
             modelVersion: chunk.modelVersion,
             usageMetadata: chunk.usageMetadata
           };
+
+          const doMetaData = includeMetaData !== undefined ? includeMetaData : true;
           
-          // Append metadata as text to the current text
-          currentText += '\n\n--- RESPONSE METADATA ---\n' + JSON.stringify(metadata, null, 2);
+          if (doMetaData) {
+            // Append metadata as text to the current text
+            currentText += '\n\n--- RESPONSE METADATA ---\n' + JSON.stringify(metadata, null, 2);
+          }
         }
         
         onText(currentText);

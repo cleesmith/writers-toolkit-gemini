@@ -28,14 +28,12 @@ class ChapterWriter extends ToolBase {
     // Extract options
     const request = options.request;
     const chaptersToWrite = options.chapters_to_write;
-    const manuscriptFile = options.manuscript || 'manuscript.txt';
-    const outlineFile = options.outline || 'outline.txt';
-    const worldFile = options.world || 'world.txt';
-    const language = options.lang || 'English';
-    const chapterDelay = options.chapter_delay || 15;
+    const manuscriptFile = options.manuscript;
+    const outlineFile = options.outline;
+    const worldFile = options.world;
+    const language = options.lang;
+    const chapterDelay = options.chapter_delay;
     const noAppend = options.no_append || false;
-    const backup = options.backup || false;
-    const showTokenStats = options.show_token_stats || false;
     
     const saveDir = options.save_dir || appState.CURRENT_PROJECT_PATH;
     const outputFiles = [];
@@ -93,8 +91,6 @@ class ChapterWriter extends ToolBase {
             worldFile,
             language,
             noAppend,
-            backup,
-            showTokenStats,
             saveDir,
             i + 1,
             chapterList.length
@@ -113,7 +109,7 @@ class ChapterWriter extends ToolBase {
         }
         
         // Output summary of all processed chapters
-        this.emitOutput("\n" + "=".repeat(80) + "\n");
+        this.emitOutput("\n\n" + "=".repeat(80) + "\n");
         this.emitOutput("SUMMARY OF ALL CHAPTERS PROCESSED\n");
         this.emitOutput("=".repeat(80) + "\n");
         
@@ -126,7 +122,7 @@ class ChapterWriter extends ToolBase {
           const minutes = Math.floor(result.elapsedTime / 60);
           const seconds = result.elapsedTime % 60;
           
-          this.emitOutput(`Chapter ${result.chapterNum}: ${result.wordCount} words, ${minutes}m ${seconds.toFixed(1)}s, saved to: ${path.basename(result.chapterFile)}\n`);
+          this.emitOutput(`Chapter ${result.chapterNum}: ${result.wordCount} words, ${minutes}m ${seconds.toFixed(1)}s, saved to: ${path.basename(result.chapterFile)}\n\n`);
         }
       } else {
         // Process a single chapter
@@ -137,8 +133,6 @@ class ChapterWriter extends ToolBase {
           worldFile,
           language,
           noAppend,
-          backup,
-          showTokenStats,
           saveDir
         );
         
@@ -178,8 +172,6 @@ class ChapterWriter extends ToolBase {
    * @param {string} worldFile - Path to world file
    * @param {string} language - Language to write in
    * @param {boolean} noAppend - Whether to disable auto-appending to manuscript
-   * @param {boolean} backup - Whether to create a backup of manuscript
-   * @param {boolean} showTokenStats - Whether to only show token stats without generation
    * @param {string} saveDir - Directory to save output files
    * @param {number} currentIdx - Current chapter index (for multiple chapters)
    * @param {number} totalChapters - Total number of chapters (for multiple chapters)
@@ -192,8 +184,6 @@ class ChapterWriter extends ToolBase {
     worldFile,
     language,
     noAppend,
-    backup,
-    showTokenStats,
     saveDir,
     currentIdx = null,
     totalChapters = null
@@ -269,7 +259,7 @@ class ChapterWriter extends ToolBase {
       const promptTokens = await this.apiService.countTokens(prompt);
       
       // Call AI API with streaming
-      this.emitOutput(`\nSending request to AI API (streaming)...\n`);
+      this.emitOutput(`\nSending request to AI API (streaming)...\n\n`);
       
       const startTime = Date.now();
       let fullResponse = "";
@@ -282,6 +272,7 @@ class ChapterWriter extends ToolBase {
             this.emitOutput(textDelta);
           },
           true, // don't use cached file
+          false, // don't show metadata
           { includeThinking: false } // don't include thinking in the response
         );
       } catch (error) {
@@ -310,8 +301,7 @@ class ChapterWriter extends ToolBase {
       if (!noAppend) {
         const appendSuccess = await this.appendToManuscript(
           fullResponse, 
-          this.ensureAbsolutePath(manuscriptFile, saveDir), 
-          backup
+          this.ensureAbsolutePath(manuscriptFile, saveDir)
         );
         
         if (appendSuccess) {
@@ -321,7 +311,7 @@ class ChapterWriter extends ToolBase {
         }
       }
       
-      this.emitOutput(`Completed Chapter ${chapterNum}: ${chapterWordCount} words (${minutes}m ${seconds.toFixed(2)}s) - saved to: ${path.basename(chapterPath)}\n`);
+      this.emitOutput(`\nCompleted Chapter ${chapterNum}: ${chapterWordCount} words (${minutes}m ${seconds.toFixed(2)}s) - saved to: ${path.basename(chapterPath)}\n`);
       
       return {
         chapterNum,
@@ -372,51 +362,7 @@ class ChapterWriter extends ToolBase {
     
     return { chapterNum, formattedChapter };
   }
-  
-  // /**
-  //  * Format chapter request for consistency in the prompt
-  //  * @param {string} request - Chapter request text
-  //  * @returns {string} - Formatted chapter request
-  //  */
-  // formatChapterRequest(request) {
-  //   // Check if already in "Chapter X: Title" format
-  //   if (/^Chapter\s+\d+/i.test(request)) {
-  //     return request;
-  //   }
-    
-  //   // Extract number and title
-  //   const match = request.match(/^(\d+)[:\.]?\s+(.+)$/);
-  //   if (match) {
-  //     const [, num, title] = match;
-  //     return `Chapter ${num}: ${title}`;
-  //   }
-    
-  //   // Fallback (should never happen due to extractChapterNum validation)
-  //   return request;
-  // }
-  
-  // /**
-  //  * Format outline request for consistency
-  //  * @param {string} request - Chapter request text
-  //  * @returns {string} - Formatted outline request
-  //  */
-  // formatOutlineRequest(request) {
-  //   // Check if already in "Chapter X: Title" format
-  //   if (/^Chapter\s+\d+/i.test(request)) {
-  //     // Convert to "Chapter X. Title" format
-  //     return request.replace(/^(Chapter\s+\d+):\s+(.+)$/i, '$1. $2');
-  //   }
-    
-  //   // Extract number and title
-  //   const match = request.match(/^(\d+)[:\.]?\s+(.+)$/);
-  //   if (match) {
-  //     const [, num, title] = match;
-  //     return `Chapter ${num}. ${title}`;
-  //   }
-    
-  //   // Fallback
-  //   return request;
-  // }
+
   /**
    * Format chapter request for consistency in the prompt
    * @param {string} request - Chapter request text
@@ -472,51 +418,6 @@ class ChapterWriter extends ToolBase {
    * @param {string} language - Language to write in
    * @returns {string} - Complete prompt for AI API
    */
-//   createChapterPrompt(formattedRequest, formattedOutlineRequest, outlineContent, worldContent, novelContent, language) {
-//     return `
-// You are a professional fiction writer with expertise in creating engaging, readable prose.
-
-// === OUTLINE ===
-// ${outlineContent}
-// === END OUTLINE ===
-
-// === WORLD ===
-// ${worldContent}
-// === END WORLD ===
-
-// === EXISTING MANUSCRIPT ===
-// ${novelContent}
-// === END EXISTING MANUSCRIPT ===
-
-// You are a skilled novelist writing ${formattedRequest} in fluent, authentic ${language}. 
-// Draw upon your knowledge of worldwide literary traditions, narrative techniques, and creative approaches from across cultures, while expressing everything in natural, idiomatic ${language} that honors its unique linguistic character.
-
-// Consider the following in your thinking:
-// - IMPORTANT: always read thoroughly the included WORLD, OUTLINE, and MANUSCRIPT.
-// - Refer to the included WORLD of characters and settings provided.
-// - Analyze how each chapter advances the overall narrative and character development.
-// - Creating compelling opening and closing scenes.
-// - Incorporating sensory details and vivid descriptions.
-// - Maintaining consistent tone and style with previous chapters.
-// - CHARACTER RESTRICTION: Do NOT create any new named characters. Only use characters explicitly mentioned in the WORLD, OUTLINE, or MANUSCRIPT. You may only add minimal unnamed incidental characters when absolutely necessary (e.g., waiter, cashier, butler, taxi/uber driver, stewardess, landlord) but keep these to an absolute minimum.
-// - WORLD FOCUS: Make extensive use of the world details provided in the WORLD section. Incorporate the settings, locations, history, culture, and atmosphere described there to create an immersive, consistent environment.
-// - DIALOGUE EMPHASIS: Significantly increase the amount of dialogue, both external conversations between characters and internal thoughts/monologues. At least 40-50% of the content should be dialogue. Use dialogue to reveal character, advance plot, create tension, and show (rather than tell) emotional states. Ensure each character's dialogue reflects their unique personality, background, and relationship dynamics as established in the WORLD and MANUSCRIPT.
-
-// IMPORTANT:
-// - NO Markdown formatting = NO Markdown! Never respond with Markdown formatting, plain text only!
-// - Use hyphens only for legitimate ${language} words
-// - Begin with: ${formattedOutlineRequest} and write in plain text only
-// - Write 2,000-3,000 words
-// - Do not repeat content from existing chapters
-// - Do not start working on the next chapter
-// - Maintain engaging narrative pacing through varied sentence structure, strategic scene transitions, and appropriate balance between action, description, and reflection
-// - Prioritize natural, character-revealing dialogue as the primary narrative vehicle, ensuring each conversation serves multiple purposes (character development, plot advancement, conflict building). Include distinctive speech patterns for different characters, meaningful subtext, and strategic dialogue beats, while minimizing lengthy exposition and internal reflection.
-// - Write all times in 12-hour numerical format with a space before lowercase am/pm (e.g., "10:30 am," "2:15 pm," "7:00 am") rather than spelling them out as words or using other formats
-// - Prioritize lexical diversity by considering multiple alternative word choices before finalizing each sentence. For descriptive passages especially, select precise, context-specific terminology rather than relying on common metaphorical language. When using figurative language, vary the sensory domains from which metaphors are drawn (visual, auditory, tactile, etc.). Actively monitor your own patterns of word selection across paragraphs and deliberately introduce variation.
-// - Do NOT reveal or show or return your thoughts and thinking in your final response and writing!
-
-// `;
-//   }
   createChapterPrompt(formattedRequest, formattedOutlineRequest, outlineContent, worldContent, novelContent, language) {
     return `
   You are a professional fiction writer with expertise in creating engaging, readable prose.
@@ -584,20 +485,12 @@ class ChapterWriter extends ToolBase {
    * Append the new chapter to the manuscript file
    * @param {string} chapterText - Text of the new chapter
    * @param {string} manuscriptPath - Path to the manuscript file
-   * @param {boolean} backup - Whether to create a backup
    * @returns {Promise<boolean>} - Whether appending was successful
    */
-  async appendToManuscript(chapterText, manuscriptPath, backup) {
+  async appendToManuscript(chapterText, manuscriptPath) {
     try {
       // Read the existing manuscript
       let manuscriptContent = await fs.readFile(manuscriptPath, 'utf8');
-      
-      // Create backup if requested
-      if (backup) {
-        const timestamp = new Date().toISOString().replace(/[-:.]/g, '').substring(0, 15);
-        const backupPath = `${manuscriptPath}_${timestamp}.bak`;
-        await fs.writeFile(backupPath, manuscriptContent);
-      }
       
       // Ensure manuscript ends with exactly one newline
       manuscriptContent = manuscriptContent.trim() + '\n';

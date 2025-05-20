@@ -504,15 +504,6 @@ const TOOL_DEFS = [
   ]},
   { id: 'chapter_writer', title: `Chapter Writer`, description: `Uses the outline, chapters list, world document, and any existing manuscript to write rough draft chapters.  *HIGHLY RECOMMENDED: Even though this is very rough draft 🌬️ writing, it really does help the AIs to have a good start by self-writing Chapter 1 or intensely edit the AI's first attempt at Chapter 1.  *CAVEAT EMPTOR: Anthropic's Claudes do a much better job, if you have the money for a API key; Google's Geminis are cheaper but less quality. YMMV🤔`, Class: ChapterWriter, options: [
     {
-      "name": "chapters_to_write",
-      "label": "chapters_to_write",
-      "type": "file",
-      "description": "Path to a file containing a list of chapters to write sequentially, and the format is \"9. Chapter Title\" per line. \nIt may contain one or more chapters. \nIt must match the chapter format in the outline.",
-      "required": false,
-      "default": "chapters.txt",
-      "group": "Input Files"
-    },
-    {
       "name": "manuscript",
       "label": "manuscript",
       "type": "file",
@@ -536,7 +527,7 @@ const TOOL_DEFS = [
       "type": "file",
       "description": "Path to world file",
       "required": false,
-      "default": "",
+      "default": "world.txt",
       "group": "Input Files"
     },
     {
@@ -576,30 +567,21 @@ const TOOL_DEFS = [
       "group": "Input Files"
     },
     {
-      "name": "backup",
-      "label": "backup",
-      "type": "boolean",
-      "description": "Create backup of manuscript file before appending (default: False)",
-      "required": false,
-      "default": false,
-      "group": "Output Configuration"
-    },
-    {
-      "name": "show_token_stats",
-      "label": "show_token_stats",
-      "type": "boolean",
-      "description": "Show tokens stats but do not call API\nYou just want to double check the settings/numbers.",
-      "required": false,
-      "default": false,
-      "group": "Claude API Configuration"
-    },
-    {
       "name": "request",
-      "label": "request",
+      "label": "Single chapter only",
       "type": "text",
       "description": "Single chapter format: \"Chapter 9: Title\"   or  \"9: Title\"   or  \"9. Title\"",
       "required": false,
       "default": null,
+      "group": "Input Files"
+    },
+    {
+      "name": "chapters_to_write",
+      "label": "List of chapters to write",
+      "type": "file",
+      "description": "Path to a file containing a list of chapters to write sequentially, and the format is \"9. Chapter Title\" per line. \nIt may contain one or more chapters. \nIt must match the chapter format in the outline.",
+      "required": false,
+      "default": "",
       "group": "Input Files"
     }
   ]},
