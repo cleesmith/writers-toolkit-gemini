@@ -6,7 +6,7 @@ const appState = require('./state.js');
 const fs = require('fs/promises');
 
 /**
- * OutlineWriter Tool
+ * Outline Writer Tool
  * Generates a plot outline from your brainstorming.
  */
 class OutlineWriter extends ToolBase {
@@ -24,7 +24,7 @@ class OutlineWriter extends ToolBase {
     // Clear the cache for this tool
     fileCache.clear(this.name);
     
-    const conceptFile = options.concept_file;
+    const brainstormFile = options.brainstorm_file;
     const saveDir = options.save_dir || appState.CURRENT_PROJECT_PATH;
 
     const outputFiles = [];
@@ -38,33 +38,19 @@ class OutlineWriter extends ToolBase {
     }
     
     try {
-      let conceptContent = "";
+      let brainstormContent = "";
     
       // Ensure file paths are absolute
-      const absoluteConceptFile = this.ensureAbsolutePath(conceptFile, saveDir);
+      const absoluteBrainstormFile = this.ensureAbsolutePath(brainstormFile, saveDir);
 
       try {
-        conceptContent = await this.readInputFile(absoluteConceptFile);
+        brainstormContent = await this.readInputFile(absoluteBrainstormFile);
       } catch (error) {
-        this.emitOutput(`Note: Concept file not found or couldn't be read: ${error.message}\n`);
-        throw new Error('Concept file is required!');
+        this.emitOutput(`Note: Brainstorm file not found or couldn't be read: ${error.message}\n`);
+        throw new Error('Brainstorm file is required!');
       }
       
-      const prompt = this.createPrompt(
-        conceptContent
-      );
-
-      // Prepare file and cache for API processing
-      const prepareResult = await this.apiService.prepareFileAndCache(absoluteConceptFile);
-      prepareResult.messages.forEach(message => {
-        this.emitOutput(`${message}\n`);
-      });
-      if (prepareResult.errors.length > 0) {
-        this.emitOutput(`\n--- Errors encountered during preparation ---\n`);
-        prepareResult.errors.forEach(error => {
-          this.emitOutput(`ERROR: ${error}\n`);
-        });
-      }
+      const prompt = this.createPrompt(brainstormContent);
       
       const promptTokens = await this.apiService.countTokens(prompt);
 
@@ -90,7 +76,8 @@ class OutlineWriter extends ToolBase {
           (textDelta) => {
             fullResponse += textDelta;
             this.emitOutput(textDelta);
-          }
+          },
+          true // don't use cached file
         );
       } catch (error) {
         this.emitOutput(`\nAPI Error: ${error.message}\n`);
@@ -142,14 +129,18 @@ class OutlineWriter extends ToolBase {
   }
   
   /**
-   * Create prompt based on input content
-   * @param {string} conceptContent - Concept content
+   * Create prompt
+   * @param {string} brainstormContent - Concept/Characters content
    * @returns {string} - Prompt for AI API
    */
-  createPrompt(
-    conceptContent
-  ) {
-let prompt = `You are a skilled novelist and story architect helping to create a detailed novel outline in fluent, authentic English.
+  createPrompt(brainstormContent) {
+    return `
+
+=== BRAINSTORM CONTENT ===
+${brainstormContent}
+=== END BRAINSTORM CONTENT ===
+
+You are a skilled novelist and story architect helping to create a detailed novel outline in fluent, authentic English.
 Draw upon your knowledge of worldwide literary traditions, narrative structure, and plot development approaches from across cultures,
 while expressing everything in natural, idiomatic English that honors its unique linguistic character.
 
@@ -261,7 +252,7 @@ Chapter 12: Return and Renewal
     - The impact of their journey on others becomes apparent
     - Unresolved relationships reach new understanding
     - Character establishes a new role that honors their growth
-    - Final image echoes but transforms the opening scene
+    - Final image repeats but transforms the opening scene
 
 
 Chapter 13: Epilogue: Seeds of Change
@@ -274,7 +265,7 @@ Chapter 13: Epilogue: Seeds of Change
 === END OUTLINE SAMPLE ===
 
 
-Create a detailed novel outline with at least 13 chapters, more if needed, and organized into 3 main acts or parts, see sample outline.
+Create a detailed novel outline with at least 13 chapters, more if needed, and organized into 3 main acts or parts, see OUTLINE SAMPLE.
 
 Your outline should follow the general format and level of detail shown in the sample, while being completely original.
 
@@ -309,6 +300,7 @@ CRITICAL FORMATTING REMINDER:
 - All bullet points MUST use dash (-) and space, NEVER asterisks (*)
 - Follow EXACTLY the same formatting shown in the sample outline
 - Do not add any extra formatting or section labels not shown in the sample outline
+- Do not use known and overused AI-ism words: echo, echoes, whispers, whisper, etc.      
 
 Note: "=== OUTLINE SAMPLE ===" should only be used:
 as a guide to layout and style and not for it's content
@@ -320,6 +312,16 @@ newline
 Chapter #: Title
 ... for example:
 Chapter 1: In the Beginning
+
+IMPORTANT STYLISTIC RESTRICTIONS:
+- STRICTLY AVOID using the words "whisper", "whispered", "whispering", or any variation of "whisper"
+- STRICTLY AVOID using the words "echo", "echoed", "echoing", or any variation of "echo"
+- NEVER use phrases about voices/sounds "echoing off walls" or characters "whispering secrets"
+- DO NOT use clichés about "eyes widening" or character reactions involving gasping, sighing, or nodding
+- Avoid overused sensory descriptions involving shivers, tingling, or characters holding their breath
+- Do not repeatedly mention heartbeats, breathing, or physical reactions to emotions
+- EXPAND your vocabulary
+
 `;    
     return prompt;
   }

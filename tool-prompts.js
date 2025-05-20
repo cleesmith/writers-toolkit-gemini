@@ -972,8 +972,7 @@ Use specific text examples from the manuscript to support your critique.
 // AI writing tools
 brainstorm: ``, // see tool for prompt
 
-outline_writer: `
-`,
+outline_writer: ``, // see tool for prompt
 
 world_writer: `
 `,

@@ -6,20 +6,14 @@ const appState = require('./state.js');
 const fs = require('fs/promises');
 
 /**
- * WorldWriter Tool
- * Extract and develop characters and world elements from a novel outline.
- * It requires: title, POV, and characters.txt and outline.txt.
+ * World Writer Tool
+ * Extract and develop brainstorm and world elements from an outline.
+ * Requires: title, POV, and brainstorm.txt and outline.txt.
  */
 class WorldWriter extends ToolBase {
-  /**
-   * Constructor
-   * @param {Object} GeminiAPIService - Claude API service
-   * @param {Object} config - Tool configuration
-   */
-  constructor(GeminiAPIService, config = {}) {
+  constructor(apiService, config = {}) {
     super('world_writer', config);
-    this.GeminiAPIService = GeminiAPIService;
-    // console.log('WorldWriter Tool initialized with config:', config);
+    this.apiService = apiService;
   }
   
   /**
@@ -28,19 +22,15 @@ class WorldWriter extends ToolBase {
    * @returns {Promise<Object>} - Execution result
    */
   async execute(options) {
-    console.log('Executing WorldWriter with options:', options);
-    
     // Clear the cache for this tool
-    const toolName = 'world_writer';
-    fileCache.clear(toolName);
+    fileCache.clear(this.name);
     
     // Extract options
     const title = options.title;
     const pov = options.pov;
-    const charactersFile = options.characters_file;
+    const brainstormFile = options.brainstorm_file;
     const outlineFile = options.outline_file;
     const language = options.lang || 'English';
-    const detailed = options.detailed || false;
     
     const saveDir = options.save_dir || appState.CURRENT_PROJECT_PATH;
     const outputFiles = [];
@@ -61,15 +51,15 @@ class WorldWriter extends ToolBase {
     }
     
     if (!pov) {
-      const errorMsg = 'Error: Point of view (pov) is required.\n';
+      const errorMsg = 'Error: Point of view (POV) is required.\n';
       this.emitOutput(errorMsg);
       throw new Error('Point of view is required');
     }
     
     try {
-      // Read characters file (required)
-      this.emitOutput(`Reading characters file: ${charactersFile}\n`);
-      const charactersContent = await this.readInputFile(this.ensureAbsolutePath(charactersFile, saveDir));
+      // Read brainstorm file
+      this.emitOutput(`Reading brainstorm file: ${brainstormFile}\n`);
+      const brainstormContent = await this.readInputFile(this.ensureAbsolutePath(brainstormFile, saveDir));
       
       // Read outline file (required)
       this.emitOutput(`Reading outline file: ${outlineFile}\n`);
@@ -79,58 +69,17 @@ class WorldWriter extends ToolBase {
       const prompt = this.createPrompt(
         title,
         pov,
-        charactersContent,
+        brainstormContent,
         outlineContent,
-        language,
-        detailed
+        language
       );
       
-      // Count tokens in prompt
-      this.emitOutput(`Counting tokens in prompt...\n`);
-      const promptTokens = await this.GeminiAPIService.countTokens(prompt);
+      const promptTokens = await this.apiService.countTokens(prompt);
       
-      // Calculate available tokens after prompt
-      const contextWindow = this.config.context_window || 200000;
-      const desiredOutputTokens = this.config.desired_output_tokens || 12000;
-      const configuredThinkingBudget = this.config.thinking_budget_tokens || 32000;
+      this.emitOutput(`\nGenerating world document for: ${title}\n`);
+      this.emitOutput(`\nSending request to AI API (streaming)...\n`);
       
-      const availableTokens = contextWindow - promptTokens;
-      
-      // For API call, max_tokens must respect the API limit
-      const maxTokens = Math.min(availableTokens, 128000); // Limited by beta feature
-      
-      // Thinking budget must be LESS than max_tokens to leave room for visible output
-      let thinkingBudget = maxTokens - desiredOutputTokens;
-      if (thinkingBudget > 32000) {
-        this.emitOutput("Warning: thinking budget is larger than 32K, set to 32K.\n");
-        thinkingBudget = 32000;
-      }
-      
-      // Display token stats
-      this.emitOutput(`\nToken stats:\n`);
-      this.emitOutput(`Max AI model context window: [${contextWindow}] tokens\n`);
-      this.emitOutput(`Input prompt tokens: [${promptTokens}] ...\n`);
-      this.emitOutput(`                     = characters + outline + prompt instructions\n`);
-      this.emitOutput(`Available tokens: [${availableTokens}]  = ${contextWindow} - ${promptTokens} = context_window - prompt\n`);
-      this.emitOutput(`Desired output tokens: [${desiredOutputTokens}]\n`);
-      this.emitOutput(`AI model thinking budget: [${thinkingBudget}] tokens  = ${maxTokens} - ${desiredOutputTokens}\n`);
-      this.emitOutput(`Max output tokens (max_tokens): [${maxTokens}] tokens  = min(${availableTokens}, 128000)\n`);
-      this.emitOutput(`                                = can not exceed: 'betas=["output-128k-2025-02-19"]'\n`);
-      
-      // Check if prompt is too large for the configured thinking budget
-      if (thinkingBudget < configuredThinkingBudget) {
-        this.emitOutput(`Error: prompt is too large to have a ${configuredThinkingBudget} thinking budget!\n`);
-        this.emitOutput(`Run aborted!\n`);
-        throw new Error(`Prompt is too large for ${configuredThinkingBudget} thinking budget - run aborted`);
-      }
-      
-      // Call Claude API with streaming
-      this.emitOutput(`\nGenerating world document (including characters) for novel: ${title}\n`);
-      this.emitOutput(`Sending request to Claude API (streaming)...\n`);
-      
-      // Add a message about waiting
       this.emitOutput(`****************************************************************************\n`);
-      this.emitOutput(`*  Generating world document with character profiles...\n`);
       this.emitOutput(`*  This process typically takes several minutes.\n`);
       this.emitOutput(`*  \n`);
       this.emitOutput(`*  It's recommended to keep this window the sole 'focus'\n`);
@@ -144,31 +93,14 @@ class WorldWriter extends ToolBase {
       let fullResponse = "";
       let thinkingContent = "";
       
-      // Create system prompt to avoid markdown
-      const systemPrompt = "NO Markdown! Never respond with Markdown formatting, plain text only.";
-      
       try {
-        // Use streaming API call
-        await this.GeminiAPIService.streamWithThinking(
+        await this.apiService.streamWithThinking(
           prompt,
-          {
-            model: "claude-3-7-sonnet-20250219",
-            system: systemPrompt,
-            max_tokens: maxTokens,
-            thinking: {
-              type: "enabled",
-              budget_tokens: thinkingBudget
-            },
-            betas: ["output-128k-2025-02-19"]
-          },
-          // Callback for thinking content
-          (thinkingDelta) => {
-            thinkingContent += thinkingDelta;
-          },
-          // Callback for response text - simply accumulate without progress indicators
           (textDelta) => {
             fullResponse += textDelta;
-          }
+            this.emitOutput(textDelta);
+          },
+          true // don't use cached file
         );
       } catch (error) {
         this.emitOutput(`\nAPI Error: ${error.message}\n`);
@@ -182,12 +114,10 @@ class WorldWriter extends ToolBase {
       
       this.emitOutput(`\nWorld document completed in: ${minutes}m ${seconds.toFixed(2)}s.\n`);
       
-      // Count words in response
       const wordCount = this.countWords(fullResponse);
       this.emitOutput(`World document has approximately ${wordCount} words.\n`);
       
-      // Count tokens in response
-      const responseTokens = await this.GeminiAPIService.countTokens(fullResponse);
+      const responseTokens = await this.apiService.countTokens(fullResponse);
       this.emitOutput(`World document token count: ${responseTokens}\n`);
       
       // Save the world document to a file
@@ -202,44 +132,9 @@ class WorldWriter extends ToolBase {
       outputFiles.push(worldPath);
       
       // Add to the file cache
-      fileCache.addFile(toolName, worldPath);
-      
-      // Save thinking content if available and not skipped
-      if (thinkingContent) {
-        const thinkingFilename = `world_thinking_${timestamp}.txt`;
-        
-        // Create stats for thinking file
-        const stats = `
-Stats:
-Prompt tokens: ${promptTokens}
-Elapsed time: ${minutes} minutes, ${seconds.toFixed(2)} seconds
-Word count: ${wordCount}
-`;
-        
-        const thinkingContent2 = `=== PROMPT USED (EXCLUDING REFERENCE CONTENT) ===
-Generating world document (including characters) for novel: ${title}
-
-=== AI'S THINKING PROCESS ===
-
-${thinkingContent}
-
-=== END AI'S THINKING PROCESS ===
-${stats}
-
-Files saved to: ${saveDir}
-###`;
-        
-        await this.writeOutputFile(thinkingContent2, saveDir, thinkingFilename);
-        const thinkingPath = path.join(saveDir, thinkingFilename);
-        this.emitOutput(`AI thinking saved to: ${thinkingPath}\n`);
-        
-        // Add thinking file to output files and cache
-        outputFiles.push(thinkingPath);
-        fileCache.addFile(toolName, thinkingPath);
-      }
+      fileCache.addFile(this.name, worldPath);
       
       this.emitOutput(`\nFiles saved to: ${saveDir}\n`);
-      this.emitOutput(`###\n`);
       
       // Return the result
       return {
@@ -253,7 +148,7 @@ Files saved to: ${saveDir}
       };
       
     } catch (error) {
-      console.error('Error in WorldWriter:', error);
+      console.error('Error in World Writer:', error);
       this.emitOutput(`\nError: ${error.message}\n`);
       throw error;
     }
@@ -263,22 +158,14 @@ Files saved to: ${saveDir}
    * Create prompt for world document generation
    * @param {string} title - Novel title
    * @param {string} pov - Point of view
-   * @param {string} charactersContent - Characters content
+   * @param {string} brainstormContent - brainstorm content
    * @param {string} outlineContent - Outline content
    * @param {string} language - Language
-   * @param {boolean} detailed - Whether to generate detailed profiles
-   * @returns {string} - Prompt for Claude API
+   * @returns {string} - Prompt for AI API
    */
-  createPrompt(
-    title,
-    pov,
-    charactersContent,
-    outlineContent,
-    language,
-    detailed
-  ) {
-    // Start with the basic world prompt
-    let prompt = `You are a skilled novelist, worldbuilder, and character developer helping to create a comprehensive world document in fluent, authentic ${language}.
+  createPrompt(title, pov, brainstormContent, outlineContent, language) {
+    return `
+You are a skilled novelist, worldbuilder, and character developer helping to create a comprehensive world document in fluent, authentic ${language}.
 This document will include both the world elements and detailed character profiles for a novel based on the outline below.
 
 === OUTLINE ===
@@ -327,44 +214,33 @@ WORLD: ${title}
    - Unique aspects of how this world functions
 
 8. CHARACTER PROFILES:
-`;
 
-    // Add character profile instructions
-    prompt += `
-   For each of the following characters, create a detailed profile but do NOT change the character names:
+For each of the following characters, create a detailed profile but do NOT change the character names:
 
-    === CHARACTERS ===
-    ${charactersContent}
-    === END CHARACTERS ===
+=== CHARACTERS ===
+${brainstormContent}
+=== END CHARACTERS ===
 
-   Include for each character:
+Include for each character:
 
-   a) CHARACTER NAME: [Full name]
-   b) ROLE: [Protagonist, Antagonist, Supporting Character, etc.]
-   c) AGE: [Age or age range]
-   d) PHYSICAL DESCRIPTION: [Detailed physical appearance]
-   e) BACKGROUND: [Personal history relevant to the story]
-   f) PERSONALITY: [Core personality traits, strengths, and flaws]
-   g) MOTIVATIONS: [What drives this character? What do they want?]
-   h) CONFLICTS: [Internal struggles and external conflicts]
-   i) RELATIONSHIPS: [Important relationships with other characters]
-   j) ARC: [How this character changes throughout the story]
-   k) NOTABLE QUOTES: [3-5 examples of how this character might speak]`;
+a) CHARACTER NAME: [Full name]
+b) ROLE: [Protagonist, Antagonist, Supporting Character, etc.]
+c) AGE: [Age or age range]
+d) PHYSICAL DESCRIPTION: [Detailed physical appearance]
+e) BACKGROUND: [Personal history relevant to the story]
+f) PERSONALITY: [Core personality traits, strengths, and flaws]
+g) MOTIVATIONS: [What drives this character? What do they want?]
+h) CONFLICTS: [Internal struggles and external conflicts]
+i) RELATIONSHIPS: [Important relationships with other characters]
+j) ARC: [How this character changes throughout the story]
+k) NOTABLE QUOTES: [3-5 examples of how this character might speak]
+l) SKILLS & ABILITIES: [Special skills, knowledge, or supernatural abilities]
+m) HABITS & QUIRKS: [Distinctive behaviors and mannerisms]
+n) SECRETS: [What this character is hiding]
+o) FEARS & WEAKNESSES: [What makes this character vulnerable]
+p) SYMBOLIC ELEMENTS: [Any symbolic elements associated with this character]
+q) NARRATIVE FUNCTION: [How this character serves the themes and plot]
 
-    // Add detailed character profile elements if requested
-    if (detailed) {
-      prompt += `
-   l) SKILLS & ABILITIES: [Special skills, knowledge, or supernatural abilities]
-   m) HABITS & QUIRKS: [Distinctive behaviors and mannerisms]
-   n) SECRETS: [What this character is hiding]
-   o) FEARS & WEAKNESSES: [What makes this character vulnerable]
-   p) SYMBOLIC ELEMENTS: [Any symbolic elements associated with this character]
-   q) NARRATIVE FUNCTION: [How this character serves the themes and plot]
-`;
-    }
-
-    // Add formatting instructions
-    prompt += `
 IMPORTANT FORMATTING INSTRUCTIONS:
 - Write in ${pov}
 - Make the existing character profiles deep and psychologically nuanced
@@ -380,9 +256,17 @@ IMPORTANT FORMATTING INSTRUCTIONS:
 - Be consistent in formatting throughout the document
 - Use plain text formatting with NO markdown in your outputs
 - Do NOT change nor add to character names
-`;
 
-    return prompt;
+IMPORTANT STYLISTIC RESTRICTIONS:
+- STRICTLY AVOID using the words "whisper", "whispered", "whispering", or any variation of "whisper"
+- STRICTLY AVOID using the words "echo", "echoed", "echoing", or any variation of "echo"
+- NEVER use phrases about voices/sounds "echoing off walls" or characters "whispering secrets"
+- DO NOT use clichés about "eyes widening" or character reactions involving gasping, sighing, or nodding
+- Avoid overused sensory descriptions involving shivers, tingling, or characters holding their breath
+- Do not repeatedly mention heartbeats, breathing, or physical reactions to emotions
+- EXPAND your vocabulary
+
+`;
   }
   
   /**
