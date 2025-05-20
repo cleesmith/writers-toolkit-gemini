@@ -6,19 +6,14 @@ const appState = require('./state.js');
 const fs = require('fs/promises');
 
 /**
- * ChapterWriter Tool
- * Uses the outline, chapters list, world document, and any existing manuscript to write rough draft chapters
+ * Chapter Writer Tool
+ * Uses the outline, chapters list, world document, and 
+ * any existing manuscript to write rough draft chapters
  */
 class ChapterWriter extends ToolBase {
-  /**
-   * Constructor
-   * @param {Object} GeminiAPIService - Claude API service
-   * @param {Object} config - Tool configuration
-   */
-  constructor(GeminiAPIService, config = {}) {
+  constructor(apiService, config = {}) {
     super('chapter_writer', config);
-    this.GeminiAPIService = GeminiAPIService;
-    // console.log('ChapterWriter Tool initialized with config:', config);
+    this.apiService = apiService;
   }
   
   /**
@@ -27,11 +22,8 @@ class ChapterWriter extends ToolBase {
    * @returns {Promise<Object>} - Execution result
    */
   async execute(options) {
-    console.log('Executing ChapterWriter with options:', options);
-    
     // Clear the cache for this tool
-    const toolName = 'chapter_writer';
-    fileCache.clear(toolName);
+    fileCache.clear(this.name);
     
     // Extract options
     const request = options.request;
@@ -41,7 +33,6 @@ class ChapterWriter extends ToolBase {
     const worldFile = options.world || 'world.txt';
     const language = options.lang || 'English';
     const chapterDelay = options.chapter_delay || 15;
-    const noDialogueEmphasis = options.no_dialogue_emphasis || false;
     const noAppend = options.no_append || false;
     const backup = options.backup || false;
     const showTokenStats = options.show_token_stats || false;
@@ -101,7 +92,6 @@ class ChapterWriter extends ToolBase {
             outlineFile,
             worldFile,
             language,
-            noDialogueEmphasis,
             noAppend,
             backup,
             showTokenStats,
@@ -112,9 +102,6 @@ class ChapterWriter extends ToolBase {
           
           if (result) {
             outputFiles.push(result.chapterFile);
-            if (result.thinkingFile) {
-              outputFiles.push(result.thinkingFile);
-            }
             summary.push(result);
           }
           
@@ -141,17 +128,6 @@ class ChapterWriter extends ToolBase {
           
           this.emitOutput(`Chapter ${result.chapterNum}: ${result.wordCount} words, ${minutes}m ${seconds.toFixed(1)}s, saved to: ${path.basename(result.chapterFile)}\n`);
         }
-        
-        // Calculate averages and totals
-        const avgWords = summary.length > 0 ? totalWords / summary.length : 0;
-        const totalMinutes = Math.floor(totalTime / 60);
-        const totalSeconds = totalTime % 60;
-        
-        this.emitOutput(`\nTotal chapters: ${summary.length}\n`);
-        this.emitOutput(`Total words: ${totalWords}\n`);
-        this.emitOutput(`Average words per chapter: ${avgWords.toFixed(1)}\n`);
-        this.emitOutput(`Total time: ${totalMinutes}m ${totalSeconds.toFixed(1)}s\n`);
-        this.emitOutput("=".repeat(80) + "\n");
       } else {
         // Process a single chapter
         const result = await this.processChapter(
@@ -160,7 +136,6 @@ class ChapterWriter extends ToolBase {
           outlineFile,
           worldFile,
           language,
-          noDialogueEmphasis,
           noAppend,
           backup,
           showTokenStats,
@@ -169,16 +144,13 @@ class ChapterWriter extends ToolBase {
         
         if (result) {
           outputFiles.push(result.chapterFile);
-          if (result.thinkingFile) {
-            outputFiles.push(result.thinkingFile);
-          }
           summary.push(result);
         }
       }
       
       // Add all files to the cache
       for (const file of outputFiles) {
-        fileCache.addFile(toolName, file);
+        fileCache.addFile(this.name, file);
       }
       
       return {
@@ -205,7 +177,6 @@ class ChapterWriter extends ToolBase {
    * @param {string} outlineFile - Path to outline file
    * @param {string} worldFile - Path to world file
    * @param {string} language - Language to write in
-   * @param {boolean} noDialogueEmphasis - Whether to disable dialogue emphasis
    * @param {boolean} noAppend - Whether to disable auto-appending to manuscript
    * @param {boolean} backup - Whether to create a backup of manuscript
    * @param {boolean} showTokenStats - Whether to only show token stats without generation
@@ -220,7 +191,6 @@ class ChapterWriter extends ToolBase {
     outlineFile,
     worldFile,
     language,
-    noDialogueEmphasis,
     noAppend,
     backup,
     showTokenStats,
@@ -271,7 +241,7 @@ class ChapterWriter extends ToolBase {
         await fs.writeFile(this.ensureAbsolutePath(manuscriptFile, saveDir), "");
       }
       
-      // Read world file (optional)
+      // Read world file
       let worldContent = "";
       try {
         this.emitOutput(`Reading world file: ${worldFile}\n`);
@@ -293,98 +263,26 @@ class ChapterWriter extends ToolBase {
         outlineContent,
         worldContent,
         novelContent,
-        language,
-        noDialogueEmphasis
+        language
       );
       
-      // Create a prompt version for logging (without full file content)
-      const promptForLogging = this.createPromptForLogging(
-        formattedOutlineRequest,
-        language,
-        noDialogueEmphasis
-      );
+      const promptTokens = await this.apiService.countTokens(prompt);
       
-      // Count tokens in prompt
-      this.emitOutput(`Counting tokens in prompt...\n`);
-      const promptTokens = await this.GeminiAPIService.countTokens(prompt);
-      
-      // Calculate available tokens after prompt
-      const contextWindow = this.config.context_window || 200000;
-      const desiredOutputTokens = this.config.desired_output_tokens || 12000;
-      const configuredThinkingBudget = this.config.thinking_budget_tokens || 32000;
-      const betasMaxTokens = this.config.betas_max_tokens || 128000;
-      
-      const availableTokens = contextWindow - promptTokens;
-      
-      // For API call, max_tokens must respect the API limit
-      const maxTokens = Math.min(availableTokens, betasMaxTokens);
-      
-      // Thinking budget must be LESS than max_tokens to leave room for visible output
-      const thinkingBudget = maxTokens - desiredOutputTokens;
-      
-      // Display token stats
-      this.emitOutput(`\nToken stats:\n`);
-      this.emitOutput(`Max AI model context window: [${contextWindow}] tokens\n`);
-      this.emitOutput(`Input prompt tokens: [${promptTokens}] ...\n`);
-      this.emitOutput(`                     = request + chapters.txt + manuscript.txt\n`);
-      this.emitOutput(`                       + outline.txt + world.txt + prompt instructions\n`);
-      this.emitOutput(`Available tokens: [${availableTokens}]  = ${contextWindow} - ${promptTokens} = context_window - prompt\n`);
-      this.emitOutput(`Desired output tokens: [${desiredOutputTokens}]\n`);
-      this.emitOutput(`AI model thinking budget: [${thinkingBudget}] tokens  = ${maxTokens} - ${desiredOutputTokens}\n`);
-      this.emitOutput(`Max output tokens (max_tokens): [${maxTokens}] tokens  = min(${availableTokens}, ${betasMaxTokens})\n`);
-      this.emitOutput(`                                = can not exceed: 'betas=["output-128k-2025-02-19"]'\n`);
-      
-      // Check if prompt is too large for the configured thinking budget
-      if (thinkingBudget < configuredThinkingBudget) {
-        this.emitOutput(`Error: prompt is too large to have a ${configuredThinkingBudget} thinking budget!\n`);
-        this.emitOutput(`Run aborted!\n`);
-        throw new Error(`Prompt is too large for ${configuredThinkingBudget} thinking budget - run aborted`);
-      }
-      
-      // Show token stats only if requested
-      if (showTokenStats) {
-        this.emitOutput(`FYI: token stats shown without creating chapters, to aid in making adjustments.\n`);
-        this.emitOutput(`\nNote: with Claude 3.7 Sonnet, 'max_tokens' is enforced as a strict limit,\n`);
-        this.emitOutput(`      which includes your thinking budget when thinking is enabled.\n`);
-        this.emitOutput(`      So Claude API will now return a validation error if:\n`);
-        this.emitOutput(`      'prompt tokens' + 'max_tokens' exceeds the 'context window' size.\n`);
-        this.emitOutput(`      Where 'prompt tokens' includes: request, chapters.txt, manuscript.txt, outline.txt, world.txt,\n`);
-        this.emitOutput(`      and the prompt instructions to the AI -- see: 'Input prompt tokens:' for each run.\n`);
-        return null;
-      }
-      
-      // Call Claude API with streaming
-      this.emitOutput(`Sending request to Claude API (streaming)...\n`);
+      // Call AI API with streaming
+      this.emitOutput(`\nSending request to AI API (streaming)...\n`);
       
       const startTime = Date.now();
       let fullResponse = "";
-      let thinkingContent = "";
-      
-      // Create system prompt to avoid markdown
-      const systemPrompt = "NO Markdown! Never respond with Markdown formatting, plain text only.";
-      
+
       try {
-        // Use streaming API call
-        await this.GeminiAPIService.streamWithThinking(
+        await this.apiService.streamWithThinking(
           prompt,
-          {
-            model: "claude-3-7-sonnet-20250219",
-            system: systemPrompt,
-            max_tokens: maxTokens,
-            thinking: {
-              type: "enabled",
-              budget_tokens: thinkingBudget
-            },
-            betas: ["output-128k-2025-02-19"]
-          },
-          // Callback for thinking content
-          (thinkingDelta) => {
-            thinkingContent += thinkingDelta;
-          },
-          // Callback for response text - simply accumulate without progress indicators
           (textDelta) => {
             fullResponse += textDelta;
-          }
+            this.emitOutput(textDelta);
+          },
+          true, // don't use cached file
+          { includeThinking: false } // don't include thinking in the response
         );
       } catch (error) {
         this.emitOutput(`\n*** Error during generation:\n${error.message}\n`);
@@ -396,27 +294,22 @@ class ChapterWriter extends ToolBase {
       const minutes = Math.floor(elapsed / 60);
       const seconds = elapsed % 60;
       
-      // Clean response (skipping the complex cleaning functions from Python for now)
-      const cleanedResponse = fullResponse;
-      
       // Create timestamp for filename
       const timestamp = new Date().toISOString().replace(/[-:.]/g, '').substring(0, 15);
       const chapterFilename = `${formattedChapter}_chapter_${timestamp}.txt`;
       const chapterPath = path.join(saveDir, chapterFilename);
       
       // Write chapter to file
-      await this.writeOutputFile(cleanedResponse, saveDir, chapterFilename);
+      await this.writeOutputFile(fullResponse, saveDir, chapterFilename);
       
-      // Count words in chapter
-      const chapterWordCount = this.countWords(cleanedResponse);
+      const chapterWordCount = this.countWords(fullResponse);
       
-      // Count tokens in chapter
-      const chapterTokenCount = await this.GeminiAPIService.countTokens(cleanedResponse);
+      const chapterTokenCount = await this.apiService.countTokens(fullResponse);
       
       // Append the new chapter to the manuscript file if not disabled
       if (!noAppend) {
         const appendSuccess = await this.appendToManuscript(
-          cleanedResponse, 
+          fullResponse, 
           this.ensureAbsolutePath(manuscriptFile, saveDir), 
           backup
         );
@@ -428,83 +321,14 @@ class ChapterWriter extends ToolBase {
         }
       }
       
-      // Stats for thinking file
-      const stats = `
-Details:
-Max request timeout: ${this.config.request_timeout || 300} seconds
-Max retries: ${this.config.max_retries || 1}
-Max AI model context window: ${contextWindow} tokens
-Input prompt tokens: ${promptTokens}
-AI model thinking budget: ${thinkingBudget} tokens
-Max output tokens: ${maxTokens} tokens
-Elapsed time: ${minutes}m ${seconds.toFixed(2)}s
-Chapter ${chapterNum}: ${chapterWordCount} words
-Chapter ${chapterNum} token count: ${chapterTokenCount}
-`;
-      
-      // Save thinking content if available
-      let thinkingPath = null;
-      if (thinkingContent) {
-        const thinkingTokenCount = await this.GeminiAPIService.countTokens(thinkingContent);
-        const thinkingEfficiency = (thinkingTokenCount / thinkingBudget) * 100;
-        const thinkingToOutputRatio = thinkingTokenCount / chapterTokenCount;
-        
-        const analytics = `
---------------------------
-CHAPTER GENERATION METRICS
---------------------------
-Token Counts:
-- Thinking tokens used: ${thinkingTokenCount.toLocaleString()} of ${thinkingBudget.toLocaleString()} (${thinkingEfficiency.toFixed(1)}%)
-- Chapter output tokens: ${chapterTokenCount.toLocaleString()}
-- Thinking-to-output ratio: ${thinkingToOutputRatio.toFixed(2)}:1
-
-Notes:
-1. Token counts were calculated using full API parameters to match 
-   the actual token accounting used for API billing.
-
-2. The thinking token count represents the raw content returned 
-   by the API. This gives insight into how much reasoning Claude 
-   performed before producing the chapter.
-   
-3. A higher thinking-to-output ratio typically indicates more 
-   extensive reasoning before generating content, which may 
-   correlate with more complex narrative development.
-
-4. The API does not provide details about exact internal 
-   tokens or time usage, so this is just an estimate based
-   on token counts alone.
-`;
-        
-        const thinkingFilename = `${formattedChapter}_thinking_${timestamp}.txt`;
-        thinkingPath = path.join(saveDir, thinkingFilename);
-        
-        const thinkingContent2 = `=== PROMPT USED (EXCLUDING NOVEL CONTENT) ===
-${promptForLogging}
-
-=== AI'S THINKING PROCESS ===
-
-${thinkingContent}
-
-=== END AI'S THINKING PROCESS ===
-${stats}
-${analytics}
-###
-`;
-        
-        await this.writeOutputFile(thinkingContent2, saveDir, thinkingFilename);
-        this.emitOutput(`AI thinking saved to: ${thinkingPath}\n`);
-      }
-      
       this.emitOutput(`Completed Chapter ${chapterNum}: ${chapterWordCount} words (${minutes}m ${seconds.toFixed(2)}s) - saved to: ${path.basename(chapterPath)}\n`);
       
-      // Return chapter information
       return {
         chapterNum,
         wordCount: chapterWordCount, 
         tokenCount: chapterTokenCount,
         elapsedTime: elapsed,
-        chapterFile: chapterPath,
-        thinkingFile: thinkingPath
+        chapterFile: chapterPath
       };
       
     } catch (error) {
@@ -549,6 +373,50 @@ ${analytics}
     return { chapterNum, formattedChapter };
   }
   
+  // /**
+  //  * Format chapter request for consistency in the prompt
+  //  * @param {string} request - Chapter request text
+  //  * @returns {string} - Formatted chapter request
+  //  */
+  // formatChapterRequest(request) {
+  //   // Check if already in "Chapter X: Title" format
+  //   if (/^Chapter\s+\d+/i.test(request)) {
+  //     return request;
+  //   }
+    
+  //   // Extract number and title
+  //   const match = request.match(/^(\d+)[:\.]?\s+(.+)$/);
+  //   if (match) {
+  //     const [, num, title] = match;
+  //     return `Chapter ${num}: ${title}`;
+  //   }
+    
+  //   // Fallback (should never happen due to extractChapterNum validation)
+  //   return request;
+  // }
+  
+  // /**
+  //  * Format outline request for consistency
+  //  * @param {string} request - Chapter request text
+  //  * @returns {string} - Formatted outline request
+  //  */
+  // formatOutlineRequest(request) {
+  //   // Check if already in "Chapter X: Title" format
+  //   if (/^Chapter\s+\d+/i.test(request)) {
+  //     // Convert to "Chapter X. Title" format
+  //     return request.replace(/^(Chapter\s+\d+):\s+(.+)$/i, '$1. $2');
+  //   }
+    
+  //   // Extract number and title
+  //   const match = request.match(/^(\d+)[:\.]?\s+(.+)$/);
+  //   if (match) {
+  //     const [, num, title] = match;
+  //     return `Chapter ${num}. ${title}`;
+  //   }
+    
+  //   // Fallback
+  //   return request;
+  // }
   /**
    * Format chapter request for consistency in the prompt
    * @param {string} request - Chapter request text
@@ -570,7 +438,7 @@ ${analytics}
     // Fallback (should never happen due to extractChapterNum validation)
     return request;
   }
-  
+
   /**
    * Format outline request for consistency
    * @param {string} request - Chapter request text
@@ -579,15 +447,15 @@ ${analytics}
   formatOutlineRequest(request) {
     // Check if already in "Chapter X: Title" format
     if (/^Chapter\s+\d+/i.test(request)) {
-      // Convert to "Chapter X. Title" format
-      return request.replace(/^(Chapter\s+\d+):\s+(.+)$/i, '$1. $2');
+      // Ensure it has a colon, not a period
+      return request.replace(/^(Chapter\s+\d+)[\.:]?\s+(.+)$/i, '$1: $2');
     }
     
     // Extract number and title
     const match = request.match(/^(\d+)[:\.]?\s+(.+)$/);
     if (match) {
       const [, num, title] = match;
-      return `Chapter ${num}. ${title}`;
+      return `Chapter ${num}: ${title}`;
     }
     
     // Fallback
@@ -602,116 +470,114 @@ ${analytics}
    * @param {string} worldContent - Content of world file
    * @param {string} novelContent - Content of manuscript file
    * @param {string} language - Language to write in
-   * @param {boolean} noDialogueEmphasis - Whether to disable dialogue emphasis
-   * @returns {string} - Complete prompt for Claude API
+   * @returns {string} - Complete prompt for AI API
    */
-  createChapterPrompt(
-    formattedRequest,
-    formattedOutlineRequest,
-    outlineContent,
-    worldContent,
-    novelContent,
-    language,
-    noDialogueEmphasis
-  ) {
-    // Dialogue emphasis option - included by default unless disabled
-    let dialogueOption = "";
-    if (!noDialogueEmphasis) {
-      dialogueOption = `
-- DIALOGUE EMPHASIS: Significantly increase the amount of dialogue, both external conversations between characters and internal thoughts/monologues. At least 40-50% of the content should be dialogue. Use dialogue to reveal character, advance plot, create tension, and show (rather than tell) emotional states. Ensure each character's dialogue reflects their unique personality, background, and relationship dynamics as established in the WORLD and MANUSCRIPT.
-`;
-    }
-    
-    // Character restriction is always included
-    const characterRestriction = `- CHARACTER RESTRICTION: Do NOT create any new named characters. Only use characters explicitly mentioned in the WORLD, OUTLINE, or MANUSCRIPT. You may only add minimal unnamed incidental characters when absolutely necessary (e.g., a waiter, cashier, landlord) but keep these to an absolute minimum.
-- WORLD FOCUS: Make extensive use of the world details provided in the WORLD section. Incorporate the settings, locations, history, culture, and atmosphere described there to create an immersive, consistent environment.
-`;
-    
-    return `=== OUTLINE ===
-${outlineContent}
-=== END OUTLINE ===
+//   createChapterPrompt(formattedRequest, formattedOutlineRequest, outlineContent, worldContent, novelContent, language) {
+//     return `
+// You are a professional fiction writer with expertise in creating engaging, readable prose.
 
-=== WORLD ===
-${worldContent}
-=== END WORLD ===
+// === OUTLINE ===
+// ${outlineContent}
+// === END OUTLINE ===
 
-=== EXISTING MANUSCRIPT ===
-${novelContent}
-=== END EXISTING MANUSCRIPT ===
+// === WORLD ===
+// ${worldContent}
+// === END WORLD ===
 
-You are a skilled novelist writing ${formattedRequest} in fluent, authentic ${language}. 
-Draw upon your knowledge of worldwide literary traditions, narrative techniques, and creative approaches from across cultures, while expressing everything in natural, idiomatic ${language} that honors its unique linguistic character.
+// === EXISTING MANUSCRIPT ===
+// ${novelContent}
+// === END EXISTING MANUSCRIPT ===
 
-Consider the following in your thinking:
-- IMPORTANT: always review the included WORLD, OUTLINE, and MANUSCRIPT
-- Refer to the included WORLD of characters and settings provided
-- Analyze how each chapter advances the overall narrative and character development
-- Creating compelling opening and closing scenes
-- Incorporating sensory details and vivid descriptions
-- Maintaining consistent tone and style with previous chapters
-- Do NOT add new characters, only used characters from: WORLD, OUTLINE, and MANUSCRIPT
+// You are a skilled novelist writing ${formattedRequest} in fluent, authentic ${language}. 
+// Draw upon your knowledge of worldwide literary traditions, narrative techniques, and creative approaches from across cultures, while expressing everything in natural, idiomatic ${language} that honors its unique linguistic character.
 
-IMPORTANT:
-- NO Markdown formatting
-- Use hyphens only for legitimate ${language} words
-- Begin with: ${formattedOutlineRequest} and write in plain text only
-- Write 2,000-3,000 words
-- Do not repeat content from existing chapters
-- Do not start working on the next chapter
-- Maintain engaging narrative pacing through varied sentence structure, strategic scene transitions, and appropriate balance between action, description, and reflection
-- Prioritize natural, character-revealing dialogue as the primary narrative vehicle, ensuring each conversation serves multiple purposes (character development, plot advancement, conflict building). Include distinctive speech patterns for different characters, meaningful subtext, and strategic dialogue beats, while minimizing lengthy exposition and internal reflection.
-- Write all times in 12-hour numerical format with a space before lowercase am/pm (e.g., "10:30 am," "2:15 pm," "7:00 am") rather than spelling them out as words or using other formats
-- Prioritize lexical diversity by considering multiple alternative word choices before finalizing each sentence. For descriptive passages especially, select precise, context-specific terminology rather than relying on common metaphorical language. When using figurative language, vary the sensory domains from which metaphors are drawn (visual, auditory, tactile, etc.). Actively monitor your own patterns of word selection across paragraphs and deliberately introduce variation.
-- In your 'thinking' before writing always indicate and explain what you're using from: WORLD, OUTLINE, and MANUSCRIPT (previous chapters)${dialogueOption}${characterRestriction}
-`;
-  }
+// Consider the following in your thinking:
+// - IMPORTANT: always read thoroughly the included WORLD, OUTLINE, and MANUSCRIPT.
+// - Refer to the included WORLD of characters and settings provided.
+// - Analyze how each chapter advances the overall narrative and character development.
+// - Creating compelling opening and closing scenes.
+// - Incorporating sensory details and vivid descriptions.
+// - Maintaining consistent tone and style with previous chapters.
+// - CHARACTER RESTRICTION: Do NOT create any new named characters. Only use characters explicitly mentioned in the WORLD, OUTLINE, or MANUSCRIPT. You may only add minimal unnamed incidental characters when absolutely necessary (e.g., waiter, cashier, butler, taxi/uber driver, stewardess, landlord) but keep these to an absolute minimum.
+// - WORLD FOCUS: Make extensive use of the world details provided in the WORLD section. Incorporate the settings, locations, history, culture, and atmosphere described there to create an immersive, consistent environment.
+// - DIALOGUE EMPHASIS: Significantly increase the amount of dialogue, both external conversations between characters and internal thoughts/monologues. At least 40-50% of the content should be dialogue. Use dialogue to reveal character, advance plot, create tension, and show (rather than tell) emotional states. Ensure each character's dialogue reflects their unique personality, background, and relationship dynamics as established in the WORLD and MANUSCRIPT.
+
+// IMPORTANT:
+// - NO Markdown formatting = NO Markdown! Never respond with Markdown formatting, plain text only!
+// - Use hyphens only for legitimate ${language} words
+// - Begin with: ${formattedOutlineRequest} and write in plain text only
+// - Write 2,000-3,000 words
+// - Do not repeat content from existing chapters
+// - Do not start working on the next chapter
+// - Maintain engaging narrative pacing through varied sentence structure, strategic scene transitions, and appropriate balance between action, description, and reflection
+// - Prioritize natural, character-revealing dialogue as the primary narrative vehicle, ensuring each conversation serves multiple purposes (character development, plot advancement, conflict building). Include distinctive speech patterns for different characters, meaningful subtext, and strategic dialogue beats, while minimizing lengthy exposition and internal reflection.
+// - Write all times in 12-hour numerical format with a space before lowercase am/pm (e.g., "10:30 am," "2:15 pm," "7:00 am") rather than spelling them out as words or using other formats
+// - Prioritize lexical diversity by considering multiple alternative word choices before finalizing each sentence. For descriptive passages especially, select precise, context-specific terminology rather than relying on common metaphorical language. When using figurative language, vary the sensory domains from which metaphors are drawn (visual, auditory, tactile, etc.). Actively monitor your own patterns of word selection across paragraphs and deliberately introduce variation.
+// - Do NOT reveal or show or return your thoughts and thinking in your final response and writing!
+
+// `;
+//   }
+  createChapterPrompt(formattedRequest, formattedOutlineRequest, outlineContent, worldContent, novelContent, language) {
+    return `
+  You are a professional fiction writer with expertise in creating engaging, readable prose.
   
-  /**
-   * Create a logging version of the prompt without file contents
-   * @param {string} formattedOutlineRequest - Formatted outline request
-   * @param {string} language - Language to write in
-   * @param {boolean} noDialogueEmphasis - Whether to disable dialogue emphasis
-   * @returns {string} - Prompt for logging
-   */
-  createPromptForLogging(formattedOutlineRequest, language, noDialogueEmphasis) {
-    // Dialogue emphasis option - included by default unless disabled
-    let dialogueOption = "";
-    if (!noDialogueEmphasis) {
-      dialogueOption = `
-- DIALOGUE EMPHASIS: Significantly increase the amount of dialogue, both external conversations between characters and internal thoughts/monologues. At least 40-50% of the content should be dialogue. Use dialogue to reveal character, advance plot, create tension, and show (rather than tell) emotional states. Ensure each character's dialogue reflects their unique personality, background, and relationship dynamics as established in the WORLD and MANUSCRIPT.
-`;
-    }
-    
-    // Character restriction is always included
-    const characterRestriction = `- CHARACTER RESTRICTION: Do NOT create any new named characters. Only use characters explicitly mentioned in the WORLD, OUTLINE, or MANUSCRIPT. You may only add minimal unnamed incidental characters when absolutely necessary (e.g., a waiter, cashier, landlord) but keep these to an absolute minimum.
-- WORLD FOCUS: Make extensive use of the world details provided in the WORLD section. Incorporate the settings, locations, history, culture, and atmosphere described there to create an immersive, consistent environment.
-`;
-    
-    return `You are a skilled novelist writing ${formattedOutlineRequest} in fluent, authentic ${language}. 
-Draw upon your knowledge of worldwide literary traditions, narrative techniques, and creative approaches from across cultures, while expressing everything in natural, idiomatic ${language} that honors its unique linguistic character.
+  === OUTLINE ===
+  ${outlineContent}
+  === END OUTLINE ===
+  
+  === WORLD ===
+  ${worldContent}
+  === END WORLD ===
+  
+  === EXISTING MANUSCRIPT ===
+  ${novelContent}
+  === END EXISTING MANUSCRIPT ===
 
-Consider the following in your thinking:
-- IMPORTANT: always review the included OUTLINE thoroughly 
-- Refer to the included WORLD of characters and settings, if provided
-- How this chapter advances the overall narrative and character development
-- Creating compelling opening and closing scenes
-- Incorporating sensory details and vivid descriptions
-- Maintaining consistent tone and style with previous chapters
+  You are a skilled novelist writing ${formattedRequest} in fluent, authentic ${language}. 
+  Draw upon your knowledge of worldwide literary traditions, narrative techniques, and creative approaches from across cultures, while expressing everything in natural, idiomatic ${language} that honors its unique linguistic character.
 
-IMPORTANT:
-- NO Markdown formatting
-- Use hyphens only for legitimate ${language} words
-- Begin with: ${formattedOutlineRequest} and write in plain text only
-- Write 2,000-3,000 words
-- Do not repeat content from existing chapters
-- Do not start working on the next chapter
-- Maintain engaging narrative pacing through varied sentence structure, strategic scene transitions, and appropriate balance between action, description, and reflection
-- Prioritize natural, character-revealing dialogue as the primary narrative vehicle, ensuring each conversation serves multiple purposes (character development, plot advancement, conflict building). Include distinctive speech patterns for different characters, meaningful subtext, and strategic dialogue beats, while minimizing lengthy exposition and internal reflection.
-- Write all times in 12-hour numerical format with a space before lowercase am/pm (e.g., "10:30 am," "2:15 pm," "7:00 am") rather than spelling them out as words or using other formats
-- Prioritize lexical diversity by considering multiple alternative word choices before finalizing each sentence. For descriptive passages especially, select precise, context-specific terminology rather than relying on common metaphorical language. When using figurative language, vary the sensory domains from which metaphors are drawn (visual, auditory, tactile, etc.). Actively monitor your own patterns of word selection across paragraphs and deliberately introduce variation.
-- In your 'thinking' before writing always indicate and explain what you're using from: WORLD, OUTLINE, and MANUSCRIPT (previous chapters)${dialogueOption}${characterRestriction}
-note: The actual prompt included the outline, world, manuscript which are not logged to save space.
-`;
+  YOUR TASK:
+  Write ${formattedRequest} according to these guidelines. DO NOT SHOW ANY THOUGHT PROCESS - ONLY WRITE THE ACTUAL CHAPTER TEXT.
+
+  WRITING REQUIREMENTS:
+  - Read thoroughly the included WORLD, OUTLINE, and MANUSCRIPT
+  - Refer to the world of characters and settings provided
+  - Create compelling opening and closing scenes
+  - Incorporate sensory details and vivid descriptions
+  - Maintain consistent tone and style with previous chapters
+  - Begin with: ${formattedOutlineRequest} and write in plain text only
+  - Write 2,000-3,000 words
+  - Do not repeat content from existing chapters
+  - Do not start working on the next chapter
+
+  CHARACTER RESTRICTIONS:
+  - Do NOT create any new named characters
+  - Only use characters explicitly mentioned in the WORLD, OUTLINE, or MANUSCRIPT
+  - Only add minimal unnamed incidental characters when absolutely necessary (e.g., waiter, cashier)
+
+  WORLD BUILDING:
+  - Make extensive use of the world details provided in the WORLD section
+  - Incorporate the settings, locations, history, culture, and atmosphere described there
+
+  DIALOGUE EMPHASIS:
+  - Significantly increase the amount of dialogue (40-50% of content)
+  - Include both external conversations and internal thoughts/monologues
+  - Ensure each character's dialogue reflects their unique personality
+
+  STYLISTIC REQUIREMENTS:
+  - NO Markdown formatting - plain text only
+  - Use hyphens only for legitimate ${language} words
+  - Write all times in 12-hour numerical format with a space before lowercase am/pm (e.g., "10:30 am")
+  - Maintain engaging narrative pacing through varied sentence structure
+  - Avoid whispers, echoes, eyes widening, and other overused phrases
+  - EXPAND your vocabulary beyond common expressions, especially for:
+    • Dialogue attribution (beyond said, asked, replied)
+    • Character movements (beyond nodding, sighing, shrugging)
+    • Emotional reactions (beyond physical clichés like racing hearts)
+    • Environmental descriptions (use specific terminology)
+
+  IMPORTANT: Provide ONLY the chapter text itself with no explanation, commentary, or thinking process.
+  `;
   }
   
   /**

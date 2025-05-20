@@ -974,11 +974,9 @@ brainstorm: ``, // see tool for prompt
 
 outline_writer: ``, // see tool for prompt
 
-world_writer: `
-`,
+world_writer: ``, // see tool for prompt
 
-chapter_writer: `
-`,
+chapter_writer: ``, // see tool for prompt
 
 // Non-AI tools
 docx_comments: `

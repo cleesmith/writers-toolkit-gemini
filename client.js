@@ -334,94 +334,6 @@ DO NOT repeat any parts of the manuscript that are correct or do not have issues
     }
   }
 
-  // /**
-  //  * Stream a response
-  //  * @param {string} prompt - Prompt to complete
-  //  * @param {Function} onText - Callback for response text
-  //  * @returns {Promise<void>}
-  //  */
-  // async streamWithThinking(prompt, onText) {
-  //   if (!this.client || this.apiKeyMissing) {
-  //     throw new Error('Gemini API client not initialized - API key missing');
-  //   }
-
-  //   try {
-  //     const generationConfiguration = {
-  //       responseMimeType: 'text/plain',
-  //     };
-
-  //     const thinkingConfig = {
-  //       includeThoughts: true,
-  //       thinkingBudget: 24576
-  //     }
-
-  //     const safetySettings = [
-  //       { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.OFF },
-  //       { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.OFF },
-  //       { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.OFF },
-  //       { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.OFF }
-  //     ];
-
-  //     const contentsForRequest = [
-  //       {
-  //         role: 'user',
-  //         parts: [
-  //           { text: prompt },
-  //         ],
-  //       }
-  //     ];
-
-  //     const responseStream = await this.client.models.generateContentStream({
-  //       model: this.config.model_name,
-  //       contents: contentsForRequest,
-  //       config: { 
-  //         generationConfig: generationConfiguration,
-  //         thinkingConfig: thinkingConfig,
-  //         safetySettings: safetySettings,
-  //         cachedContent: this.aiApiCache.name
-  //       }
-  //     });
-
-  //     for await (const chunk of responseStream) {
-  //       let currentText = chunk.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        
-  //       // Check if this is the final chunk with finishReason: 'STOP'
-  //       const isLastChunk = chunk.candidates?.[0]?.finishReason === 'STOP';
-        
-  //       // Skip if no content and not the final chunk
-  //       if (!currentText && !isLastChunk) {
-  //         continue;
-  //       }
-        
-  //       if (isLastChunk) {
-  //         // Extract metadata from the final chunk
-  //         const metadata = {
-  //           finishReason: chunk.candidates[0].finishReason,
-  //           modelVersion: chunk.modelVersion,
-  //           usageMetadata: chunk.usageMetadata
-  //         };
-          
-  //         // Append metadata as text to the current text
-  //         currentText += '\n\n--- RESPONSE METADATA ---\n' + JSON.stringify(metadata, null, 2);
-  //       }
-        
-  //       onText(currentText);
-  //     }
-  //   } catch (error) {
-  //     console.error('API Connection Error:', {
-  //       message: error.message,
-  //       status: error.status,
-  //       statusText: error.statusText,
-  //       url: error.url,
-  //       type: error.type,
-  //       response: error.response ? {
-  //         status: error.response.status,
-  //         statusText: error.response.statusText
-  //       } : 'No response'
-  //     });
-  //     throw error;
-  //   }
-  // }
   /**
    * Stream a response
    * @param {string} prompt - Prompt to complete
@@ -429,7 +341,7 @@ DO NOT repeat any parts of the manuscript that are correct or do not have issues
    * @param {boolean} [noCache=false] - Whether to skip using cached content
    * @returns {Promise<void>}
    */
-  async streamWithThinking(prompt, onText, noCache = false) {
+  async streamWithThinking(prompt, onText, noCache = false, options = {}) {
     if (!this.client || this.apiKeyMissing) {
       throw new Error('Gemini API client not initialized - API key missing');
     }
@@ -439,8 +351,11 @@ DO NOT repeat any parts of the manuscript that are correct or do not have issues
         responseMimeType: 'text/plain',
       };
 
+      // Extract includeThinking from options with a default of true for backward compatibility
+      const includeThoughts = options.includeThinking !== undefined ? options.includeThinking : true;
+    
       const thinkingConfig = {
-        includeThoughts: true,
+        includeThoughts: includeThoughts,
         thinkingBudget: 24576
       }
 

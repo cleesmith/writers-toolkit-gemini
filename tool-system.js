@@ -502,7 +502,7 @@ const TOOL_DEFS = [
       "group": "Input Files"
     }
   ]},
-  { id: 'chapter_writer', title: `Chapter Writer`, description: `Uses the outline, chapters list, world document, and any existing manuscript to write rough draft chapters. CAVEAT EMPTOR: Anthropic's Claudes do a much better job, if you have the money for a API key; Google's Geminis are cheaper but less quality. YMMV🤔`, Class: ChapterWriter, options: [
+  { id: 'chapter_writer', title: `Chapter Writer`, description: `Uses the outline, chapters list, world document, and any existing manuscript to write rough draft chapters.  *HIGHLY RECOMMENDED: Even though this is very rough draft 🌬️ writing, it really does help the AIs to have a good start by self-writing Chapter 1 or intensely edit the AI's first attempt at Chapter 1.  *CAVEAT EMPTOR: Anthropic's Claudes do a much better job, if you have the money for a API key; Google's Geminis are cheaper but less quality. YMMV🤔`, Class: ChapterWriter, options: [
     {
       "name": "chapters_to_write",
       "label": "chapters_to_write",
