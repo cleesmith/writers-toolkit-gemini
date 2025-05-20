@@ -12,10 +12,6 @@ const {
  * Handles interactions with AI API services
  */
 class AiApiService {
-  /**
-   * Constructor
-   * @param {Object} config - API configuration
-   */
   constructor(config = {}) {
     // Store the configuration with defaults
     this.config = {
@@ -338,13 +334,102 @@ DO NOT repeat any parts of the manuscript that are correct or do not have issues
     }
   }
 
+  // /**
+  //  * Stream a response
+  //  * @param {string} prompt - Prompt to complete
+  //  * @param {Function} onText - Callback for response text
+  //  * @returns {Promise<void>}
+  //  */
+  // async streamWithThinking(prompt, onText) {
+  //   if (!this.client || this.apiKeyMissing) {
+  //     throw new Error('Gemini API client not initialized - API key missing');
+  //   }
+
+  //   try {
+  //     const generationConfiguration = {
+  //       responseMimeType: 'text/plain',
+  //     };
+
+  //     const thinkingConfig = {
+  //       includeThoughts: true,
+  //       thinkingBudget: 24576
+  //     }
+
+  //     const safetySettings = [
+  //       { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.OFF },
+  //       { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.OFF },
+  //       { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.OFF },
+  //       { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.OFF }
+  //     ];
+
+  //     const contentsForRequest = [
+  //       {
+  //         role: 'user',
+  //         parts: [
+  //           { text: prompt },
+  //         ],
+  //       }
+  //     ];
+
+  //     const responseStream = await this.client.models.generateContentStream({
+  //       model: this.config.model_name,
+  //       contents: contentsForRequest,
+  //       config: { 
+  //         generationConfig: generationConfiguration,
+  //         thinkingConfig: thinkingConfig,
+  //         safetySettings: safetySettings,
+  //         cachedContent: this.aiApiCache.name
+  //       }
+  //     });
+
+  //     for await (const chunk of responseStream) {
+  //       let currentText = chunk.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        
+  //       // Check if this is the final chunk with finishReason: 'STOP'
+  //       const isLastChunk = chunk.candidates?.[0]?.finishReason === 'STOP';
+        
+  //       // Skip if no content and not the final chunk
+  //       if (!currentText && !isLastChunk) {
+  //         continue;
+  //       }
+        
+  //       if (isLastChunk) {
+  //         // Extract metadata from the final chunk
+  //         const metadata = {
+  //           finishReason: chunk.candidates[0].finishReason,
+  //           modelVersion: chunk.modelVersion,
+  //           usageMetadata: chunk.usageMetadata
+  //         };
+          
+  //         // Append metadata as text to the current text
+  //         currentText += '\n\n--- RESPONSE METADATA ---\n' + JSON.stringify(metadata, null, 2);
+  //       }
+        
+  //       onText(currentText);
+  //     }
+  //   } catch (error) {
+  //     console.error('API Connection Error:', {
+  //       message: error.message,
+  //       status: error.status,
+  //       statusText: error.statusText,
+  //       url: error.url,
+  //       type: error.type,
+  //       response: error.response ? {
+  //         status: error.response.status,
+  //         statusText: error.response.statusText
+  //       } : 'No response'
+  //     });
+  //     throw error;
+  //   }
+  // }
   /**
    * Stream a response
    * @param {string} prompt - Prompt to complete
    * @param {Function} onText - Callback for response text
+   * @param {boolean} [noCache=false] - Whether to skip using cached content
    * @returns {Promise<void>}
    */
-  async streamWithThinking(prompt, onText) {
+  async streamWithThinking(prompt, onText, noCache = false) {
     if (!this.client || this.apiKeyMissing) {
       throw new Error('Gemini API client not initialized - API key missing');
     }
@@ -358,17 +443,6 @@ DO NOT repeat any parts of the manuscript that are correct or do not have issues
         includeThoughts: true,
         thinkingBudget: 24576
       }
-      // export declare interface ThinkingConfig {
-      //   /** Indicates whether to include thoughts in the response. 
-      //    *  If true, thoughts are returned only if the model supports 
-      //    *  thought and thoughts are available.
-      //    */
-      //   includeThoughts?: boolean;
-      //   /** Indicates the thinking budget in tokens.
-      //    *  max is 24576
-      //    */
-      //   thinkingBudget?: number;
-      // }
 
       const safetySettings = [
         { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.OFF },
@@ -386,30 +460,28 @@ DO NOT repeat any parts of the manuscript that are correct or do not have issues
         }
       ];
 
-      // console.log(`contentsForRequest:`);
-      // console.dir(contentsForRequest, { depth: null });
-
-      // console.log(`\naiApiCache.name:`);
-      // console.log(this.aiApiCache.name);
-      // console.log(`\naiApiCache.name:`);
-      // console.dir(this.aiApiCache, { depth: null });
+      // Create config object with or without cache based on noCache parameter
+      const configObj = { 
+        generationConfig: generationConfiguration,
+        thinkingConfig: thinkingConfig,
+        safetySettings: safetySettings
+      };
+      
+      // Only include cached content if we have a cache and noCache is false
+      if (this.aiApiCache && !noCache) {
+        console.log(`Using cached content: ${this.aiApiCache.name}`);
+        configObj.cachedContent = this.aiApiCache.name;
+      } else {
+        console.log(`Not using cached content (noCache: ${noCache}, aiApiCache available: ${!!this.aiApiCache})`);
+      }
 
       const responseStream = await this.client.models.generateContentStream({
         model: this.config.model_name,
         contents: contentsForRequest,
-        config: { 
-          generationConfig: generationConfiguration,
-          thinkingConfig: thinkingConfig,
-          safetySettings: safetySettings,
-          cachedContent: this.aiApiCache.name
-        }
+        config: configObj
       });
 
       for await (const chunk of responseStream) {
-        // console.log(JSON.stringify(chunk.candidates[0].content.parts[0], null, 2));
-        // console.log("Full chunk structure:"); // Label for the upcoming output
-        // console.dir(chunk, { depth: null });  // Display the complete object structure
-
         let currentText = chunk.candidates?.[0]?.content?.parts?.[0]?.text || '';
         
         // Check if this is the final chunk with finishReason: 'STOP'
@@ -421,10 +493,8 @@ DO NOT repeat any parts of the manuscript that are correct or do not have issues
         }
         
         if (isLastChunk) {
-          console.log("Full final chunk structure:");
-          console.dir(chunk, { depth: null }); // show the complete object structure
-          // cost = (1.25 × promptTokenCount + 10 × completionTokenCount) / 1000000
-          // cost = (1.25 × 3336 + 10 × 2764) / 1000000
+          // console.log("Full final chunk structure:");
+          // console.dir(chunk, { depth: null }); // show the complete object structure
 
           // Extract metadata for the final chunk
           const metadata = {
@@ -434,13 +504,11 @@ DO NOT repeat any parts of the manuscript that are correct or do not have issues
           };
           
           // Append metadata as text to the current text
-          currentText += '\n\n--- METADATA ---\n' + JSON.stringify(metadata, null, 2);
+          currentText += '\n\n--- RESPONSE METADATA ---\n' + JSON.stringify(metadata, null, 2);
         }
         
         onText(currentText);
       }
-
-
     } catch (error) {
       console.error('API Connection Error:', {
         message: error.message,

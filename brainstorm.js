@@ -39,47 +39,18 @@ class BrainstormTool extends ToolBase {
       throw new Error('No save directory available');
     }
     
-    // Ensure file paths are absolute
     const absoluteIdeasFile = this.ensureAbsolutePath(ideasFile, saveDir);
     
     try {
-      // Read ideas file
       this.emitOutput(`Reading ideas file: ${absoluteIdeasFile}\n`);
       const ideasContent = await this.readIdeasFile(absoluteIdeasFile);
 
-      // Prepare file and cache for API processing
-      const prepareResult = await this.apiService.prepareFileAndCache(absoluteIdeasFile);
-      prepareResult.messages.forEach(message => {
-        this.emitOutput(`${message}\n`);
-      });
-      if (prepareResult.errors.length > 0) {
-        this.emitOutput(`\n--- Errors encountered during preparation ---\n`);
-        prepareResult.errors.forEach(error => {
-          this.emitOutput(`ERROR: ${error}\n`);
-        });
-      }
-
-      // Generate concept and/or characters based on options
-      if (charactersOnly) {
-        const outputFile = await this.generateAndAppend("characters", ideasContent, absoluteIdeasFile, saveDir, options);
-        outputFiles.push(outputFile);
-      } else if (conceptOnly) {
-        const outputFile = await this.generateAndAppend("concept", ideasContent, absoluteIdeasFile, saveDir, options);
-        outputFiles.push(outputFile);
-      } else {
-        // Generate both by default
-        this.emitOutput("\n*** Generating both concept and characters...\n");
-        const conceptFile = await this.generateAndAppend("concept", ideasContent, absoluteIdeasFile, saveDir, options);
-        outputFiles.push(conceptFile);
-        
-        // Read updated ideas file after concept generation
-        const updatedIdeasContent = await this.readIdeasFile(absoluteIdeasFile);
-        const charactersFile = await this.generateAndAppend("characters", updatedIdeasContent, absoluteIdeasFile, saveDir, options);
-        outputFiles.push(charactersFile);
-      }
+      // Generate concept and characters based on options
+      this.emitOutput("\nUsing ideas file to generate both concept and characters...\n");
+      const conceptFile = await this.generateAndAppend(ideasContent, absoluteIdeasFile, saveDir, options);
+      outputFiles.push(conceptFile);
       
       this.emitOutput("\nGeneration complete!\n");
-      this.emitOutput(`All content has been appended to: ${absoluteIdeasFile}\n`);
       
       return {
         success: true,
@@ -114,23 +85,16 @@ class BrainstormTool extends ToolBase {
   
   /**
    * Generate content and append to ideas file
-   * @param {string} promptType - Type of prompt ("concept" or "characters")
    * @param {string} ideasContent - Content of ideas file
    * @param {string} ideasFile - Path to ideas file
    * @param {string} saveDir - Directory to save output
    * @param {Object} options - Tool options
    * @returns {Promise<string>} - Path to saved file
    */
-  async generateAndAppend(promptType, ideasContent, ideasFile, saveDir, options) {
-    // Create appropriate prompt
+  async generateAndAppend(ideasContent, ideasFile, saveDir, options) {
     let prompt;
-    if (promptType === "concept") {
-      prompt = this.createConceptPrompt(ideasContent, options);
-    } else { // characters
-      prompt = this.createCharacterPrompt(ideasContent, options);
-    }
-
-    this.emitOutput(`\n*** Working on: ${promptType}.txt file...\n`);
+    prompt = this.createConceptPrompt(ideasContent, options);
+    prompt += this.createCharacterPrompt(ideasContent, options);
 
     const promptTokens = await this.apiService.countTokens(prompt);
     
@@ -147,7 +111,8 @@ class BrainstormTool extends ToolBase {
         (textDelta) => {
           fullResponse += textDelta;
           this.emitOutput(textDelta);
-        }
+        },
+        true // don't use cached file
       );
     } catch (error) {
       this.emitOutput(`\nAPI Error: ${error.message}\n`);
@@ -160,59 +125,24 @@ class BrainstormTool extends ToolBase {
     
     this.emitOutput(`\nCompleted in ${minutes}m ${seconds.toFixed(2)}s.\n`);
     
-    // No need to remove markdown formatting - trust the API response directly
-    const cleanedResponse = fullResponse;
+    const wordCount = this.countWords(fullResponse);
+    this.emitOutput(`Generated brainstorm has approximately ${wordCount} words.\n`);
     
-    const wordCount = this.countWords(cleanedResponse);
-    this.emitOutput(`Generated ${promptType} has approximately ${wordCount} words.\n`);
-    
-    const responseTokens = await this.apiService.countTokens(cleanedResponse);
+    const responseTokens = await this.apiService.countTokens(fullResponse);
     this.emitOutput(`Response token count: ${responseTokens}\n`);
+      
+    // Save the brainstorm to a file
+    const timestamp = new Date().toISOString().replace(/[-:.]/g, '').substring(0, 15);
+    const brainstormFilename = `brainstorm_${timestamp}.txt`;
+    const brainstormPath = path.join(saveDir, brainstormFilename);
     
-    // Append to ideas file
-    await this.appendToIdeasFile(ideasFile, cleanedResponse, promptType);
-    this.emitOutput(`Content appended to: ${ideasFile}\n`);
-    
-    // Save a backup copy
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
-    const backupFilename = `${promptType}_${timestamp}.txt`;
-    const backupPath = path.join(saveDir, backupFilename);
-    await this.writeOutputFile(cleanedResponse, saveDir, backupFilename);
-    this.emitOutput(`Backup saved to: ${backupPath}\n`);
+    await this.writeOutputFile(fullResponse, saveDir, brainstormFilename);
+    this.emitOutput(`Brainstorm saved to: ${brainstormPath}\n`);
     
     // Add to the file cache
-    fileCache.addFile('brainstorm', backupPath);
+    fileCache.addFile('brainstorm', brainstormPath);
     
-    return backupPath;
-  }
-  
-  /**
-   * Append content to ideas file
-   * @param {string} filepath - Path to ideas file
-   * @param {string} newContent - New content to append
-   * @param {string} contentType - Type of content ("Concept" or "Characters")
-   * @returns {Promise<void>}
-   */
-  async appendToIdeasFile(filepath, newContent, contentType) {
-    try {
-      // Read existing content
-      let existingContent = await fs.readFile(filepath, 'utf8');
-      
-      // Format content type with proper capitalization
-      const formattedType = contentType.charAt(0).toUpperCase() + contentType.slice(1);
-      
-      // Get current timestamp
-      const timestamp = new Date().toLocaleString();
-      
-      // Format new content to append
-      const contentToAppend = `\n\n# ${formattedType} (Generated ${timestamp})\n\n${newContent}`;
-      
-      // Append to file
-      await fs.writeFile(filepath, existingContent + contentToAppend);
-    } catch (error) {
-      this.emitOutput(`Error appending to ideas file: ${error.message}\n`);
-      throw error;
-    }
+    return brainstormPath;
   }
   
   /**
@@ -222,14 +152,15 @@ class BrainstormTool extends ToolBase {
    * @returns {string} - Concept prompt
    */
   createConceptPrompt(ideasContent, options) {
-    return `You are a skilled novelist and worldbuilder helping to create a detailed concept document in fluent, authentic English.
+    return `
+
+=== IDEAS CONTENT ===
+${ideasContent}
+=== END IDEAS CONTENT ===
+
+You are a skilled novelist and worldbuilder helping to create a detailed concept document in fluent, authentic English.
 Draw upon your knowledge of worldwide literary traditions, narrative structure, and worldbuilding approaches from across cultures,
 while expressing everything in natural, idiomatic English.
-
-=== IDEAS FILE CONTENT ===
-${ideasContent}
-=== END IDEAS FILE CONTENT ===
-
 
 Create a detailed concept document that explores and develops this writing idea. Focus on worldbuilding, setting, themes, and plot possibilities.
 The depth level requested is 5, so adjust your detail accordingly.
@@ -260,13 +191,13 @@ IMPORTANT FORMATTING INSTRUCTIONS:
    * @returns {string} - Character prompt
    */
   createCharacterPrompt(ideasContent, options) {
-    return `You are a skilled novelist and character developer helping to create detailed character descriptions in fluent, authentic English.
+    return `
+
+Reread IDEAS CONTENT again, so now you are:
+
+You are a skilled novelist and character developer helping to create detailed character descriptions in fluent, authentic English.
 Draw upon your knowledge of worldwide literary traditions, character development, and psychological complexity from across cultures,
 while expressing everything in natural, idiomatic English.
-
-=== IDEAS FILE CONTENT ===
-${ideasContent}
-=== END IDEAS FILE CONTENT ===
 
 Create details for 5 characters that would fit well in this story concept.
 

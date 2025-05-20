@@ -970,7 +970,7 @@ Use specific text examples from the manuscript to support your critique.
 `,
 
 // AI writing tools
-brainstorm: ``, // no prompt required
+brainstorm: ``, // see tool for prompt
 
 outline_writer: `
 `,
