@@ -24,50 +24,22 @@ copy_editing: `
 `,
 
 proofreader_spelling: `
-Perform a comprehensive word-by-word spelling check on the entire document while being sensitive to intentional stylistic choices.
+Perform a meticulous word-by-word spelling check on the following text. Do not skim or speed-read. Examine each word individually and independently to identify any misspellings.
 
-Your task:
-1. Examine EVERY single word in sequence, comparing each against standard spelling
-2. Specifically flag ALL instances of:
-   - Misspelled words (e.g., 'teh' instead of 'the')
-   - Missing apostrophes in contractions (e.g., 'dont' instead of 'don't')
-   - Incorrect homophone usage (e.g., 'their' when 'there' is needed)
-   - Common pattern errors (dropping double letters, 'ie' vs 'ei' errors)
+Follow these steps:
+1. Process the text one word at a time, comparing each against standard English spelling
+2. Do not allow mental auto-correction while reading
+3. After completing your initial check, perform a second review to catch anything missed
+4. Present all identified spelling errors in the exact format below
 
-3. DISTINGUISH between true spelling errors and intentional stylistic choices by considering:
-   - Is the word in dialogue or a character's thoughts?
-   - Does it reflect a character's established speech pattern or education level?
-   - Is it consistent with the character's voice throughout the story?
-   - Is it a recognized colloquialism, slang term, or regional dialect?
-   - Does it appear to be an intentional creative choice?
+For each misspelled word found, format your response as follows:
+Original: [exact verbatim sentence containing the misspelled word, without extra quotes]
+Issue: [misspelled word]
+Solution: [correct spelling]
 
-Format your response differently based on the type of issue:
+If no spelling errors are found, clearly state: "No spelling errors detected in the provided text."
 
-FOR GENUINE SPELLING ERRORS:
----------
-Original: [The passage containing the error]
-Issue(s): Spelling - [Describe the specific error]
-Correction/Suggestion: [The corrected passage]
-
-FOR POSSIBLE STYLISTIC CHOICES:
----------
-Original: [The passage containing the non-standard usage]
-Note: This appears to be intentional non-standard language that might reflect [character voice/dialect/colloquial speech/etc.]. While not standard usage, this may be a stylistic choice rather than an error.
-Consider: [Brief note on whether this is consistent with the character's established voice or if it might be an unintentional error]
-
-Examples of stylistic choices that should NOT be marked as errors (unless inconsistent with the character):
-- Non-standard words used in dialogue ("ain't", "gonna", "wanna")
-- Child-like speech ("bestest", "funnest")
-- Dialectal spellings showing accent ("fer" for "for", "ya" for "you")
-- Character-specific speech patterns (dropped g's like "talkin'", simplified words)
-- Established slang or colloquialisms
-
-When in doubt about whether something is an error or stylistic choice:
-1. Check if it's consistent with how the character speaks/thinks elsewhere
-2. Note it as a possible stylistic choice rather than definitively marking it as an error
-3. Suggest the standard spelling but indicate it may be intentional
-
-For the "Correction/Suggestion:" line, provide the directly corrected sentence.
+Important: Your task is strictly to identify misspelled words, not to evaluate grammar, punctuation, or style. Be thorough and precise, as the user expects all spelling errors to be identified in a single pass.
 `,
 
 proofreader_punctuation: `
@@ -83,7 +55,7 @@ Pay special attention to:
 5. Sentences where alternative punctuation would improve flow or clarity
 
 For each issue you identify, provide:
-- The original passage
+- The original passage verbatim, with no extra quotes added
 - What makes the punctuation problematic
 - A specific recommendation for improvement
 
