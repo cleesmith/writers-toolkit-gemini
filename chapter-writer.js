@@ -26,14 +26,13 @@ class ChapterWriter extends ToolBase {
     fileCache.clear(this.name);
     
     // Extract options
-    const manuscriptFile = options.manuscript;
-    const outlineFile = options.outline;
-    const worldFile = options.world;
+    const manuscriptFile = options.manuscript; // a filepath
+    const outlineFile = options.outline; // a filepath
+    const worldFile = options.world; // a filepath
     const language = options.lang || 'English';
-    const noDialogueEmphasis = options.no_dialogue_emphasis || false;
-    const noAppend = options.no_append || false;
     
     const saveDir = options.save_dir || appState.CURRENT_PROJECT_PATH;
+
     const outputFiles = [];
     const summary = [];
     
@@ -88,7 +87,6 @@ class ChapterWriter extends ToolBase {
         outlineFile,
         worldFile,
         language,
-        noAppend,
         saveDir
       );
       
@@ -162,7 +160,7 @@ class ChapterWriter extends ToolBase {
     // Find the first chapter in the outline that's not in the manuscript
     for (const chapter of outlineChapters) {
       if (!manuscriptChapterNumbers.has(chapter.number)) {
-        this.emitOutput(`Chapter ${chapter.number} is in the outline but not in the manuscript.\n`);
+        this.emitOutput(`\nChapter ${chapter.number} is in the outline but not in the manuscript.\n`);
         return chapter.full;
       }
     }
@@ -178,7 +176,6 @@ class ChapterWriter extends ToolBase {
    * @param {string} outlineFile - Path to outline file
    * @param {string} worldFile - Path to world file
    * @param {string} language - Language to write in
-   * @param {boolean} noAppend - Whether to disable auto-appending to manuscript
    * @param {string} saveDir - Directory to save output files
    * @returns {Promise<Object>} - Result of chapter processing
    */
@@ -188,7 +185,6 @@ class ChapterWriter extends ToolBase {
     outlineFile,
     worldFile,
     language,
-    noAppend,
     saveDir
   ) {
     try {
@@ -203,7 +199,7 @@ class ChapterWriter extends ToolBase {
         hour12: true 
       }).toLowerCase().replace(/^0/, '');
       
-      this.emitOutput(`${currentTime} - Processing: Chapter ${chapterNum}\n`);
+      this.emitOutput(`\n${currentTime} - Processing: Chapter ${chapterNum}\n`);
       
       // Read files
       // Read outline file (required)
@@ -296,21 +292,19 @@ class ChapterWriter extends ToolBase {
       
       const chapterTokenCount = await this.apiService.countTokens(fullResponse);
       
-      // Append the new chapter to the manuscript file if not disabled
-      if (!noAppend) {
-        const appendSuccess = await this.appendToManuscript(
-          fullResponse, 
-          this.ensureAbsolutePath(manuscriptFile, saveDir)
-        );
+      // Append the new chapter to the manuscript file
+      const appendSuccess = await this.appendToManuscript(
+        fullResponse, 
+        this.ensureAbsolutePath(manuscriptFile, saveDir)
+      );
         
-        if (appendSuccess) {
-          this.emitOutput(`Chapter ${chapterNum} appended to manuscript file: ${manuscriptFile}\n`);
-        } else {
-          this.emitOutput(`Warning: Failed to append chapter to manuscript file\n`);
-        }
+      if (appendSuccess) {
+        this.emitOutput(`Chapter ${chapterNum} appended to manuscript file: ${manuscriptFile}\n`);
+      } else {
+        this.emitOutput(`Warning: Failed to append chapter to manuscript file\n`);
       }
       
-      this.emitOutput(`\nCompleted Chapter ${chapterNum}: ${chapterWordCount} words (${minutes}m ${seconds.toFixed(2)}s) - saved to: ${path.basename(chapterPath)}\n`);
+      this.emitOutput(`\nCompleted Chapter ${chapterNum}: ${chapterWordCount} words (${minutes}m ${seconds.toFixed(2)}s) - saved to: ${path.basename(chapterPath)} and\nappended to manuscript.\n`);
       
       return {
         chapterNum,
@@ -337,9 +331,6 @@ class ChapterWriter extends ToolBase {
       this.emitOutput("\nERROR: Chapter heading is empty or undefined\n");
       throw new Error('Empty chapter heading');
     }
-
-    // Debug output to help diagnose parsing issues
-    this.emitOutput(`\nDebug: Parsing chapter heading: "${chapterHeading}"\n`);
     
     // Check for the different formats with more robust patterns
     const fullPattern = /^Chapter\s+(\d+):\s+(.+)$/i;
@@ -381,7 +372,7 @@ class ChapterWriter extends ToolBase {
         this.emitOutput(`\t"X. Title"\n`);
         this.emitOutput(`... where X is a number.\n`);
         this.emitOutput(`But your chapter heading was: '${chapterHeading}'\n\n`);
-        throw new Error('Invalid chapter heading format');
+        throw new Error('Invalid chapter heading format!');
       }
     }
     
@@ -450,64 +441,64 @@ class ChapterWriter extends ToolBase {
    */
   createChapterPrompt(formattedHeading, formattedOutlineHeading, outlineContent, worldContent, novelContent, language) {
     return `
-  You are a professional fiction writer with expertise in creating engaging, readable prose.
-  
-  === OUTLINE ===
-  ${outlineContent}
-  === END OUTLINE ===
-  
-  === WORLD ===
-  ${worldContent}
-  === END WORLD ===
-  
-  === EXISTING MANUSCRIPT ===
-  ${novelContent}
-  === END EXISTING MANUSCRIPT ===
+You are a professional fiction writer with expertise in creating engaging, readable prose.
 
-  You are a skilled novelist writing ${formattedHeading} in fluent, authentic ${language}. 
-  Draw upon your knowledge of worldwide literary traditions, narrative techniques, and creative approaches from across cultures, while expressing everything in natural, idiomatic ${language} that honors its unique linguistic character.
+=== OUTLINE ===
+${outlineContent}
+=== END OUTLINE ===
 
-  YOUR TASK:
-  Write ${formattedHeading} according to these guidelines. DO NOT SHOW ANY THOUGHT PROCESS - ONLY WRITE THE ACTUAL CHAPTER TEXT.
+=== WORLD ===
+${worldContent}
+=== END WORLD ===
 
-  WRITING REQUIREMENTS:
-  - Read thoroughly the included WORLD, OUTLINE, and MANUSCRIPT
-  - Refer to the world of characters and settings provided
-  - Create compelling opening and closing scenes
-  - Incorporate sensory details and vivid descriptions
-  - Maintain consistent tone and style with previous chapters
-  - Begin with: ${formattedOutlineHeading} and write in plain text only
-  - Write 2,000-3,000 words
-  - Do not repeat content from existing chapters
-  - Do not start working on the next chapter
+=== EXISTING MANUSCRIPT ===
+${novelContent}
+=== END EXISTING MANUSCRIPT ===
 
-  CHARACTER RESTRICTIONS:
-  - Do NOT create any new named characters
-  - Only use characters explicitly mentioned in the WORLD, OUTLINE, or MANUSCRIPT
-  - Only add minimal unnamed incidental characters when absolutely necessary (e.g., waiter, cashier)
+You are a skilled novelist writing ${formattedHeading} in fluent, authentic ${language}. 
+Draw upon your knowledge of worldwide literary traditions, narrative techniques, and creative approaches from across cultures, while expressing everything in natural, idiomatic ${language} that honors its unique linguistic character.
 
-  WORLD BUILDING:
-  - Make extensive use of the world details provided in the WORLD section
-  - Incorporate the settings, locations, history, culture, and atmosphere described there
+YOUR TASK:
+Write ${formattedHeading} according to these guidelines. DO NOT SHOW ANY THOUGHT PROCESS - ONLY WRITE THE ACTUAL CHAPTER TEXT.
 
-  DIALOGUE EMPHASIS:
-  - Significantly increase the amount of dialogue (40-50% of content)
-  - Include both external conversations and internal thoughts/monologues
-  - Ensure each character's dialogue reflects their unique personality
+WRITING REQUIREMENTS:
+- Read thoroughly the included OUTLINE, WORLD, and MANUSCRIPT
+- Refer to the world of characters and settings provided
+- Create compelling opening and closing scenes
+- Incorporate sensory details and vivid descriptions
+- Maintain consistent tone and style with previous chapters
+- Begin with: ${formattedOutlineHeading} and write in plain text only
+- Write 2,500-3,000 words
+- Do not repeat content from existing chapters
+- Do not start working on the next chapter
 
-  STYLISTIC REQUIREMENTS:
-  - NO Markdown formatting - plain text only
-  - Use hyphens only for legitimate ${language} words
-  - Write all times in 12-hour numerical format with a space before lowercase am/pm (e.g., "10:30 am")
-  - Maintain engaging narrative pacing through varied sentence structure
-  - Avoid whispers, echoes, eyes widening, and other overused phrases
-  - EXPAND your vocabulary beyond common expressions, especially for:
-    • Dialogue attribution (beyond said, asked, replied)
-    • Character movements (beyond nodding, sighing, shrugging)
-    • Emotional reactions (beyond physical clichés like racing hearts)
-    • Environmental descriptions (use specific terminology)
+CHARACTER RESTRICTIONS:
+- Do NOT create any new named characters
+- Only use characters explicitly mentioned in the WORLD, OUTLINE, or MANUSCRIPT
+- Only add minimal unnamed incidental characters when absolutely necessary (e.g., waiter, cashier)
 
-  IMPORTANT: Provide ONLY the chapter text itself with no explanation, commentary, or thinking process.
+WORLD BUILDING:
+- Make extensive use of the world details provided in the WORLD section
+- Incorporate the settings, locations, history, culture, and atmosphere described there
+
+DIALOGUE EMPHASIS:
+- Significantly increase the amount of dialogue (40% of content)
+- Include both external conversations and internal thoughts/monologues
+- Ensure each character's dialogue reflects their unique personality
+
+STYLISTIC REQUIREMENTS:
+- NO Markdown formatting - plain text only
+- Use hyphens only for legitimate ${language} words
+- Write all times in 12-hour numerical format with a space before lowercase am/pm (e.g., "10:30 am")
+- Maintain engaging narrative pacing through varied sentence structure
+- Avoid whispers, echoes, eyes widening, and other overused phrases
+- EXPAND your vocabulary beyond common expressions, especially for:
+  • Dialogue attribution (beyond said, asked, replied)
+  • Character movements (beyond nodding, sighing, shrugging)
+  • Emotional reactions (beyond physical clichés like racing hearts)
+  • Environmental descriptions (use specific terminology)
+
+IMPORTANT: Provide ONLY the chapter text itself with no explanation, commentary, or thinking process.
   `;
   }
   
@@ -517,16 +508,48 @@ class ChapterWriter extends ToolBase {
    * @param {string} manuscriptPath - Path to the manuscript file
    * @returns {Promise<boolean>} - Whether appending was successful
    */
+  // async appendToManuscript(chapterText, manuscriptPath) {
+  //   try {
+  //     // Read the existing manuscript
+  //     let manuscriptContent = await fs.readFile(manuscriptPath, 'utf8');
+      
+  //     // Ensure manuscript ends with exactly one newline
+  //     manuscriptContent = manuscriptContent.trim() + '\n';
+      
+  //     // Append chapter with proper formatting (two blank lines)
+  //     const updatedContent = manuscriptContent + '\n\n' + chapterText;
+      
+  //     // Write updated content back to manuscript
+  //     await fs.writeFile(manuscriptPath, updatedContent);
+      
+  //     return true;
+  //   } catch (error) {
+  //     console.error('Error appending to manuscript:', error);
+  //     this.emitOutput(`Error appending to manuscript: ${error.message}\n`);
+  //     return false;
+  //   }
+  // }
   async appendToManuscript(chapterText, manuscriptPath) {
     try {
       // Read the existing manuscript
       let manuscriptContent = await fs.readFile(manuscriptPath, 'utf8');
       
-      // Ensure manuscript ends with exactly one newline
-      manuscriptContent = manuscriptContent.trim() + '\n';
+      // BETTER APPROACH: 
+      // Only trim trailing whitespace, not leading whitespace
+      // This preserves any newlines before the first chapter
+      manuscriptContent = manuscriptContent.replace(/\s+$/, '') + '\n';
       
-      // Append chapter with proper formatting (two blank lines)
-      const updatedContent = manuscriptContent + '\n\n' + chapterText;
+      // For empty manuscripts, ensure Chapter 1 also has two newlines before it
+      if (manuscriptContent.trim() === '') {
+        // If the manuscript is empty, add two newlines before the first chapter
+        manuscriptContent = '\n\n';
+      } else {
+        // Otherwise, ensure two newlines between chapters
+        manuscriptContent = manuscriptContent + '\n\n';
+      }
+      
+      // Append chapter text (without additional newlines)
+      const updatedContent = manuscriptContent + chapterText;
       
       // Write updated content back to manuscript
       await fs.writeFile(manuscriptPath, updatedContent);
