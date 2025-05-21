@@ -538,51 +538,6 @@ const TOOL_DEFS = [
       "required": false,
       "default": "English",
       "group": "Input Files"
-    },
-    {
-      "name": "chapter_delay",
-      "label": "chapter_delay",
-      "type": "number",
-      "description": "Delay in seconds between processing multiple chapters (default: 15 seconds)",
-      "required": false,
-      "default": 15,
-      "group": "Input Files"
-    },
-    {
-      "name": "no_dialogue_emphasis",
-      "label": "no_dialogue_emphasis",
-      "type": "boolean",
-      "description": "Turn off the additional dialogue emphasis (dialogue emphasis is ON by default)",
-      "required": false,
-      "default": true,
-      "group": "Input Files"
-    },
-    {
-      "name": "no_append",
-      "label": "no_append",
-      "type": "boolean",
-      "description": "Disable auto-appending new chapters to manuscript file",
-      "required": false,
-      "default": false,
-      "group": "Input Files"
-    },
-    {
-      "name": "request",
-      "label": "Single chapter only",
-      "type": "text",
-      "description": "Single chapter format: \"Chapter 9: Title\"   or  \"9: Title\"   or  \"9. Title\"",
-      "required": false,
-      "default": null,
-      "group": "Input Files"
-    },
-    {
-      "name": "chapters_to_write",
-      "label": "List of chapters to write",
-      "type": "file",
-      "description": "Path to a file containing a list of chapters to write sequentially, and the format is \"9. Chapter Title\" per line. \nIt may contain one or more chapters. \nIt must match the chapter format in the outline.",
-      "required": false,
-      "default": "",
-      "group": "Input Files"
     }
   ]},
   { id: 'docx_comments', title: 'DOCX Text/Comments Extractor', description: 'Extracts comments and associated text from DOCX files and saves them to a text file', Class: DocxComments, options: [

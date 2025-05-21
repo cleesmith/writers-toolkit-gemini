@@ -7,8 +7,8 @@ const fs = require('fs/promises');
 
 /**
  * Chapter Writer Tool
- * Uses the outline, chapters list, world document, and 
- * any existing manuscript to write rough draft chapters
+ * Uses the outline, world document, and 
+ * existing manuscript to write the first missing chapter
  */
 class ChapterWriter extends ToolBase {
   constructor(apiService, config = {}) {
@@ -26,13 +26,11 @@ class ChapterWriter extends ToolBase {
     fileCache.clear(this.name);
     
     // Extract options
-    const request = options.request;
-    const chaptersToWrite = options.chapters_to_write;
     const manuscriptFile = options.manuscript;
     const outlineFile = options.outline;
     const worldFile = options.world;
-    const language = options.lang;
-    const chapterDelay = options.chapter_delay;
+    const language = options.lang || 'English';
+    const noDialogueEmphasis = options.no_dialogue_emphasis || false;
     const noAppend = options.no_append || false;
     
     const saveDir = options.save_dir || appState.CURRENT_PROJECT_PATH;
@@ -47,99 +45,56 @@ class ChapterWriter extends ToolBase {
       throw new Error('No save directory available');
     }
     
-    // Validate that either request or chaptersToWrite is provided
-    if (!request && !chaptersToWrite) {
-      const errorMsg = 'Error: You must provide either request for a single chapter or chapters_to_write for multiple chapters.\n';
-      this.emitOutput(errorMsg);
-      throw new Error('No chapter request provided');
-    }
-    
     try {
-      // If chapters_to_write is provided, process multiple chapters
-      if (chaptersToWrite) {
-        // Read chapters list file
-        this.emitOutput(`Reading chapters to write from: ${chaptersToWrite}\n`);
-        const chaptersPath = this.ensureAbsolutePath(chaptersToWrite, saveDir);
-        const chaptersContent = await this.readInputFile(chaptersPath);
+      // Read manuscript file or create it if it doesn't exist
+      let manuscriptContent = "";
+      try {
+        this.emitOutput(`Reading manuscript file: ${manuscriptFile}\n`);
+        manuscriptContent = await this.readInputFile(this.ensureAbsolutePath(manuscriptFile, saveDir));
+      } catch (error) {
+        this.emitOutput(`Error: Required manuscript file not found: ${manuscriptFile}\n`);
+        this.emitOutput("Creating a new manuscript file.\n");
         
-        // Parse chapter list - non-empty lines
-        const chapterList = chaptersContent
-          .split('\n')
-          .map(line => line.trim())
-          .filter(line => line.length > 0);
-        
-        if (chapterList.length === 0) {
-          this.emitOutput(`Error: Chapters file is empty: ${chaptersToWrite}\n`);
-          throw new Error('Chapters file is empty');
-        }
-        
-        this.emitOutput(`Found ${chapterList.length} chapters to process:\n`);
-        chapterList.forEach((chapter, index) => {
-          this.emitOutput(`  ${index + 1}. ${chapter}\n`);
-        });
-        
-        // Process each chapter with a delay between them
-        for (let i = 0; i < chapterList.length; i++) {
-          const chapterRequest = chapterList[i];
-          
-          this.emitOutput(`\nProcessing chapter ${i + 1} of ${chapterList.length}: ${chapterRequest}\n`);
-          
-          const result = await this.processChapter(
-            chapterRequest,
-            manuscriptFile,
-            outlineFile,
-            worldFile,
-            language,
-            noAppend,
-            saveDir,
-            i + 1,
-            chapterList.length
-          );
-          
-          if (result) {
-            outputFiles.push(result.chapterFile);
-            summary.push(result);
-          }
-          
-          // If this isn't the last chapter, wait before processing the next one
-          if (i < chapterList.length - 1) {
-            this.emitOutput(`Waiting ${chapterDelay} seconds before next chapter...\n`);
-            await new Promise(resolve => setTimeout(resolve, chapterDelay * 1000));
-          }
-        }
-        
-        // Output summary of all processed chapters
-        this.emitOutput("\n\n" + "=".repeat(80) + "\n");
-        this.emitOutput("SUMMARY OF ALL CHAPTERS PROCESSED\n");
-        this.emitOutput("=".repeat(80) + "\n");
-        
-        let totalWords = 0;
-        let totalTime = 0;
-        
-        for (const result of summary) {
-          totalWords += result.wordCount;
-          totalTime += result.elapsedTime;
-          const minutes = Math.floor(result.elapsedTime / 60);
-          const seconds = result.elapsedTime % 60;
-          
-          this.emitOutput(`Chapter ${result.chapterNum}: ${result.wordCount} words, ${minutes}m ${seconds.toFixed(1)}s, saved to: ${path.basename(result.chapterFile)}\n\n`);
-        }
-      } else {
-        // Process a single chapter
-        const result = await this.processChapter(
-          request,
-          manuscriptFile,
-          outlineFile,
-          worldFile,
-          language,
-          noAppend,
-          saveDir
-        );
-        
-        if (result) {
-          outputFiles.push(result.chapterFile);
-          summary.push(result);
-        }
+        // Create an empty manuscript file
+        await fs.writeFile(this.ensureAbsolutePath(manuscriptFile, saveDir), "");
+      }
+      
+      // Read outline file (required)
+      let outlineContent = "";
+      try {
+        this.emitOutput(`Reading outline file: ${outlineFile}\n`);
+        outlineContent = await this.readInputFile(this.ensureAbsolutePath(outlineFile, saveDir));
+      } catch (error) {
+        this.emitOutput(`Error: Required outline file not found: ${outlineFile}\n`);
+        this.emitOutput("The outline file is required to continue.\n");
+        throw error;
+      }
+      
+      // Find the first missing chapter by analyzing the manuscript and outline
+      const missingChapterHeading = await this.findFirstMissingChapter(manuscriptContent, outlineContent);
+      
+      if (!missingChapterHeading) {
+        this.emitOutput(`No missing chapters found. All chapters from outline appear to be in the manuscript.\n`);
+        this.emitOutput(`If you want to write a new chapter, add it to your outline first.\n`);
+        throw new Error('No missing chapters found');
+      }
+      
+      this.emitOutput(`Found first missing chapter to write: ${missingChapterHeading}\n`);
+      
+      // Process the missing chapter
+      const result = await this.processChapter(
+        missingChapterHeading,
+        manuscriptFile,
+        outlineFile,
+        worldFile,
+        language,
+        noAppend,
+        saveDir
+      );
+      
+      if (result) {
+        outputFiles.push(result.chapterFile);
+        summary.push(result);
       }
       
       // Add all files to the cache
@@ -165,32 +120,80 @@ class ChapterWriter extends ToolBase {
   }
   
   /**
+   * Find the first missing chapter by analyzing manuscript and outline
+   * @param {string} manuscriptContent - Content of the manuscript file
+   * @param {string} outlineContent - Content of the outline file
+   * @returns {Promise<string>} - First missing chapter to write (format: "Chapter X: Title")
+   */
+  async findFirstMissingChapter(manuscriptContent, outlineContent) {
+    // Extract chapters from the manuscript and put numbers in a Set for quick lookup
+    const manuscriptChapterNumbers = new Set();
+    const chapterRegex = /Chapter\s+(\d+):\s+(.*?)(?=\n\n|\n*$)/gs;
+    let match;
+    
+    while ((match = chapterRegex.exec(manuscriptContent)) !== null) {
+      manuscriptChapterNumbers.add(parseInt(match[1], 10));
+    }
+    
+    this.emitOutput(`Found ${manuscriptChapterNumbers.size} chapters in manuscript.\n`);
+    
+    // Find all chapters in the outline with a more specific regex
+    const outlineChapters = [];
+    // This improved regex looks specifically for lines that start with "Chapter" at beginning of line
+    const outlineChapterRegex = /^Chapter\s+(\d+):\s+(.+)$/gm;
+    let outlineMatch;
+    
+    while ((outlineMatch = outlineChapterRegex.exec(outlineContent)) !== null) {
+      // Debug output for each chapter found
+      this.emitOutput(`Found in outline: Chapter ${outlineMatch[1]}: ${outlineMatch[2]}\n`);
+      
+      outlineChapters.push({
+        number: parseInt(outlineMatch[1], 10),
+        title: outlineMatch[2],
+        full: `Chapter ${outlineMatch[1]}: ${outlineMatch[2]}`
+      });
+    }
+    
+    // Sort outline chapters by chapter number
+    outlineChapters.sort((a, b) => a.number - b.number);
+    
+    this.emitOutput(`Found ${outlineChapters.length} chapters in outline.\n`);
+    
+    // Find the first chapter in the outline that's not in the manuscript
+    for (const chapter of outlineChapters) {
+      if (!manuscriptChapterNumbers.has(chapter.number)) {
+        this.emitOutput(`Chapter ${chapter.number} is in the outline but not in the manuscript.\n`);
+        return chapter.full;
+      }
+    }
+    
+    // No missing chapters found
+    return null;
+  }
+  
+  /**
    * Process a single chapter
-   * @param {string} chapterRequest - Chapter request text
+   * @param {string} chapterHeading - Chapter heading to process
    * @param {string} manuscriptFile - Path to manuscript file
    * @param {string} outlineFile - Path to outline file
    * @param {string} worldFile - Path to world file
    * @param {string} language - Language to write in
    * @param {boolean} noAppend - Whether to disable auto-appending to manuscript
    * @param {string} saveDir - Directory to save output files
-   * @param {number} currentIdx - Current chapter index (for multiple chapters)
-   * @param {number} totalChapters - Total number of chapters (for multiple chapters)
    * @returns {Promise<Object>} - Result of chapter processing
    */
   async processChapter(
-    chapterRequest,
+    chapterHeading,
     manuscriptFile,
     outlineFile,
     worldFile,
     language,
     noAppend,
-    saveDir,
-    currentIdx = null,
-    totalChapters = null
+    saveDir
   ) {
     try {
       // Extract chapter number and formatted chapter number
-      const { chapterNum, formattedChapter } = this.extractChapterNum(chapterRequest);
+      const { chapterNum, formattedChapter } = this.extractChapterNum(chapterHeading);
       
       // Log processing info
       const currentTime = new Date().toLocaleTimeString('en-US', { 
@@ -200,11 +203,7 @@ class ChapterWriter extends ToolBase {
         hour12: true 
       }).toLowerCase().replace(/^0/, '');
       
-      if (currentIdx !== null && totalChapters !== null) {
-        this.emitOutput(`${currentTime} - Processing chapter ${currentIdx} of ${totalChapters}: Chapter ${chapterNum}\n`);
-      } else {
-        this.emitOutput(`${currentTime} - Processing: Chapter ${chapterNum}\n`);
-      }
+      this.emitOutput(`${currentTime} - Processing: Chapter ${chapterNum}\n`);
       
       // Read files
       // Read outline file (required)
@@ -242,14 +241,14 @@ class ChapterWriter extends ToolBase {
         // Don't throw an error - continue with empty worldContent
       }
       
-      // Format chapter request for consistency in prompt
-      const formattedRequest = this.formatChapterRequest(chapterRequest);
-      const formattedOutlineRequest = this.formatOutlineRequest(chapterRequest);
+      // Format chapter heading for consistency in prompt
+      const formattedHeading = this.formatChapterHeading(chapterHeading);
+      const formattedOutlineHeading = this.formatOutlineHeading(chapterHeading);
       
       // Create prompt
       const prompt = this.createChapterPrompt(
-        formattedRequest,
-        formattedOutlineRequest,
+        formattedHeading,
+        formattedOutlineHeading,
         outlineContent,
         worldContent,
         novelContent,
@@ -329,96 +328,127 @@ class ChapterWriter extends ToolBase {
   }
   
   /**
-   * Extract chapter number from request
-   * @param {string} request - Chapter request text
+   * Extract chapter number from heading with improved error handling
+   * @param {string} chapterHeading - Chapter heading text
    * @returns {Object} - Chapter number and formatted chapter number
    */
-  extractChapterNum(request) {
-    // Check for the different formats
-    const fullPattern = /^Chapter\s+(\d+)[:\.]?\s+(.+)$/i;
+  extractChapterNum(chapterHeading) {
+    if (!chapterHeading) {
+      this.emitOutput("\nERROR: Chapter heading is empty or undefined\n");
+      throw new Error('Empty chapter heading');
+    }
+
+    // Debug output to help diagnose parsing issues
+    this.emitOutput(`\nDebug: Parsing chapter heading: "${chapterHeading}"\n`);
+    
+    // Check for the different formats with more robust patterns
+    const fullPattern = /^Chapter\s+(\d+):\s+(.+)$/i;
     const colonPattern = /^(\d+):\s+(.+)$/;
     const periodPattern = /^(\d+)\.\s+(.+)$/;
     
     let chapterNum;
-    let fullMatch = request.match(fullPattern);
-    let colonMatch = request.match(colonPattern);
-    let periodMatch = request.match(periodPattern);
+    let title;
+    
+    let fullMatch = chapterHeading.match(fullPattern);
+    let colonMatch = chapterHeading.match(colonPattern);
+    let periodMatch = chapterHeading.match(periodPattern);
     
     if (fullMatch) {
       chapterNum = fullMatch[1];
+      title = fullMatch[2].trim();
+      this.emitOutput(`Matched full pattern: Chapter ${chapterNum}: ${title}\n`);
     } else if (colonMatch) {
       chapterNum = colonMatch[1];
+      title = colonMatch[2].trim();
+      this.emitOutput(`Matched colon pattern: ${chapterNum}: ${title}\n`);
     } else if (periodMatch) {
       chapterNum = periodMatch[1];
+      title = periodMatch[2].trim();
+      this.emitOutput(`Matched period pattern: ${chapterNum}. ${title}\n`);
     } else {
-      this.emitOutput("\nERROR: it's best to copy your next chapter number and title from your outline, as\n");
-      this.emitOutput("'--request' must be like:\n\t--request \"Chapter X: Title\"\n...or\n\t--request \"X: Title\"\n...or\n\t--request \"X. Title\"\n... where X is a number.\n");
-      this.emitOutput(`But your request was: '${request}'\n\n`);
-      throw new Error('Invalid chapter request format');
+      // Try a more lenient pattern as a fallback
+      const anyNumberPattern = /Chapter\s+(\d+)[^a-zA-Z0-9]*(.+)/i;
+      const anyNumberMatch = chapterHeading.match(anyNumberPattern);
+      
+      if (anyNumberMatch) {
+        chapterNum = anyNumberMatch[1];
+        title = anyNumberMatch[2].trim();
+        this.emitOutput(`Matched fallback pattern: Chapter ${chapterNum} with title: ${title}\n`);
+      } else {
+        this.emitOutput("\nERROR: Chapter format must be like:\n");
+        this.emitOutput(`\t"Chapter X: Title"\n`);
+        this.emitOutput(`\t"X: Title"\n`);
+        this.emitOutput(`\t"X. Title"\n`);
+        this.emitOutput(`... where X is a number.\n`);
+        this.emitOutput(`But your chapter heading was: '${chapterHeading}'\n\n`);
+        throw new Error('Invalid chapter heading format');
+      }
     }
     
     // Format the chapter number as 3-digit
-    const formattedChapter = String(parseInt(chapterNum)).padStart(3, '0');
+    const formattedChapter = String(parseInt(chapterNum, 10)).padStart(3, '0');
     
-    return { chapterNum, formattedChapter };
+    return { 
+      chapterNum,
+      formattedChapter,
+      title,
+      full: `Chapter ${chapterNum}: ${title}`
+    };
   }
 
   /**
-   * Format chapter request for consistency in the prompt
-   * @param {string} request - Chapter request text
-   * @returns {string} - Formatted chapter request
+   * Format chapter heading for consistency in the prompt
+   * @param {string} chapterHeading - Chapter heading text
+   * @returns {string} - Formatted chapter heading
    */
-  formatChapterRequest(request) {
-    // Check if already in "Chapter X: Title" format
-    if (/^Chapter\s+\d+/i.test(request)) {
-      return request;
-    }
+  formatChapterHeading(chapterHeading) {
+    // Extract chapter number and title if possible
+    const fullPattern = /^Chapter\s+(\d+)[:\.\s-]+(.+)$/i;
+    const numberPattern = /^(\d+)[:\.\s-]+(.+)$/;
     
-    // Extract number and title
-    const match = request.match(/^(\d+)[:\.]?\s+(.+)$/);
+    let match = chapterHeading.match(fullPattern) || chapterHeading.match(numberPattern);
+    
     if (match) {
       const [, num, title] = match;
-      return `Chapter ${num}: ${title}`;
+      return `Chapter ${num}: ${title.trim()}`;
     }
     
-    // Fallback (should never happen due to extractChapterNum validation)
-    return request;
+    // If we couldn't parse it, return the original
+    return chapterHeading;
   }
 
   /**
-   * Format outline request for consistency
-   * @param {string} request - Chapter request text
-   * @returns {string} - Formatted outline request
+   * Format outline heading for consistency
+   * @param {string} chapterHeading - Chapter heading text
+   * @returns {string} - Formatted outline heading
    */
-  formatOutlineRequest(request) {
-    // Check if already in "Chapter X: Title" format
-    if (/^Chapter\s+\d+/i.test(request)) {
-      // Ensure it has a colon, not a period
-      return request.replace(/^(Chapter\s+\d+)[\.:]?\s+(.+)$/i, '$1: $2');
-    }
+  formatOutlineHeading(chapterHeading) {
+    // Extract chapter number and title if possible
+    const fullPattern = /^Chapter\s+(\d+)[:\.\s-]+(.+)$/i;
+    const numberPattern = /^(\d+)[:\.\s-]+(.+)$/;
     
-    // Extract number and title
-    const match = request.match(/^(\d+)[:\.]?\s+(.+)$/);
+    let match = chapterHeading.match(fullPattern) || chapterHeading.match(numberPattern);
+    
     if (match) {
       const [, num, title] = match;
-      return `Chapter ${num}: ${title}`;
+      return `Chapter ${num}: ${title.trim()}`;
     }
     
-    // Fallback
-    return request;
+    // If we couldn't parse it, return the original
+    return chapterHeading;
   }
   
   /**
    * Create the chapter prompt
-   * @param {string} formattedRequest - Formatted chapter request
-   * @param {string} formattedOutlineRequest - Formatted outline request for consistency
+   * @param {string} formattedHeading - Formatted chapter heading
+   * @param {string} formattedOutlineHeading - Formatted outline heading for consistency
    * @param {string} outlineContent - Content of outline file
    * @param {string} worldContent - Content of world file
    * @param {string} novelContent - Content of manuscript file
    * @param {string} language - Language to write in
    * @returns {string} - Complete prompt for AI API
    */
-  createChapterPrompt(formattedRequest, formattedOutlineRequest, outlineContent, worldContent, novelContent, language) {
+  createChapterPrompt(formattedHeading, formattedOutlineHeading, outlineContent, worldContent, novelContent, language) {
     return `
   You are a professional fiction writer with expertise in creating engaging, readable prose.
   
@@ -434,11 +464,11 @@ class ChapterWriter extends ToolBase {
   ${novelContent}
   === END EXISTING MANUSCRIPT ===
 
-  You are a skilled novelist writing ${formattedRequest} in fluent, authentic ${language}. 
+  You are a skilled novelist writing ${formattedHeading} in fluent, authentic ${language}. 
   Draw upon your knowledge of worldwide literary traditions, narrative techniques, and creative approaches from across cultures, while expressing everything in natural, idiomatic ${language} that honors its unique linguistic character.
 
   YOUR TASK:
-  Write ${formattedRequest} according to these guidelines. DO NOT SHOW ANY THOUGHT PROCESS - ONLY WRITE THE ACTUAL CHAPTER TEXT.
+  Write ${formattedHeading} according to these guidelines. DO NOT SHOW ANY THOUGHT PROCESS - ONLY WRITE THE ACTUAL CHAPTER TEXT.
 
   WRITING REQUIREMENTS:
   - Read thoroughly the included WORLD, OUTLINE, and MANUSCRIPT
@@ -446,7 +476,7 @@ class ChapterWriter extends ToolBase {
   - Create compelling opening and closing scenes
   - Incorporate sensory details and vivid descriptions
   - Maintain consistent tone and style with previous chapters
-  - Begin with: ${formattedOutlineRequest} and write in plain text only
+  - Begin with: ${formattedOutlineHeading} and write in plain text only
   - Write 2,000-3,000 words
   - Do not repeat content from existing chapters
   - Do not start working on the next chapter
