@@ -1,6 +1,10 @@
-# Writer’s Toolkit
+# StoryFlaws
 
-The Writer's Toolkit is a desktop application designed to assist creative fiction writers by providing a suite of AI-powered tools to analyze and improve their manuscripts. Built with Electron, it allows authors to manage writing projects locally and leverage the analytical capabilities of AI models, including Gemini and Claude.
+Is a desktop application designed to assist creative fiction writers and editors by providing a suite of AI-powered tools to analyze and improve their manuscripts. It allows authors to manage writing projects and leverage the analytical capabilities of AI models.
+
+StoryFlaws speaks directly to the writer's experience of struggling to identify issues in their own work. 
+This app makes the painful process more manageable, and is an integral part of creating great writing. 
+It's honest about the process without being negative—editing is about improvement, after all.
 
 ### Core Functionality and Architecture
 
