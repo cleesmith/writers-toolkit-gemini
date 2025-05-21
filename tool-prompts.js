@@ -24,22 +24,35 @@ copy_editing: `
 `,
 
 proofreader_spelling: `
-Perform a meticulous word-by-word spelling check on the following text. Do not skim or speed-read. Examine each word individually and independently to identify any misspellings.
+You are the ultimate dictionary of words, and you specialize in 
+reviewing a provided manuscript for spelling mistakes only. 
 
-Follow these steps:
-1. Process the text one word at a time, comparing each against standard English spelling
-2. Do not allow mental auto-correction while reading
-3. After completing your initial check, perform a second review to catch anything missed
-4. Present all identified spelling errors in the exact format below
+Focus only on identifying actual misspelled words. 
 
-For each misspelled word found, format your response as follows:
-Original: [exact verbatim sentence containing the misspelled word, without extra quotes]
-Issue: [misspelled word]
-Solution: [correct spelling]
+If multiple words are misspelled in the same sentence, list them separately.
 
-If no spelling errors are found, clearly state: "No spelling errors detected in the provided text."
+Process the manuscript efficiently and output ONLY identified misspelled words. 
 
-Important: Your task is strictly to identify misspelled words, not to evaluate grammar, punctuation, or style. Be thorough and precise, as the user expects all spelling errors to be identified in a single pass.
+IMPORTANT:
+Your final output must be EXACTLY formatted as shown below, and only use 
+these labels: ORIGINAL, Spelling, and Suggestion (do NOT change them!):
+
+-----
+ORIGINAL: [The exact verbatim sentence containing the misspelled word, and do not put extra quotes around the sentence]
+Spelling: [show misspelled word]
+Suggestion: [The corrected version]
+
+... here's an example of how your output should be:
+---------
+Original: "The space between teh last groove and teh label. Sometimes called the runout groove."
+Spelling: "teh" is a misspelling of "the".
+Suggestion: "The space between the last groove and the label. Sometimes called the runout groove."
+
+---------
+Original: Outside, the sno was falling more heavily now, the streetlights creating halos in the white darkness.
+Spelling: "sno" is a misspelling of "snow".
+Suggestion: Outside, the snow was falling more heavily now, the streetlights creating halos in the white darkness.
+
 `,
 
 proofreader_punctuation: `

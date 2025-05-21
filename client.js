@@ -57,16 +57,12 @@ class AiApiService {
   /**
    * Prepares file upload and caching for manuscript processing
    * @param {string} manuscriptFile - Path to the manuscript file
-   * @param {string} baseInstructions - Base system instructions for caching
    * @returns {Promise<Object>} - Returns {cache, messages, errors} where cache is the existing cache object
    */
-  async prepareFileAndCache(manuscriptFile, baseInstructions) {
+  async prepareFileAndCache(manuscriptFile) {
     if (!this.client || this.apiKeyMissing) {
       throw new Error('Gemini API client not initialized - API key missing');
     }
-
-    console.log(`\nmanuscriptFile=${manuscriptFile}`);
-    console.log(`\nbaseInstructions=${baseInstructions}`);
 
     const path = require('path');
     let uploadedFileMetadata = null;
@@ -211,13 +207,11 @@ class AiApiService {
       try {
         log(`Creating new cache with uploaded file...`);
         
-        // Use the base instructions provided or a default
-        const instructions = baseInstructions || `You will analyze the creative fiction manuscript provided (which has been cached along with these base instructions) for the specific issues described in the user's follow-up prompt.
+        const instructions = `
+You will analyze the creative fiction manuscript provided for the specific issues described in the user's follow-up prompt.
 DO NOT include any introductory or concluding remarks (e.g., "Okay, here's the analysis...", "Overall, the manuscript is...").
-DO NOT repeat any parts of the manuscript that are correct or do not have issues.`;
-
-        // Create the cache with the file
-        // const { createPartFromUri, createUserContent } = this.client;
+DO NOT repeat any parts of the manuscript that are correct or do not have specific issues described in the user's follow-up prompt.
+        `;
         
         // Set default TTL if not provided
         const ttl = this.ttl || "14400s"; // 4 hours default if not specified
