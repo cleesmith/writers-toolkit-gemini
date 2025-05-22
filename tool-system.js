@@ -156,49 +156,15 @@ const TOOL_DEFS = [
       "group": "Input Files"
     }
   ]},
-  { id: 'narrative_integrity', title: `Narrative Integrity`, description: `Focused on consistency issues within the entire manuscript, or consistency between the manuscript and the world document and/or the outline.\nThis tool supports various consistency checks: world, internal, development, and unresolved.\nConfigurable options enable targeted analysis of character, setting, timeline, and thematic consistency, producing detailed reports with examples and recommendations for resolving discrepancies.`, Class: NarrativeIntegrity, options: [
+  { id: 'narrative_integrity', title: `Narrative Integrity`, description: `Focused on consistency issues within the entire manuscript.`, Class: NarrativeIntegrity, options: [
     {
       "name": "manuscript_file",
       "label": "Manuscript File",
       "type": "file",
-      "description": "File containing the manuscript/narrative to analyze",
+      "description": "File containing the manuscript to analyze",
       "required": true,
       "default": "manuscript.txt",
       "group": "Input Files"
-    },
-    {
-      "name": "world_file",
-      "label": "world_file",
-      "type": "file",
-      "description": "File containing the world details (required)",
-      "required": false,
-      "default": "",
-      "group": "Input Files"
-    },
-    {
-      "name": "outline_file",
-      "label": "outline_file",
-      "type": "file",
-      "description": "File containing the story outline (optional)",
-      "required": false,
-      "default": "",
-      "group": "Input Files"
-    },
-    {
-      "name": "check_type",
-      "label": "Check Type",
-      "type": "select",
-      "description": "Select type of integrity check to perform",
-      "required": false,
-      "default": "internal",
-      "group": "Analysis Options",
-      "choices": [
-        { "value": "world", "label": "World Integrity" },
-        { "value": "internal", "label": "Internal Integrity" },
-        { "value": "development", "label": "Development Integrity" },
-        { "value": "unresolved", "label": "Unresolved Elements" },
-        { "value": "all", "label": "All Checks" }
-      ]
     }
   ]},
   { id: 'developmental_editing', title: `Developmental Editing`, description: `Performs developmental editing for your manuscript, with all chapter numbers/headers removed.`, Class: DevelopmentalEditing, options: [
