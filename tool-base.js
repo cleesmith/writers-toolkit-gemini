@@ -38,8 +38,8 @@ class ToolBase {
       const prompt = await promptManager.getPrompt(this.name);
       
       if (prompt) {
-        this.emitOutput(`Using prompt for ${this.name}\n`);
-        this.emitOutput(`>>> prompt:\n${prompt}\n`);
+        this.emitOutput(`Using this prompt for ${this.name}:\n`);
+        this.emitOutput(`${prompt}\n`);
         return prompt;
       } else {
         // If we still couldn't get a prompt, show the error message
