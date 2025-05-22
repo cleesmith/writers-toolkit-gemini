@@ -15,7 +15,8 @@ class AiApiService {
   constructor(config = {}) {
     // Store the configuration with defaults
     this.config = {
-      model_name: 'gemini-2.5-pro-preview-05-06', 
+      // model_name: 'gemini-2.5-flash-preview-05-20', // cheaper but not as good
+      model_name: 'gemini-2.5-pro-preview-05-06',
       ...config
     };
 
@@ -209,7 +210,7 @@ class AiApiService {
         
         const instructions = `
 You will analyze the creative fiction manuscript provided for the specific issues described in the user's follow-up prompt.
-DO NOT include any introductory or concluding remarks (e.g., "Okay, here's the analysis...", "Overall, the manuscript is...").
+In your final output/response, DO NOT include any introductory or concluding remarks (e.g., "Okay, here's the analysis...", "Overall, the manuscript is...").
 DO NOT repeat any parts of the manuscript that are correct or do not have specific issues described in the user's follow-up prompt.
         `;
         
@@ -336,6 +337,7 @@ DO NOT repeat any parts of the manuscript that are correct or do not have specif
    * @returns {Promise<void>}
    */
   async streamWithThinking(prompt, onText, noCache = false, includeMetaData = true, options = {}) {
+    console.log(`\nprompt:\n${prompt}\n\n`);
     if (!this.client || this.apiKeyMissing) {
       throw new Error('Gemini API client not initialized - API key missing');
     }
@@ -390,36 +392,79 @@ DO NOT repeat any parts of the manuscript that are correct or do not have specif
         config: configObj
       });
 
+      // Track whether we've seen thinking content to know when 
+      // to show the divider
+      let hasSeenThinking = false;
+      let hasShownDivider = false;
+
       for await (const chunk of responseStream) {
-        let currentText = chunk.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        // console.log(`\n-----\nchunk parts:\n`);
+        // console.dir(chunk.candidates[0].content.parts);
         
-        // Check if this is the final chunk with finishReason: 'STOP'
+        let thoughtText = '';
+        let outputText = '';
+        
+        if (chunk.candidates?.[0]?.content?.parts) {
+          for (const part of chunk.candidates[0].content.parts) {
+            if (!part.text) {
+              continue;
+            }
+            
+            // Separate thinking content from final output content
+            if (part.thought) {
+              thoughtText += part.text;
+              hasSeenThinking = true;
+            } else {
+              outputText += part.text;
+            }
+          }
+        }
+        
+        // Build the current chunk's display text with minimal formatting
+        let currentText = '';
+        
+        // Add any thinking content directly without headers or announcements
+        if (thoughtText.trim()) {
+          currentText += thoughtText.trim() + '\n\n';
+        }
+        
+        // Show the single divider only when transitioning from thinking to final output
+        if (outputText.trim() && hasSeenThinking && !hasShownDivider) {
+          currentText += '═══════════════════════════════════════\n';
+          currentText += '📝 **Final Response:**\n\n';
+          hasShownDivider = true;
+        }
+        
+        // Add any output content from this chunk
+        if (outputText.trim()) {
+          currentText += outputText.trim();
+        }
+        
+        // Handle final chunk processing for metadata
         const isLastChunk = chunk.candidates?.[0]?.finishReason === 'STOP';
         
-        // Skip if no content and not the final chunk
-        if (!currentText && !isLastChunk) {
+        // Skip processing if no meaningful content and not the final chunk
+        if (!currentText.trim() && !isLastChunk) {
           continue;
         }
         
+        // Include metadata section for the final chunk if requested
         if (isLastChunk) {
-          // console.log("Full final chunk structure:");
-          // console.dir(chunk, { depth: null }); // show the complete object structure
-
-          // Extract metadata for the final chunk
           const metadata = {
             finishReason: chunk.candidates[0].finishReason,
             modelVersion: chunk.modelVersion,
             usageMetadata: chunk.usageMetadata
           };
-
           const doMetaData = includeMetaData !== undefined ? includeMetaData : true;
           
           if (doMetaData) {
-            // Append metadata as text to the current text
-            currentText += '\n\n--- RESPONSE METADATA ---\n' + JSON.stringify(metadata, null, 2);
+            currentText += '\n\n─────────────────────────────────────\n';
+            currentText += '📊 **Response Metadata:**\n\n';
+            currentText += JSON.stringify(metadata, null, 2);
           }
         }
         
+        // Send this chunk's content immediately to preserve streaming experience
         onText(currentText);
       }
     } catch (error) {

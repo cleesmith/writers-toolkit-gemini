@@ -24,39 +24,14 @@ copy_editing: `
 `,
 
 proofreader_spelling: `
-Do NOT use the word: issue!
+Read the provided manuscript. Your tasks are as follows:
 
-IMPORTANT:
-Your final output must be formatted EXACTLY as shown below, and only use 
-these labels: 
-ORIGINAL, Spelling, and Suggestion, as in:
+1.  First, from the provided manuscript, change all words to lower case words.
+2.  Second, use the lower cased words to extract a list of all character names, place names, and any words that are not typically found in a standard English dictionary (e.g., made-up words, slang, brand names if unique, portmanteaus, nicknames not obviously common names). This initial list can contain multi-word entries (e.g., 'Saturday Night Specials', 'Bubba Gumshoe').
+3.  Third, take the list generated in step 2 and process it to show only single words. If a multi-word entry was in the second list (e.g., 'Saturday Night Specials'), it should be broken down into its constituent single words ('Saturday', 'Night', 'Specials') in this third list. Duplicates are acceptable if they arise from breaking down different multi-word phrases or were distinct entries in the second list.
+4.  Fourth, take the list generated in step 3 and double check that each word is actually a true misspelled word, i.e. the word is NOT in a dictionary, if the word is correctly spelled remove it from your step 3 list.
 
------
-ORIGINAL: [The exact verbatim sentence containing the misspelled word, and do not put extra quotes around the sentence]
-Spelling: [show misspelled word]
-Suggestion: [The corrected version]
-
-... here's an example of how your output should be:
----------
-Original: "The space between teh last groove and teh label. Sometimes called the runout groove."
-Spelling: "teh" is a misspelling of "the".
-Suggestion: "The space between the last groove and the label. Sometimes called the runout groove."
-
----------
-Original: Outside, the sno was falling more heavily now, the streetlights creating halos in the white darkness.
-Spelling: "sno" is a misspelling of "snow".
-Suggestion: Outside, the snow was falling more heavily now, the streetlights creating halos in the white darkness.
-
-
-You are the ultimate dictionary of words, and you specialize in 
-reviewing a provided manuscript for spelling mistakes only. 
-
-Focus only on identifying actual misspelled words.
-
-If multiple words are misspelled in the same sentence, list them separately.
-
-Process the manuscript efficiently and output ONLY identified misspelled words. 
-
+Your final output should ONLY be the plain list of lower cased single words generated in step 4, with each word on a new line. Do not include any other explanatory text, headers, or the list from steps 1, 2, or 3 in your final response.
 `,
 
 proofreader_punctuation: `

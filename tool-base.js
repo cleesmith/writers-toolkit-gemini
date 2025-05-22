@@ -29,11 +29,17 @@ class ToolBase {
 
   async getPrompt() {
     try {
+      //            ******************************************
+      // IMPORTANT: all prompts are in: ~/writing/tool-prompts
+      //            ******************************************
+      //            so double check they agree with: tool-prompts.js !!
+
       // Try to get prompt from the manager (it will create the prompt if needed)
       const prompt = await promptManager.getPrompt(this.name);
       
       if (prompt) {
         this.emitOutput(`Using prompt for ${this.name}\n`);
+        this.emitOutput(`>>> prompt:\n${prompt}\n`);
         return prompt;
       } else {
         // If we still couldn't get a prompt, show the error message
