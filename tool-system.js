@@ -237,15 +237,6 @@ const TOOL_DEFS = [
         }
       ],
       "group": "Input Files"
-    },
-    {
-      "name": "chapter_number",
-      "label": "Chapter Number",
-      "type": "text",
-      "description": "The chapter number to analyze (e.g. '1', '5', '20')",
-      "required": true,
-      "default": "1",
-      "group": "Analysis Options"
     }
   ]},
   { id: 'copy_editing', title: `Copy Editing`, description: `Performs copy editing for an entire manuscript, with all chapter numbers/headers removed.`, Class: CopyEditing, options: [

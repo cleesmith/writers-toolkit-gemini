@@ -7,20 +7,15 @@ const fs = require('fs/promises');
 
 /**
  * ManuscriptToOutlineCharactersWorld Tool
- * Analyzes a manuscript file and generates three output files:
+ * Analyzes a manuscript file and generate 3 output files:
  * 1. outline.txt - Structured outline of the manuscript
  * 2. characters.txt - List of characters from the manuscript
  * 3. world.txt - Description of the world/setting in the manuscript
  */
 class ManuscriptToOutlineCharactersWorld extends ToolBase {
-  /**
-   * Constructor
-   * @param {Object} GeminiAPIService - Claude API service
-   * @param {Object} config - Tool configuration
-   */
-  constructor(GeminiAPIService, config = {}) {
+  constructor(apiService, config = {}) {
     super('manuscript_to_outline_characters_world', config);
-    this.GeminiAPIService = GeminiAPIService;
+    this.apiService = apiService;
   }
   
   /**
@@ -108,8 +103,8 @@ class ManuscriptToOutlineCharactersWorld extends ToolBase {
     // Create the prompt for outline
     const prompt = this.createOutlinePrompt(manuscriptContent);
     
-    // Call Claude API
-    const { content, thinking, promptTokens, responseTokens } = await this.callClaudeAPI(prompt, 'Outline');
+    // Call AI API
+    const { content, thinking, promptTokens, responseTokens } = await this.callAIAPI(prompt, 'Outline');
     
     // Save the outline to a file
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -142,8 +137,8 @@ class ManuscriptToOutlineCharactersWorld extends ToolBase {
     // Create the prompt for character
     const prompt = this.createCharactersPrompt(manuscriptContent);
     
-    // Call Claude API
-    const { content, thinking, promptTokens, responseTokens } = await this.callClaudeAPI(prompt, 'Characters');
+    // Call AI API
+    const { content, thinking, promptTokens, responseTokens } = await this.callAIAPI(prompt, 'Characters');
     
     // Save the characters to a file
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -176,8 +171,8 @@ class ManuscriptToOutlineCharactersWorld extends ToolBase {
     // Create the prompt for world
     const prompt = this.createWorldPrompt(manuscriptContent);
     
-    // Call Claude API
-    const { content, thinking, promptTokens, responseTokens } = await this.callClaudeAPI(prompt, 'World');
+    // Call AI API
+    const { content, thinking, promptTokens, responseTokens } = await this.callAIAPI(prompt, 'World');
     
     // Save the world description to a file
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -198,18 +193,18 @@ class ManuscriptToOutlineCharactersWorld extends ToolBase {
   }
   
   /**
-   * Call Claude API with thinking
-   * @param {string} prompt - Prompt for Claude API
+   * Call AI API with thinking
+   * @param {string} prompt - Prompt for AI API
    * @param {string} label - Label for logging
    * @returns {Promise<Object>} - API response
    */
-  async callClaudeAPI(prompt, label) {
+  async callAIAPI(prompt, label) {
     // Count tokens in the prompt
     this.emitOutput(`Counting tokens for: ${label} prompt...\n`);
-    const promptTokens = await this.GeminiAPIService.countTokens(prompt);
+    const promptTokens = await this.apiService.countTokens(prompt);
 
     // Call the shared token budget calculator
-    const tokenBudgets = this.GeminiAPIService.calculateTokenBudgets(promptTokens);
+    const tokenBudgets = this.apiService.calculateTokenBudgets(promptTokens);
 
     // Handle logging based on the returned values
     this.emitOutput(`\n${label} Token stats:\n`);
@@ -232,8 +227,8 @@ class ManuscriptToOutlineCharactersWorld extends ToolBase {
       throw new Error(`Prompt is too large for ${tokenBudgets.configuredThinkingBudget} thinking budget - run aborted`);
     }
     
-    // Call Claude API with streaming
-    this.emitOutput(`\n\nSending request to Claude API (streaming) for ${label}...\n`);
+    // Call AI API with streaming
+    this.emitOutput(`\n\nSending request to AI API (streaming) for ${label}...\n`);
     
     // Add a message about waiting
     this.emitOutput(`****************************************************************************\n`);
@@ -256,7 +251,7 @@ class ManuscriptToOutlineCharactersWorld extends ToolBase {
 
     // Use the calculated values in the API call
     try {
-      await this.GeminiAPIService.streamWithThinking(
+      await this.apiService.streamWithThinking(
         prompt,
         {
           system: systemPrompt,
@@ -291,7 +286,7 @@ class ManuscriptToOutlineCharactersWorld extends ToolBase {
     this.emitOutput(`${label} has approximately ${wordCount} words.\n`);
     
     // Count tokens in response
-    const responseTokens = await this.GeminiAPIService.countTokens(fullResponse);
+    const responseTokens = await this.apiService.countTokens(fullResponse);
     this.emitOutput(`${label} response token count: ${responseTokens}\n`);
 
     // Remove any markdown formatting
@@ -357,7 +352,7 @@ ${stats}`;
   /**
    * Create outline extraction prompt
    * @param {string} manuscriptContent - Manuscript content
-   * @returns {string} - Prompt for Claude API
+   * @returns {string} - Prompt for AI API
    */
   createOutlinePrompt(manuscriptContent) {
     return `=== MANUSCRIPT ===
@@ -399,7 +394,7 @@ Format the outline consistently, with clear chapter/section designations. Use nu
   /**
    * Create characters extraction prompt
    * @param {string} manuscriptContent - Manuscript content
-   * @returns {string} - Prompt for Claude API
+   * @returns {string} - Prompt for AI API
    */
   createCharactersPrompt(manuscriptContent) {
     return `=== MANUSCRIPT ===
@@ -446,7 +441,7 @@ Format each character profile consistently, starting with the character's name f
   /**
    * Create world extraction prompt
    * @param {string} manuscriptContent - Manuscript content
-   * @returns {string} - Prompt for Claude API
+   * @returns {string} - Prompt for AI API
    */
   createWorldPrompt(manuscriptContent) {
     return `=== MANUSCRIPT ===

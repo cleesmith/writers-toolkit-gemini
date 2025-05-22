@@ -336,8 +336,156 @@ DO NOT repeat any parts of the manuscript that are correct or do not have specif
    * @param {boolean} [noCache=false] - Whether to skip using cached content
    * @returns {Promise<void>}
    */
+  // async streamWithThinking(prompt, onText, noCache = false, includeMetaData = true, options = {}) {
+  //   console.log(`\nprompt:\n${prompt}\n\n`);
+  //   if (!this.client || this.apiKeyMissing) {
+  //     throw new Error('Gemini API client not initialized - API key missing');
+  //   }
+
+  //   try {
+  //     const generationConfiguration = {
+  //       responseMimeType: 'text/plain',
+  //     };
+
+  //     // Extract includeThinking from options with a default of true for backward compatibility
+  //     const includeThoughts = options.includeThinking !== undefined ? options.includeThinking : true;
+    
+  //     const thinkingConfig = {
+  //       includeThoughts: includeThoughts,
+  //       thinkingBudget: 24576
+  //     }
+
+  //     const safetySettings = [
+  //       { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.OFF },
+  //       { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.OFF },
+  //       { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.OFF },
+  //       { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.OFF }
+  //     ];
+
+  //     const contentsForRequest = [
+  //       {
+  //         role: 'user',
+  //         parts: [
+  //           { text: prompt },
+  //         ],
+  //       }
+  //     ];
+
+  //     // Create config object with or without cache based on noCache parameter
+  //     const configObj = { 
+  //       generationConfig: generationConfiguration,
+  //       thinkingConfig: thinkingConfig,
+  //       safetySettings: safetySettings
+  //     };
+      
+  //     // Only include cached content if we have a cache and noCache is false
+  //     if (this.aiApiCache && !noCache) {
+  //       console.log(`Using cached content: ${this.aiApiCache.name}`);
+  //       configObj.cachedContent = this.aiApiCache.name;
+  //     } else {
+  //       console.log(`Not using cached content (noCache: ${noCache}, aiApiCache available: ${!!this.aiApiCache})`);
+  //     }
+
+  //     const responseStream = await this.client.models.generateContentStream({
+  //       model: this.config.model_name,
+  //       contents: contentsForRequest,
+  //       config: configObj
+  //     });
+
+
+  //     for await (const chunk of responseStream) {
+  //       // console.log(`\n-----\nchunk parts:\n`);
+  //       // console.dir(chunk.candidates[0].content.parts);
+        
+  //       let thoughtText = '';
+  //       let outputText = '';
+        
+  //       if (chunk.candidates?.[0]?.content?.parts) {
+  //         for (const part of chunk.candidates[0].content.parts) {
+  //           if (!part.text) {
+  //             continue;
+  //           }
+            
+  //           // Separate thinking content from final output content
+  //           if (part.thought) {
+  //             thoughtText += part.text;
+  //             hasSeenThinking = true;
+  //           } else {
+  //             outputText += part.text;
+  //           }
+  //         }
+  //       }
+        
+  //       // Build the current chunk's display text with minimal formatting
+  //       let currentText = '';
+        
+  //       // Add any thinking content directly without headers or announcements
+  //       if (thoughtText.trim()) {
+  //         currentText += thoughtText.trim() + '\n\n';
+  //       }
+        
+  //       // Show the single divider only when transitioning from thinking to final output
+  //       if (outputText.trim() && hasSeenThinking && !hasShownDivider) {
+  //         currentText += '═══════════════════════════════════════\n';
+  //         currentText += '📝 **Final Response:**\n\n';
+  //         hasShownDivider = true;
+  //       }
+        
+  //       // Add any output content from this chunk
+  //       if (outputText.trim()) {
+  //         currentText += outputText.trim();
+  //       }
+        
+  //       // Handle final chunk processing for metadata
+  //       const isLastChunk = chunk.candidates?.[0]?.finishReason === 'STOP';
+        
+  //       // Skip processing if no meaningful content and not the final chunk
+  //       if (!currentText.trim() && !isLastChunk) {
+  //         continue;
+  //       }
+        
+  //       // Include metadata section for the final chunk if requested
+  //       if (isLastChunk) {
+  //         const metadata = {
+  //           finishReason: chunk.candidates[0].finishReason,
+  //           modelVersion: chunk.modelVersion,
+  //           usageMetadata: chunk.usageMetadata
+  //         };
+  //         const doMetaData = includeMetaData !== undefined ? includeMetaData : true;
+          
+  //         if (doMetaData) {
+  //           currentText += '\n\n─────────────────────────────────────\n';
+  //           currentText += '📊 **Response Metadata:**\n\n';
+  //           currentText += JSON.stringify(metadata, null, 2);
+  //         }
+  //       }
+        
+  //       // Send this chunk's content immediately to preserve streaming experience
+  //       onText(currentText);
+  //     }
+  //   } catch (error) {
+  //     console.error('API Connection Error:', {
+  //       message: error.message,
+  //       status: error.status,
+  //       statusText: error.statusText,
+  //       url: error.url,
+  //       type: error.type,
+  //       response: error.response ? {
+  //         status: error.response.status,
+  //         statusText: error.response.statusText
+  //       } : 'No response'
+  //     });
+  //     throw error;
+  //   }
+  // }
+  /**
+   * Stream a response
+   * @param {string} prompt - Prompt to complete
+   * @param {Function} onText - Callback for response text
+   * @param {boolean} [noCache=false] - Whether to skip using cached content
+   * @returns {Promise<void>}
+   */
   async streamWithThinking(prompt, onText, noCache = false, includeMetaData = true, options = {}) {
-    console.log(`\nprompt:\n${prompt}\n\n`);
     if (!this.client || this.apiKeyMissing) {
       throw new Error('Gemini API client not initialized - API key missing');
     }
@@ -348,7 +496,7 @@ DO NOT repeat any parts of the manuscript that are correct or do not have specif
       };
 
       // Extract includeThinking from options with a default of true for backward compatibility
-      const includeThoughts = options.includeThinking !== undefined ? options.includeThinking : true;
+      const includeThoughts = options.includeThinking !== undefined ? options.includeThinking : false;
     
       const thinkingConfig = {
         includeThoughts: includeThoughts,
@@ -392,79 +540,36 @@ DO NOT repeat any parts of the manuscript that are correct or do not have specif
         config: configObj
       });
 
-      // Track whether we've seen thinking content to know when 
-      // to show the divider
-      let hasSeenThinking = false;
-      let hasShownDivider = false;
-
       for await (const chunk of responseStream) {
-        // console.log(`\n-----\nchunk parts:\n`);
-        // console.dir(chunk.candidates[0].content.parts);
+        let currentText = chunk.candidates?.[0]?.content?.parts?.[0]?.text || '';
         
-        let thoughtText = '';
-        let outputText = '';
-        
-        if (chunk.candidates?.[0]?.content?.parts) {
-          for (const part of chunk.candidates[0].content.parts) {
-            if (!part.text) {
-              continue;
-            }
-            
-            // Separate thinking content from final output content
-            if (part.thought) {
-              thoughtText += part.text;
-              hasSeenThinking = true;
-            } else {
-              outputText += part.text;
-            }
-          }
-        }
-        
-        // Build the current chunk's display text with minimal formatting
-        let currentText = '';
-        
-        // Add any thinking content directly without headers or announcements
-        if (thoughtText.trim()) {
-          currentText += thoughtText.trim() + '\n\n';
-        }
-        
-        // Show the single divider only when transitioning from thinking to final output
-        if (outputText.trim() && hasSeenThinking && !hasShownDivider) {
-          currentText += '═══════════════════════════════════════\n';
-          currentText += '📝 **Final Response:**\n\n';
-          hasShownDivider = true;
-        }
-        
-        // Add any output content from this chunk
-        if (outputText.trim()) {
-          currentText += outputText.trim();
-        }
-        
-        // Handle final chunk processing for metadata
+        // Check if this is the final chunk with finishReason: 'STOP'
         const isLastChunk = chunk.candidates?.[0]?.finishReason === 'STOP';
         
-        // Skip processing if no meaningful content and not the final chunk
-        if (!currentText.trim() && !isLastChunk) {
+        // Skip if no content and not the final chunk
+        if (!currentText && !isLastChunk) {
           continue;
         }
         
-        // Include metadata section for the final chunk if requested
         if (isLastChunk) {
+          // console.log("Full final chunk structure:");
+          // console.dir(chunk, { depth: null }); // show the complete object structure
+
+          // Extract metadata for the final chunk
           const metadata = {
             finishReason: chunk.candidates[0].finishReason,
             modelVersion: chunk.modelVersion,
             usageMetadata: chunk.usageMetadata
           };
+
           const doMetaData = includeMetaData !== undefined ? includeMetaData : true;
           
           if (doMetaData) {
-            currentText += '\n\n─────────────────────────────────────\n';
-            currentText += '📊 **Response Metadata:**\n\n';
-            currentText += JSON.stringify(metadata, null, 2);
+            // Append metadata as text to the current text
+            currentText += '\n\n--- RESPONSE METADATA ---\n' + JSON.stringify(metadata, null, 2);
           }
         }
         
-        // Send this chunk's content immediately to preserve streaming experience
         onText(currentText);
       }
     } catch (error) {
