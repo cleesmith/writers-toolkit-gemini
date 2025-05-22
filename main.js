@@ -881,18 +881,6 @@ function setupToolHandlers() {
         console.error(`Tool with ID ${id} exists in registry but could not be retrieved`);
         throw new Error(`Tool with ID ${id} exists in registry but could not be retrieved`);
       }
-      
-      // Log each tool's properties
-      // console.log(`Tool ${id} properties:`, {
-      //   hasConfig: !!tool.config,
-      //   title: tool.config?.title || 'missing',
-      //   description: tool.config?.description || 'missing'
-      // });
-
-      // console.log(`>>> Tool ${id} description debugging:`, {
-      //   'tool.config?.description': tool.config?.description,
-      //   'tool.title': tool.config?.title
-      // });      
 
       // Ensure tool has required properties
       return {

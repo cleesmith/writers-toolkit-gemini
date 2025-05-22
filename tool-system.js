@@ -96,7 +96,10 @@ function loadToolClass(toolName) {
 
 // AI tools (mostly editing):
 const TokensWordsCounter = loadToolClass('tokens-words-counter');
-const ManuscriptToOutlineCharactersWorld = loadToolClass('manuscript-to-outline-characters-world');
+// const ManuscriptToOutlineCharactersWorld = loadToolClass('manuscript-to-outline-characters-world');
+const ManuscriptToOutline = loadToolClass('manuscript-to-outline');
+const ManuscriptToCharacters = loadToolClass('manuscript-to-characters'); 
+const ManuscriptToWorld = loadToolClass('manuscript-to-world');
 const NarrativeIntegrity = loadToolClass('narrative-integrity');
 const DevelopmentalEditing = loadToolClass('developmental-editing');
 const LineEditing = loadToolClass('line-editing');
@@ -145,14 +148,54 @@ const TOOL_DEFS = [
       ]
     }
   ]},
-  { id: 'manuscript_to_outline_characters_world', title: `Manuscript.txt to create: outline, characters, and world files`, description: `Works in reverse to create: outline, characters, and world files given a manuscript. May be useful for pantsers, and old manuscript files.`, Class: ManuscriptToOutlineCharactersWorld, options: [
+  { id: 'manuscript_to_outline', title: `Manuscript to Outline`, description: `Analyzes a manuscript and generates a detailed structural outline showing chapter divisions, key plot points, and story progression. Creates an outline.txt file that serves as a blueprint for the entire narrative.`, Class: ManuscriptToOutline, options: [
+    {
+      "name": "manuscript_file",
+      "label": "Manuscript File", 
+      "type": "file",
+      "description": "File containing the manuscript to analyze for outline extraction",
+      "required": true,
+      "default": "manuscript.txt",
+      "filters": [
+        {
+          "name": "Text Files",
+          "extensions": ["txt"]
+        }
+      ],
+      "group": "Input Files"
+    }
+  ]},
+  { id: 'manuscript_to_characters', title: `Manuscript to Characters`, description: `Analyzes a manuscript and generates a comprehensive character reference document. Extracts detailed profiles for all significant characters including their roles, relationships, physical descriptions, and character development arcs.`, Class: ManuscriptToCharacters, options: [
+    {
+      "name": "manuscript_file", 
+      "label": "Manuscript File",
+      "type": "file", 
+      "description": "File containing the manuscript to analyze for character extraction",
+      "required": true,
+      "default": "manuscript.txt",
+      "filters": [
+        {
+          "name": "Text Files", 
+          "extensions": ["txt"]
+        }
+      ],
+      "group": "Input Files"
+    }
+  ]},
+  { id: 'manuscript_to_world', title: `Manuscript to World`, description: `Analyzes a manuscript and generates a comprehensive world-building reference document. Extracts setting details, world rules, social structures, and environmental elements that define the story's fictional universe.`, Class: ManuscriptToWorld, options: [
     {
       "name": "manuscript_file",
       "label": "Manuscript File",
       "type": "file",
-      "description": "File containing the manuscript/narrative to use",
+      "description": "File containing the manuscript to analyze for world-building extraction", 
       "required": true,
       "default": "manuscript.txt",
+      "filters": [
+        {
+          "name": "Text Files",
+          "extensions": ["txt"]
+        }
+      ],
       "group": "Input Files"
     }
   ]},

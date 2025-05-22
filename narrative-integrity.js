@@ -3,10 +3,8 @@ const ToolBase = require('./tool-base');
 
 /**
  * Narrative Integrity Tool
- * Checks a manuscript for integrity against:
- *    a world document and optionally an outline
  * Supports different types of consistency/integrity checks: 
- *    internal, unresolved
+ *    internal and unresolved
  */
 class NarrativeIntegrity extends ToolBase {
   constructor(apiService, config = {}) {
