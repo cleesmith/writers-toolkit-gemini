@@ -107,13 +107,46 @@ function initCodeMirror() {
   // Set up CodeMirror event listeners
   setupCodeMirrorEvents();
   
-  // Force an initial refresh to ensure proper setup
-  // This helps with cases where the editor is initially hidden
-  setTimeout(() => {
-    editor.refresh();
-  }, 100);
-  
   console.log('CodeMirror initialized');
+}
+
+// Force CodeMirror to be properly ready for text input
+function ensureCodeMirrorReady() {
+  // This function ensures CodeMirror's text input system is fully functional
+  // We need to be especially careful with empty documents, which require
+  // more stable initialization conditions than documents with existing content
+  
+  const isEditMode = htmlEl.classList.contains('edit-mode');
+  
+  if (isEditMode) {
+    // We're in edit mode, so the container should be visible
+    // Give CodeMirror multiple opportunities to establish proper input handling
+    
+    // First refresh - lets CodeMirror measure its container
+    editor.refresh();
+    
+    // For empty documents, CodeMirror needs extra stabilization time
+    // to establish its coordinate system without text-based reference points
+    setTimeout(() => {
+      // Second refresh - ensures layout calculations are complete
+      editor.refresh();
+      
+      // Focus with a slight delay to ensure input capture is ready
+      setTimeout(() => {
+        editor.focus();
+        
+        // Final verification - ensure the cursor is visible and input is active
+        // This is especially important for empty documents
+        if (editor.getValue().length === 0) {
+          // For empty documents, explicitly position cursor at start
+          editor.setCursor({line: 0, ch: 0});
+        }
+      }, 30);
+    }, 50);
+  } else {
+    // Not in edit mode, just do a basic refresh
+    editor.refresh();
+  }
 }
 
 // Set up CodeMirror-specific event listeners
@@ -283,10 +316,9 @@ function toggleEditMode() {
     // Apply current font size to preview mode
     updateFontSize();
   } else {
-    // When switching to edit mode, keep it simple and reliable
+    // When switching to edit mode, ensure CodeMirror is fully ready for text input
     setTimeout(() => {
-      editor.refresh(); // Recalculate CodeMirror's dimensions and layout
-      editor.focus();   // Give CodeMirror focus for text input
+      ensureCodeMirrorReady(); // This replaces the simple refresh/focus sequence
       updateFontSize(); // Apply font size after CodeMirror is ready
     }, 50);
   }
