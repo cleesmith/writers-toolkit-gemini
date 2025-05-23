@@ -56,8 +56,8 @@
     "png-to-ico": "^2.1.8"
   },
   "build": {
-    "appId": "com.slipthetrap.writerstoolkit",
-    "productName": "Writer's Toolkit",
+    "appId": "com.slipthetrap.storygrinder",
+    "productName": "StoryGrinder",
     "files": [
       "**/*",
       "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",

@@ -251,16 +251,16 @@ DO NOT repeat any parts of the manuscript that are correct or do not have specif
   /**
    * Method to clear ALL uploaded files and ALL caches
    * from the Gemini API associated with this API key.
-   * Called when switching projects in Writer's Toolkit.
+   * Called when switching projects in the app.
    */
   async clearFilesAndCaches() {
     if (!this.client || this.apiKeyMissing) {
-      console.warn('[WritersToolkit Gemini API] Client not initialized. Skipping API cleanup.');
+      console.warn('Gemini API Client not initialized. Skipping API cleanup.');
       return;
     }
 
     let anyErrors = false;
-    const operationDescription = "[WritersToolkit Gemini API]";
+    const operationDescription = "Gemini API";
 
     // Clear All Uploaded Files
     if (this.client.files && typeof this.client.files.list === 'function' && typeof this.client.files.delete === 'function') {

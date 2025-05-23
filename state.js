@@ -16,7 +16,7 @@ function safeLog(message) {
       const fs = require('fs');
       const path = require('path');
       const os = require('os');
-      const logPath = path.join(os.homedir(), 'writers-toolkit-debug.log');
+      const logPath = path.join(os.homedir(), 'StoryGrinder-debug.log');
       const timestamp = new Date().toISOString();
       const logLine = `${timestamp}: [state.js] ${message}\n`;
       fs.appendFileSync(logPath, logLine);
@@ -72,7 +72,7 @@ class AppState {
       
       // Initialize persistent storage
       this.store = new Store({
-        name: 'writers-toolkit-config'
+        name: 'StoryGrinder-config'
       });
       console.log(`*** Electron Store location: ${this.store.path}`);
       

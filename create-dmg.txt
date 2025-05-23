@@ -1,9 +1,9 @@
 create-dmg \
-  --volname "Writer's Toolkit" \
+  --volname "StoryGrinder" \
   --window-size 540 400 \
   --icon-size 128 \
-  --icon "WritersToolkit.app" 150 200 \
-  --hide-extension "WritersToolkit.app" \
+  --icon "StoryGrinder.app" 150 200 \
+  --hide-extension "StoryGrinder.app" \
   --app-drop-link 390 200 \
-  "out/WritersToolkit.dmg" \
-  "out/WritersToolkit-darwin-arm64/WritersToolkit.app"
+  "out/StoryGrinder.dmg" \
+  "out/StoryGrinder-darwin-arm64/StoryGrinder.app"

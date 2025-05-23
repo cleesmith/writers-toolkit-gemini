@@ -31,7 +31,7 @@ function createWindow() {
       nodeIntegration: false,
       preload: path.join(__dirname, 'editor-preload.js')
     },
-    title: 'Writer\'s Toolkit - Editor',
+    title: 'StoryGrinder - Editor',
     backgroundColor: '#121212', // Dark background for better appearance during load
     autoHideMenuBar: true // Hide the menu bar but keep shortcuts accessible
   });

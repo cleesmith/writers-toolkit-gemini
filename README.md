@@ -132,4 +132,4 @@ The application features a main interface (`index.html`, `renderer.js`) where us
 
 * **Output Files:** Tools generate timestamped output files to avoid overwriting previous results.
 
-In summary, the Writer's Toolkit is a comprehensive desktop application that empowers authors with a range of AI-driven and utility tools to enhance their creative writing process, from initial brainstorming and drafting to in-depth analysis and editing, all while keeping their work stored locally.
+In summary, the StoryGrinder is a comprehensive desktop application that empowers authors with a range of AI-driven and utility tools to enhance their creative writing process, from initial brainstorming and drafting to in-depth analysis and editing, all while keeping their work stored locally.

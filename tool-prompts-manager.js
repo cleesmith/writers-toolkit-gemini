@@ -1,4 +1,4 @@
-// tool-prompts-manager.js - Manages tool prompts for Writer's Toolkit
+// tool-prompts-manager.js
 // Handles creation, retrieval, and management of prompts in ~/writing/tool-prompts
 
 const fs = require('fs/promises');

@@ -47,7 +47,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       // Set tool name in both main view and dialog
       toolNameElement.textContent = toolData.title || toolData.name;
       dialogToolNameElement.textContent = toolData.title || toolData.name;
-      document.title = `Writer's Toolkit - ${toolData.title || toolData.name}`;
+      document.title = `StoryGrinder - ${toolData.title || toolData.name}`;
       
       // Get tool options - wrap in try/catch to prevent hanging
       try {

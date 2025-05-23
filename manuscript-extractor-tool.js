@@ -8,7 +8,7 @@ const fs = require('fs/promises');
 /**
  * ManuscriptExtractor Tool
  * Analyzes an existing manuscript and extracts the outline, world elements, and character details
- * to help users transition into the Writer's Toolkit workflow with complete project files.
+ * to help users transition into this app's workflow with complete project files.
  */
 class ManuscriptExtractor extends ToolBase {
   /**

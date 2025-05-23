@@ -71,14 +71,14 @@ const gotTheLock = app.requestSingleInstanceLock();
   provides consistent behavior across all Linux distributions.
 
 This code provides a consistent experience across all platforms by 
-ensuring only one instance of Writer's Toolkit can run at a time, 
+ensuring only one instance of StoryGrinder can run at a time, 
 preventing potential data conflicts when multiple instances try to 
 access the same prompt files.
 */
 
 if (!gotTheLock) {
   // We're not the first instance, so quit immediately
-  console.log('Another instance of Writer\'s Toolkit is already running. Exiting this instance.');
+  console.log('Another instance of StoryGrinder is already running. Exiting this instance.');
   //  ****
   app.quit(); // kills the 2nd instance immediately!!!
   //  ****
@@ -98,7 +98,7 @@ if (!gotTheLock) {
       
       // Optional: Show a notification in the window that a second instance was attempted
       mainWindow.webContents.send('second-instance-detected', {
-        message: 'A second instance of Writer\'s Toolkit was started. Only one instance can run at a time.'
+        message: 'A second instance of StoryGrinder was started. Only one instance can run at a time.'
       });
       
       // Optional: If any command line arguments were passed to the second instance,
@@ -114,7 +114,7 @@ if (!gotTheLock) {
 // The ONLY ONE "whenReady" that does everything in proper sequence
 app.whenReady().then(() => {
   // 1. Set App User Model ID first
-  app.setAppUserModelId("com.slipthetrap.writerstoolkit");
+  app.setAppUserModelId("com.slipthetrap.storygrinder");
   
   // 2. Register DevTools shortcut
   const { globalShortcut } = require('electron');
@@ -179,9 +179,9 @@ async function initializeApp() {
                 title: 'Gemini API Key Issue',
                 message: 'Connecton failed: Gemini API key not found or invalid.',
                 detail: `To use AI-powered tools, your Gemini API key needs to be configured.\n\n` +
-                        `- click 'OK' to continue using Writer's Toolkit.\nAI features will be unavailable or may cause errors until the api key is set.\nHowever, non-AI based Tools are available for use.\n\n` +
-                        `- click 'Quit then Edit .env file' to open the .env configuration file.\nWriter's Toolkit will then quit.\nYour default text editor should appear.\nAfter adding/changing your key, please start the app again.\n` +
-                        `\nYou may do this manually:\nThe .env file must be located here:\n${envFilePath}\nOpen .env in a text editor (Notepad/Textedit), then add the line:\nGEMINI_API_KEY=your_actual_api_key\nand replace 'your_actual_api_key' with your actual api key, then save and quit the editor, then start the Writer's Toolkit again.`,
+                        `- click 'OK' to continue using StoryGrinder.\nAI features will be unavailable or may cause errors until the api key is set.\nHowever, non-AI based Tools are available for use.\n\n` +
+                        `- click 'Quit then Edit .env file' to open the .env configuration file.\nStoryGrinder will then quit.\nYour default text editor should appear.\nAfter adding/changing your key, please start the app again.\n` +
+                        `\nYou may do this manually:\nThe .env file must be located here:\n${envFilePath}\nOpen .env in a text editor (Notepad/Textedit), then add the line:\nGEMINI_API_KEY=your_actual_api_key\nand replace 'your_actual_api_key' with your actual api key, then save and quit the editor, then start the StoryGrinder again.`,
                 buttons: ['OK', 'Quit then Edit .env file'],
                 defaultId: 0,
                 cancelId: 0
@@ -196,9 +196,9 @@ async function initializeApp() {
 
                         const timestamp = new Date().toLocaleString();
                         let newEnvContent = currentEnvContent;
-                        const instructionalComment = `\n# On ${timestamp}, Writer's Toolkit tried to use Gemini AI API key, but failed!\n# Please ensure the line below is correct and uncommented (remove any leading '#'):\n# GEMINI_API_KEY=your_actual_api_key_here\n... or change/update if this line already exists.\n\n`;
+                        const instructionalComment = `\n# On ${timestamp}, StoryGrinder tried to use Gemini AI API key, but failed!\n# Please ensure the line below is correct and uncommented (remove any leading '#'):\n# GEMINI_API_KEY=your_actual_api_key_here\n... or change/update if this line already exists.\n\n`;
 
-                        if (!currentEnvContent.includes("# Writer's Toolkit tried to use Gemini AI API key, but failed!")) {
+                        if (!currentEnvContent.includes("# StoryGrinder tried to use Gemini AI API key, but failed!")) {
                             newEnvContent = instructionalComment + currentEnvContent;
                         }
                         if (!newEnvContent.match(/^GEMINI_API_KEY=/m) && !newEnvContent.match(/^#\s*GEMINI_API_KEY=/m) ) {
@@ -215,13 +215,13 @@ async function initializeApp() {
                         const openError = await shell.openPath(envFilePath);
                         if (openError) {
                             console.error(`Error opening .env file with shell.openPath: ${openError}`);
-                            dialog.showErrorBox('File Access Error', `Could not automatically open the .env file at:\n${envFilePath}\n\nPlease open it manually. Writer's Toolkit will now quit.`);
+                            dialog.showErrorBox('File Access Error', `Could not automatically open the .env file at:\n${envFilePath}\n\nPlease open it manually. StoryGrinder will now quit.`);
                         } else {
                             console.log(`Attempted to open .env file: ${envFilePath}`);
                         }
                     } catch (err) {
                         console.error(`Error preparing or opening .env file: ${err.message || err}`);
-                        dialog.showErrorBox('Configuration Error', `An error occurred while trying to prepare or open your .env file at:\n${envFilePath}\n\nPlease check it manually. Writer's Toolkit will now quit.`);
+                        dialog.showErrorBox('Configuration Error', `An error occurred while trying to prepare or open your .env file at:\n${envFilePath}\n\nPlease check it manually. StoryGrinder will now quit.`);
                     } finally {
                         console.log('Quitting application after "Setup Key & Quit" option.');
                         app.quit();
@@ -264,7 +264,7 @@ async function initializeApp() {
 // In main.js, update the logToFile function to make it globally available
 // Simple logging function that writes to a file in the user's home directory
 function logToFile(message) {
-  const logPath = path.join(os.homedir(), 'writers-toolkit-debug.log');
+  const logPath = path.join(os.homedir(), 'StoryGrinder-debug.log');
   const timestamp = new Date().toISOString();
   const logLine = `${timestamp}: ${message}\n`;
   
@@ -300,24 +300,6 @@ if (isPackaged) {
   logToFile(`Resources path: ${path.join(app.getAppPath(), '..')}`);
 }
 
-// May 2025 = not needed for Gemini API:
-// Define Gemini API schema globally
-// const GEMINI_API_SCHEMA = [
-//   { name: 'max_retries',            label: 'Max Retries',                       type: 'number', default: 1,       required: true,  description: 'Maximum retry attempts if an API call fails.' },
-//   { name: 'request_timeout',        label: 'Request Timeout (seconds)',         type: 'number', default: 300,     required: true,  description: 'Seconds to wait for the API to respond.' },
-//   { name: 'model_name',             label: 'Model Name',                        type: 'text',   default: 'gemini-2.5-pro-preview-05-06', required: true, description: 'Exact model identifier.' },
-//   { name: 'max_tokens',             label: 'Max Tokens',                   type: 'number', default: 128000,  required: true,  description: 'Absolute cap for output tokens.' }
-// ];
-// const GEMINI_API_SCHEMA = [
-//   { name: 'model_name',
-//     label: 'Model Name',
-//     type: 'text',
-//     default: 'gemini-2.5-pro-preview-05-06',
-//     required: true,
-//     description: 'Exact model identifier.' 
-//   },
-// ];
-
 // Global function to get complete settings 
 function getCompleteApiSettings() {
   // cls: not needed for Gemini, so just a placeholder!
@@ -351,12 +333,12 @@ let shouldShowProjectDialog = true;
 let currentTool = null;
 
 // Set application name
-app.name = "Writer's Toolkit";
+app.name = "StoryGrinder";
 
 // Define menu template
 const menuTemplate = [
   {
-    label: 'Writer\'s Toolkit',
+    label: 'StoryGrinder',
     submenu: [
       { role: 'about' },
       { type: 'separator' },
