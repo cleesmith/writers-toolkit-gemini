@@ -1,7 +1,7 @@
-// editor-dialog.js
+// editor-dialog.js with CodeMirror
 
 // DOM Elements - Reference these after DOM is fully loaded
-let editor;
+let editor; // This will now be a CodeMirror instance
 let preview;
 let filepath;
 let modeToggle;
@@ -11,18 +11,24 @@ let saveButton;
 let saveAsButton;
 let closeButton;
 let notification;
-let fontSizeSelect;
 let wordWrapToggle;
 let removeMarkdownButton;
+let fontSizeIncrease;
+let fontSizeDecrease;
+let fontSizeDisplay;
 let positionDisplay;
 let statisticsDisplay;
 let htmlEl;
+
+// Find functionality elements
+let findButton;
 
 // State variables
 let currentFilePath = null;
 let documentChanged = false;
 let originalContent = '';
 let isWordWrapEnabled = true;
+let currentFontSize = 14; // Default font size in pixels
 
 // Wait for DOM to be fully loaded before doing anything
 document.addEventListener('DOMContentLoaded', () => {
@@ -31,19 +37,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize DOM references
   initDomReferences();
   
-  // Set up editor event listeners
-  setupEditorEvents();
+  // Initialize CodeMirror
+  initCodeMirror();
   
   // Set up UI control event listeners
   setupControlEvents();
   
-  updateFontSize();
   updateWordWrap();
+  updateFontSize(); // Initialize font size display and CodeMirror styling
   updatePreview();
   
   // set the mode tooltip to "Edit" since we start in preview mode
   if (modeTooltip) {
-    modeTooltip.textContent = 'Edit';
+    modeTooltip.textContent = 'go Edit';
   }
   
   console.log('Editor initialization complete in preview mode');
@@ -51,7 +57,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Initialize all DOM references
 function initDomReferences() {
-  editor = document.getElementById('editor');
   preview = document.getElementById('preview');
   filepath = document.getElementById('filepath');
   modeToggle = document.getElementById('mode-toggle');
@@ -62,47 +67,74 @@ function initDomReferences() {
   closeButton = document.getElementById('close-button');
   removeMarkdownButton = document.getElementById('remove-markdown-button');
   notification = document.getElementById('notification');
-  fontSizeSelect = document.getElementById('font-size-select');
   wordWrapToggle = document.getElementById('word-wrap-toggle');
+  fontSizeIncrease = document.getElementById('font-size-increase');
+  fontSizeDecrease = document.getElementById('font-size-decrease');
+  fontSizeDisplay = document.getElementById('font-size-display');
   positionDisplay = document.getElementById('position');
   statisticsDisplay = document.getElementById('statistics');
   htmlEl = document.documentElement;
+  findButton = document.getElementById('find-button');
   
   console.log('DOM references initialized');
 }
 
-// Set up editor event listeners
-function setupEditorEvents() {
-  console.log('Setting up editor events');
+// Initialize CodeMirror editor
+function initCodeMirror() {
+  const editorElement = document.getElementById('editor');
   
+  // Create CodeMirror instance with basic configuration
+  editor = CodeMirror(editorElement, {
+    value: '', // Start with empty content
+    mode: 'text/plain', // Plain text mode
+    lineNumbers: true, // Show line numbers
+    lineWrapping: true, // Enable line wrapping by default
+    theme: 'default', // We'll handle theming with CSS
+    indentUnit: 2, // Tab size
+    tabSize: 2,
+    indentWithTabs: false, // Use spaces instead of tabs
+    showCursorWhenSelecting: true,
+    styleActiveLine: true, // Highlight current line
+    matchBrackets: true, // Highlight matching brackets
+    autoRefresh: true, // Auto refresh when shown
+    viewportMargin: Infinity, // Render entire document for better search
+    // These options help with copy/paste and text interaction
+    dragDrop: true, // Enable drag and drop
+    allowDropFileTypes: ['text/plain', 'text/markdown'], // Allow text file drops
+    scrollbarStyle: 'native' // Use native scrollbars for better interaction
+  });
+  
+  // Set up CodeMirror event listeners
+  setupCodeMirrorEvents();
+  
+  // Force an initial refresh to ensure proper setup
+  // This helps with cases where the editor is initially hidden
+  setTimeout(() => {
+    editor.refresh();
+  }, 100);
+  
+  console.log('CodeMirror initialized');
+}
+
+// Set up CodeMirror-specific event listeners
+function setupCodeMirrorEvents() {
   // Track cursor position and text changes
-  editor.addEventListener('keyup', updatePositionAndStats);
-  editor.addEventListener('click', updatePositionAndStats);
-  editor.addEventListener('input', () => {
-    documentChanged = editor.value !== originalContent;
+  editor.on('cursorActivity', updatePositionAndStats);
+  
+  // Track content changes
+  editor.on('change', () => {
+    documentChanged = editor.getValue() !== originalContent;
     updatePositionAndStats();
     updatePreviewDebounced();
   });
   
-  // Handle tab key in the editor
-  editor.addEventListener('keydown', function(e) {
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      
-      // Insert a tab at cursor position
-      const start = this.selectionStart;
-      const end = this.selectionEnd;
-      
-      this.value = this.value.substring(0, start) + 
-                   "  " + 
-                   this.value.substring(end);
-      
-      // Put cursor after the inserted tab
-      this.selectionStart = this.selectionEnd = start + 2;
-      
-      documentChanged = editor.value !== originalContent;
-      updatePositionAndStats();
+  // Handle tab key properly (CodeMirror handles this by default, but we can customize if needed)
+  editor.setOption('extraKeys', {
+    'Tab': function(cm) {
+      // Insert 2 spaces instead of tab
+      cm.replaceSelection('  ');
     }
+    // Removed custom search - will use CodeMirror's default for now
   });
   
   // Initial update
@@ -148,7 +180,6 @@ function setupControlEvents() {
         showNotification('Error: File selection API not available');
       }
     });
-
   }
   
   // Modified Remove Markdown button handler with confirmation dialog
@@ -169,15 +200,15 @@ function setupControlEvents() {
     // Make sure we're in edit mode
     if (!htmlEl.classList.contains('edit-mode')) {
       htmlEl.classList.add('edit-mode');
-      modeTooltip.textContent = 'Preview';
+      modeTooltip.textContent = 'go Preview';
     }
     
     // Get the current content and remove markdown
-    const plainText = removeMarkdown(editor.value);
+    const plainText = removeMarkdown(editor.getValue());
     
     // Update the editor with plain text
-    editor.value = plainText;
-    documentChanged = editor.value !== originalContent;
+    editor.setValue(plainText);
+    documentChanged = editor.getValue() !== originalContent;
     
     // Update preview content (even though it's not visible in edit mode)
     updatePreview();
@@ -219,11 +250,23 @@ function setupControlEvents() {
     console.error('Close button element not found!');
   }
   
-  // Font size change
-  fontSizeSelect.addEventListener('change', updateFontSize);
-  
   // Word wrap toggle
   wordWrapToggle.addEventListener('click', toggleWordWrap);
+  
+  // Font size controls
+  if (fontSizeIncrease) {
+    fontSizeIncrease.addEventListener('click', increaseFontSize);
+  }
+  if (fontSizeDecrease) {
+    fontSizeDecrease.addEventListener('click', decreaseFontSize);
+  }
+  
+  // Find button - Use CodeMirror's built-in find functionality  
+  if (findButton) {
+    findButton.addEventListener('click', () => {
+      editor.execCommand('find');
+    });
+  }
 }
 
 // Toggle between edit and preview modes
@@ -232,11 +275,20 @@ function toggleEditMode() {
   const isEditMode = htmlEl.classList.contains('edit-mode');
   
   // Update tooltip text
-  modeTooltip.textContent = isEditMode ? 'Preview' : 'Edit';
+  modeTooltip.textContent = isEditMode ? 'go Preview' : 'go Edit';
   
   // If switching to preview mode, update the preview content
   if (!isEditMode) {
     updatePreview();
+    // Apply current font size to preview mode
+    updateFontSize();
+  } else {
+    // When switching to edit mode, keep it simple and reliable
+    setTimeout(() => {
+      editor.refresh(); // Recalculate CodeMirror's dimensions and layout
+      editor.focus();   // Give CodeMirror focus for text input
+      updateFontSize(); // Apply font size after CodeMirror is ready
+    }, 50);
   }
 }
 
@@ -244,7 +296,7 @@ function toggleEditMode() {
 function updatePreview() {
   try {
     // Simple markdown to HTML conversion
-    const html = simpleMarkdownToHtml(editor.value);
+    const html = simpleMarkdownToHtml(editor.getValue());
     preview.innerHTML = html;
   } catch (error) {
     console.error('Error updating preview:', error);
@@ -409,7 +461,7 @@ async function saveFile(saveAs = false) {
   }
   
   try {
-    const content = editor.value;
+    const content = editor.getValue(); // Use CodeMirror's getValue() method
     const result = await window.electronAPI.saveFile({
       filePath: currentFilePath,
       content,
@@ -443,13 +495,6 @@ function showNotification(message, duration = 2000) {
   }, duration);
 }
 
-// Update font size
-function updateFontSize() {
-  const fontSize = fontSizeSelect.value + 'px';
-  editor.style.fontSize = fontSize;
-  preview.style.fontSize = fontSize;
-}
-
 // Toggle word wrap
 function toggleWordWrap() {
   isWordWrapEnabled = !isWordWrapEnabled;
@@ -458,21 +503,65 @@ function toggleWordWrap() {
 
 // Update word wrap setting
 function updateWordWrap() {
-  editor.style.whiteSpace = isWordWrapEnabled ? 'pre-wrap' : 'pre';
+  // Use CodeMirror's lineWrapping option
+  editor.setOption('lineWrapping', isWordWrapEnabled);
   wordWrapToggle.textContent = `Wrap: ${isWordWrapEnabled ? 'On' : 'Off'}`;
+}
+
+// Increase font size
+function increaseFontSize() {
+  // Define size steps and maximum limit for readability
+  const maxSize = 24;
+  if (currentFontSize < maxSize) {
+    currentFontSize += 2; // Increase by 2px increments for smooth progression
+    updateFontSize();
+  }
+}
+
+// Decrease font size  
+function decreaseFontSize() {
+  // Define minimum size for readability
+  const minSize = 10;
+  if (currentFontSize > minSize) {
+    currentFontSize -= 2; // Decrease by 2px increments for smooth progression
+    updateFontSize();
+  }
+}
+
+// Apply font size changes to the appropriate element based on current mode
+function updateFontSize() {
+  const isEditMode = htmlEl.classList.contains('edit-mode');
+  
+  if (isEditMode) {
+    // In edit mode: apply font size to CodeMirror editor
+    const codeMirrorElement = editor.getWrapperElement();
+    codeMirrorElement.style.fontSize = currentFontSize + 'px';
+    
+    // Tell CodeMirror to refresh its layout and measurements
+    // This is crucial because font size changes affect line heights, 
+    // character widths, and overall text layout calculations
+    setTimeout(() => {
+      editor.refresh();
+    }, 10);
+  } else {
+    // In preview mode: apply font size to preview content
+    preview.style.fontSize = currentFontSize + 'px';
+  }
+  
+  // Update the display showing current font size
+  if (fontSizeDisplay) {
+    fontSizeDisplay.textContent = currentFontSize + 'px';
+  }
 }
 
 // Update cursor position and text statistics
 function updatePositionAndStats() {
-  const text = editor.value;
+  const cursor = editor.getCursor(); // Get cursor position from CodeMirror
+  const text = editor.getValue(); // Get all text from CodeMirror
   
-  // Get cursor position
-  const cursorPos = editor.selectionStart;
-  
-  // Calculate line and column
-  const lines = text.substr(0, cursorPos).split('\n');
-  const lineNumber = lines.length;
-  const columnNumber = lines[lines.length - 1].length + 1;
+  // CodeMirror uses 0-based line numbers, so add 1 for display
+  const lineNumber = cursor.line + 1;
+  const columnNumber = cursor.ch + 1;
   
   // Update position display
   positionDisplay.textContent = `Line: ${lineNumber}, Column: ${columnNumber}`;
@@ -491,10 +580,9 @@ function countWords(text) {
 // Handle file opened message from main process
 if (window.electronAPI && window.electronAPI.onFileOpened) {
   window.electronAPI.onFileOpened((data) => {
-    // console.log('File opened event received:', data.filePath);
     if (data && data.filePath && data.content !== undefined) {
       currentFilePath = data.filePath;
-      editor.value = data.content;
+      editor.setValue(data.content); // Use CodeMirror's setValue() method
       originalContent = data.content;
       documentChanged = false;
       
@@ -505,7 +593,7 @@ if (window.electronAPI && window.electronAPI.onFileOpened) {
       // Update stats
       updatePositionAndStats();
       
-      // CHANGE: Always update preview since we start in preview mode
+      // Update preview
       updatePreview();
     } else {
       console.error('Invalid data received from onFileOpened:', data);
@@ -523,6 +611,7 @@ if (window.electronAPI && window.electronAPI.onSetTheme) {
     } else {
       htmlEl.setAttribute('data-theme', 'dark');
     }
+    // CodeMirror theming is handled by CSS
   });
 } else {
   console.error('electronAPI not available or onSetTheme method not found');
