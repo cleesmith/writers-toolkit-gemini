@@ -1,61 +1,85 @@
-// editor-dialog.js with CodeMirror
+// editor-dialog.js - Complete clean version with reliable spellcheck
+// This file creates a powerful text editor using CodeMirror with features like:
+// - Live preview of markdown content
+// - Persistent spellcheck that survives font changes
+// - Customizable font sizes and word wrapping
+// - Tab functionality completely disabled for clean writing
+// - Placeholder text to guide new users
 
-// DOM Elements - Reference these after DOM is fully loaded
-let editor; // This will now be a CodeMirror instance
-let preview;
-let filepath;
-let modeToggle;
-let modeTooltip;
-let openButton;
-let saveButton;
-let saveAsButton;
-let closeButton;
-let notification;
-let wordWrapToggle;
-let removeMarkdownButton;
-let fontSizeIncrease;
-let fontSizeDecrease;
-let fontSizeDisplay;
-let positionDisplay;
-let statisticsDisplay;
-let htmlEl;
+// =============================================================================
+// SECTION 1: GLOBAL VARIABLES AND STATE MANAGEMENT
+// =============================================================================
 
-// Find functionality elements
-let findButton;
+// These variables hold references to all the important DOM elements
+// We initialize them when the page loads to avoid repeated DOM queries
+let editor; // The main CodeMirror editor instance
+let preview; // The preview pane that shows rendered markdown
+let filepath; // Display element showing current file path
+let modeToggle; // Button to switch between edit and preview modes
+let modeTooltip; // Tooltip text for the mode toggle button
+let openButton; // File open button
+let saveButton; // File save button
+let saveAsButton; // Save As button for new files
+let closeButton; // Window close button
+let notification; // Popup notification element
+let wordWrapToggle; // Button to control line wrapping
+let removeMarkdownButton; // Button to strip markdown formatting
+let fontSizeIncrease; // Button to make text larger
+let fontSizeDecrease; // Button to make text smaller
+let fontSizeDisplay; // Shows current font size
+let positionDisplay; // Shows cursor line and column
+let statisticsDisplay; // Shows word and character counts
+let htmlEl; // Reference to the HTML element for theme management
+let findButton; // Search functionality button
 
-// State variables
-let currentFilePath = null;
-let documentChanged = false;
-let originalContent = '';
-let isWordWrapEnabled = true;
-let currentFontSize = 14; // Default font size in pixels
+// Application state variables that track the editor's current condition
+let currentFilePath = null; // Path to the currently open file
+let documentChanged = false; // Whether the document has unsaved changes
+let originalContent = ''; // Content when file was last saved (for change detection)
+let isWordWrapEnabled = true; // Current word wrap setting
+let currentFontSize = 14; // Current font size in pixels
 
-// Wait for DOM to be fully loaded before doing anything
+// =============================================================================
+// SECTION 2: INITIALIZATION AND STARTUP SEQUENCE
+// =============================================================================
+
+// The main startup function that runs when the page is fully loaded
+// This sequence is carefully ordered to ensure each component has what it needs
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('DOM fully loaded');
-  
-  // Initialize DOM references
+  // Step 1: Get references to all HTML elements first
+  // This must happen before anything else tries to use these elements
   initDomReferences();
   
-  // Initialize CodeMirror
+  // Step 2: Load the placeholder addon before CodeMirror initialization
+  // CodeMirror checks for available options during setup, so addons must load first
+  loadPlaceholderAddon();
+  
+  // Step 3: Create and configure the CodeMirror editor instance
+  // This is the heart of our editor system
   initCodeMirror();
   
-  // Set up UI control event listeners
+  // Step 4: Set up all the button click handlers and user interface controls
   setupControlEvents();
   
+  // Step 5: Apply initial settings for word wrap, font size, and preview
   updateWordWrap();
-  updateFontSize(); // Initialize font size display and CodeMirror styling
+  updateFontSize(); // This also ensures spellcheck is properly configured
   updatePreview();
   
-  // set the mode tooltip to "Edit" since we start in preview mode
+  // Step 6: Set the correct tooltip since we start in edit mode
   if (modeTooltip) {
-    modeTooltip.textContent = 'go Edit';
+    modeTooltip.textContent = 'go Preview';
   }
   
-  console.log('Editor initialization complete in preview mode');
+  // Step 7: Final setup to ensure CodeMirror is ready for typing
+  // The delay allows all the DOM changes to settle before focusing
+  setTimeout(() => {
+    ensureCodeMirrorReady();
+  }, 100);
 });
 
-// Initialize all DOM references
+// Grab references to all the HTML elements we'll need throughout the application
+// This approach is more efficient than searching for elements repeatedly
 function initDomReferences() {
   preview = document.getElementById('preview');
   filepath = document.getElementById('filepath');
@@ -75,121 +99,355 @@ function initDomReferences() {
   statisticsDisplay = document.getElementById('statistics');
   htmlEl = document.documentElement;
   findButton = document.getElementById('find-button');
-  
-  console.log('DOM references initialized');
 }
 
-// Initialize CodeMirror editor
+// =============================================================================
+// SECTION 3: CODEMIRROR PLACEHOLDER ADDON
+// =============================================================================
+
+// Load the official CodeMirror placeholder addon directly into our code
+// This avoids unreliable CDN dependencies while providing professional functionality
+function loadPlaceholderAddon() {
+  // This is the official CodeMirror placeholder addon code
+  // We embed it directly to avoid external dependency issues
+  (function(mod) {
+    if (typeof exports == "object" && typeof module == "object") 
+      mod(require("../../lib/codemirror"));
+    else if (typeof define == "function" && define.amd) 
+      define(["../../lib/codemirror"], mod);
+    else 
+      mod(CodeMirror);
+  })(function(CodeMirror) {
+    // Register the placeholder option with CodeMirror
+    CodeMirror.defineOption("placeholder", "", function(cm, val, old) {
+      var prev = old && old != CodeMirror.Init;
+      if (val && !prev) {
+        // Set up event listeners when placeholder is enabled
+        cm.on("blur", onBlur);
+        cm.on("change", onChange);
+        cm.on("swapDoc", onChange);
+        CodeMirror.on(cm.getInputField(), "compositionupdate", cm.state.placeholderCompose = function() { onComposition(cm) })
+        onChange(cm);
+      } else if (!val && prev) {
+        // Clean up event listeners when placeholder is disabled
+        cm.off("blur", onBlur);
+        cm.off("change", onChange);
+        cm.off("swapDoc", onChange);
+        CodeMirror.off(cm.getInputField(), "compositionupdate", cm.state.placeholderCompose)
+        clearPlaceholder(cm);
+        var wrapper = cm.getWrapperElement();
+        wrapper.className = wrapper.className.replace(" CodeMirror-empty", "");
+      }
+      if (val && !cm.hasFocus()) onBlur(cm);
+    });
+
+    // Remove the placeholder element from the editor
+    function clearPlaceholder(cm) {
+      if (cm.state.placeholder) {
+        cm.state.placeholder.parentNode.removeChild(cm.state.placeholder);
+        cm.state.placeholder = null;
+      }
+    }
+    
+    // Create and display the placeholder element
+    function setPlaceholder(cm) {
+      clearPlaceholder(cm);
+      var elt = cm.state.placeholder = document.createElement("pre");
+      elt.style.cssText = "height: 0; overflow: visible";
+      elt.style.direction = cm.getOption("direction");
+      elt.className = "CodeMirror-placeholder CodeMirror-line-like";
+      var placeHolder = cm.getOption("placeholder")
+      if (typeof placeHolder == "string") placeHolder = document.createTextNode(placeHolder)
+      elt.appendChild(placeHolder)
+      cm.display.lineSpace.insertBefore(elt, cm.display.lineSpace.firstChild);
+    }
+
+    // Handle text composition events (important for international input methods)
+    function onComposition(cm) {
+      setTimeout(function() {
+        var empty = false
+        if (cm.lineCount() == 1) {
+          var input = cm.getInputField()
+          empty = input.nodeName == "TEXTAREA" ? !cm.getLine(0).length
+            : !/[^\u200b]/.test(input.querySelector(".CodeMirror-line").textContent)
+        }
+        if (empty) setPlaceholder(cm)
+        else clearPlaceholder(cm)
+      }, 20)
+    }
+
+    // Show placeholder when editor loses focus and is empty
+    function onBlur(cm) {
+      if (isEmpty(cm)) setPlaceholder(cm);
+    }
+    
+    // Handle content changes - show or hide placeholder as appropriate
+    function onChange(cm) {
+      var wrapper = cm.getWrapperElement(), empty = isEmpty(cm);
+      wrapper.className = wrapper.className.replace(" CodeMirror-empty", "") + (empty ? " CodeMirror-empty" : "");
+      if (empty) setPlaceholder(cm);
+      else clearPlaceholder(cm);
+    }
+
+    // Check if the editor is empty (one line with no content)
+    function isEmpty(cm) {
+      return (cm.lineCount() === 1) && (cm.getLine(0) === "");
+    }
+  });
+}
+
+// =============================================================================
+// SECTION 4: CODEMIRROR INITIALIZATION AND CONFIGURATION
+// =============================================================================
+
+// Create and configure the main CodeMirror editor with all the features we need
 function initCodeMirror() {
   const editorElement = document.getElementById('editor');
   
-  // Create CodeMirror instance with basic configuration
+  // Create CodeMirror with carefully chosen options for the best writing experience
   editor = CodeMirror(editorElement, {
     value: '', // Start with empty content
-    mode: 'text/plain', // Plain text mode
-    lineNumbers: true, // Show line numbers
-    lineWrapping: true, // Enable line wrapping by default
-    theme: 'default', // We'll handle theming with CSS
-    indentUnit: 2, // Tab size
-    tabSize: 2,
-    indentWithTabs: false, // Use spaces instead of tabs
-    showCursorWhenSelecting: true,
-    styleActiveLine: true, // Highlight current line
-    matchBrackets: true, // Highlight matching brackets
-    autoRefresh: true, // Auto refresh when shown
+    mode: 'text/plain', // Plain text mode (no syntax highlighting)
+    lineNumbers: true, // Show line numbers for reference
+    lineWrapping: true, // Wrap long lines instead of horizontal scrolling
+    theme: 'default', // Use default theme (we handle dark/light with CSS)
+    
+    // Input configuration for reliable spellcheck support
+    inputStyle: 'contenteditable', // This works better with browser spellcheck
+    
+    // Spellcheck configuration - provide assistance without being intrusive
+    spellcheck: true, // Enable red underlines for misspelled words
+    autocorrect: false, // Don't automatically change what users type
+    autocapitalize: false, // Don't automatically capitalize letters
+    
+    // Placeholder text to help new users understand what to do
+    placeholder: 'Start writing your story here...',
+    
+    // Tab behavior - completely disabled for clean, distraction-free writing
+    indentUnit: 0, // No automatic indentation
+    tabSize: 0, // Tab characters show as zero width
+    indentWithTabs: false, // Never insert tab characters
+    smartIndent: false, // Don't automatically indent based on context
+    electricChars: false, // Don't auto-indent when typing special characters
+    
+    // Custom key bindings to disable tab functionality entirely
+    extraKeys: {
+      'Tab': function(cm) {
+        // Do nothing when Tab is pressed - completely disable tab behavior
+        return;
+      },
+      'Shift-Tab': function(cm) {
+        // Do nothing when Shift-Tab is pressed - no reverse indenting
+        return;
+      }
+    },
+    
+    // Visual and interaction settings for a professional editing experience
+    showCursorWhenSelecting: true, // Keep cursor visible during text selection
+    styleActiveLine: true, // Highlight the line containing the cursor
+    matchBrackets: false, // Disabled since we disabled electricChars
+    autoRefresh: true, // Automatically refresh when the editor becomes visible
     viewportMargin: Infinity, // Render entire document for better search
-    // These options help with copy/paste and text interaction
-    dragDrop: true, // Enable drag and drop
-    allowDropFileTypes: ['text/plain', 'text/markdown'], // Allow text file drops
-    scrollbarStyle: 'native' // Use native scrollbars for better interaction
+    
+    // File handling settings
+    dragDrop: true, // Allow dragging files into the editor
+    allowDropFileTypes: ['text/plain', 'text/markdown'], // Accept text files
+    scrollbarStyle: 'native', // Use system scrollbars for familiarity
+    
+    // Performance settings that work well with spellcheck
+    pollInterval: 100, // How often to check for changes
+    workDelay: 100, // Delay before processing changes
+    flattenSpans: false, // Keep text spans separate for better browser recognition
+    addModeClass: false // Don't add CSS classes that might interfere
   });
   
-  // Set up CodeMirror event listeners
+  // Set up event listeners for the editor
   setupCodeMirrorEvents();
-  
-  console.log('CodeMirror initialized');
 }
 
-// Force CodeMirror to be properly ready for text input
-function ensureCodeMirrorReady() {
-  // This function ensures CodeMirror's text input system is fully functional
-  // We need to be especially careful with empty documents, which require
-  // more stable initialization conditions than documents with existing content
+// =============================================================================
+// SECTION 5: SPELLCHECK MANAGEMENT (SIMPLIFIED APPROACH)
+// =============================================================================
+
+// Simple, reliable spellcheck activation that doesn't overwhelm the browser
+// This approach focuses on the essential settings without excessive manipulation
+function activateSpellcheck() {
+  const inputField = editor.getInputField();
   
+  // Configure the main input field that CodeMirror uses for text entry
+  if (inputField) {
+    inputField.setAttribute('spellcheck', 'true');
+    inputField.setAttribute('autocorrect', 'off'); // Respect user preference
+    inputField.setAttribute('autocapitalize', 'off'); // Respect user preference
+    
+    // Ensure contenteditable elements are properly configured
+    if (inputField.contentEditable !== undefined) {
+      inputField.contentEditable = 'true';
+    }
+  }
+  
+  // Also configure the wrapper element to support spellcheck
+  const wrapper = editor.getWrapperElement();
+  if (wrapper) {
+    wrapper.setAttribute('spellcheck', 'true');
+  }
+}
+
+// =============================================================================
+// SECTION 6: FONT SIZE MANAGEMENT WITH SPELLCHECK PRESERVATION
+// =============================================================================
+
+// Update font size with a simplified approach that doesn't disrupt spellcheck
+// The key insight is to avoid aggressive refresh operations that break browser features
+function updateFontSize() {
   const isEditMode = htmlEl.classList.contains('edit-mode');
   
   if (isEditMode) {
-    // We're in edit mode, so the container should be visible
-    // Give CodeMirror multiple opportunities to establish proper input handling
+    // Apply font size to CodeMirror editor
+    const codeMirrorElement = editor.getWrapperElement();
+    codeMirrorElement.style.fontSize = currentFontSize + 'px';
     
-    // First refresh - lets CodeMirror measure its container
-    editor.refresh();
-    
-    // For empty documents, CodeMirror needs extra stabilization time
-    // to establish its coordinate system without text-based reference points
+    // Use a gentle refresh approach that minimizes disruption
     setTimeout(() => {
-      // Second refresh - ensures layout calculations are complete
       editor.refresh();
       
-      // Focus with a slight delay to ensure input capture is ready
+      // Simple spellcheck preservation - just ensure the attribute stays set
       setTimeout(() => {
-        editor.focus();
+        const inputField = editor.getInputField();
+        if (inputField) {
+          inputField.setAttribute('spellcheck', 'true');
+        }
+      }, 100);
+      
+    }, 10);
+  } else {
+    // In preview mode, simply apply font size to the preview element
+    preview.style.fontSize = currentFontSize + 'px';
+  }
+  
+  // Update the font size display
+  if (fontSizeDisplay) {
+    fontSizeDisplay.textContent = currentFontSize + 'px';
+  }
+}
+
+// Increase font size with reasonable limits for readability
+function increaseFontSize() {
+  const maxSize = 24; // Maximum size to prevent interface problems
+  if (currentFontSize < maxSize) {
+    currentFontSize += 2; // Increment by 2 for smooth progression
+    updateFontSize();
+  }
+}
+
+// Decrease font size with reasonable limits for readability
+function decreaseFontSize() {
+  const minSize = 10; // Minimum size to maintain readability
+  if (currentFontSize > minSize) {
+    currentFontSize -= 2; // Decrement by 2 for smooth progression
+    updateFontSize();
+  }
+}
+
+// =============================================================================
+// SECTION 7: CODEMIRROR EVENT HANDLING AND INTERACTION
+// =============================================================================
+
+// Ensure CodeMirror is properly ready for text input and user interaction
+function ensureCodeMirrorReady() {
+  const isEditMode = htmlEl.classList.contains('edit-mode');
+  
+  if (isEditMode) {
+    // Give CodeMirror time to properly establish its input handling
+    editor.refresh();
+    
+    setTimeout(() => {
+      editor.refresh(); // Second refresh for stability
+      
+      setTimeout(() => {
+        editor.focus(); // Give focus for immediate typing
         
-        // Final verification - ensure the cursor is visible and input is active
-        // This is especially important for empty documents
+        // Position cursor at the beginning for empty documents
         if (editor.getValue().length === 0) {
-          // For empty documents, explicitly position cursor at start
           editor.setCursor({line: 0, ch: 0});
         }
+        
+        // Ensure spellcheck is active
+        activateSpellcheck();
       }, 30);
     }, 50);
   } else {
-    // Not in edit mode, just do a basic refresh
+    // Just refresh if not in edit mode
     editor.refresh();
   }
 }
 
-// Set up CodeMirror-specific event listeners
+// Set up event listeners for CodeMirror editor interactions
 function setupCodeMirrorEvents() {
-  // Track cursor position and text changes
+  // Track cursor movement to update position display
   editor.on('cursorActivity', updatePositionAndStats);
   
-  // Track content changes
+  // Track content changes for save state and statistics
   editor.on('change', () => {
     documentChanged = editor.getValue() !== originalContent;
     updatePositionAndStats();
-    updatePreviewDebounced();
+    updatePreviewDebounced(); // Update preview after a delay
   });
   
-  // Handle tab key properly (CodeMirror handles this by default, but we can customize if needed)
-  editor.setOption('extraKeys', {
-    'Tab': function(cm) {
-      // Insert 2 spaces instead of tab
-      cm.replaceSelection('  ');
-    }
-    // Removed custom search - will use CodeMirror's default for now
+  // Ensure spellcheck stays active when editor gains focus
+  editor.on('focus', () => {
+    setTimeout(() => {
+      activateSpellcheck();
+    }, 100);
   });
   
-  // Initial update
+  // Initialize position and statistics display
   updatePositionAndStats();
 }
 
-// Set up UI control event listeners
-function setupControlEvents() {
-  console.log('Setting up control events');
+// =============================================================================
+// SECTION 8: MODE SWITCHING BETWEEN EDIT AND PREVIEW
+// =============================================================================
+
+// Toggle between edit mode (CodeMirror visible) and preview mode (rendered markdown visible)
+function toggleEditMode() {
+  htmlEl.classList.toggle('edit-mode');
+  const isEditMode = htmlEl.classList.contains('edit-mode');
   
-  // Mode toggle button (edit/preview)
+  // Update the tooltip to show what clicking the button will do
+  modeTooltip.textContent = isEditMode ? 'go Preview' : 'go Edit';
+  
+  if (!isEditMode) {
+    // Switching to preview mode - update the rendered content
+    updatePreview();
+    updateFontSize(); // Apply font size to preview
+  } else {
+    // Switching to edit mode - ensure CodeMirror is ready for input
+    setTimeout(() => {
+      ensureCodeMirrorReady();
+      updateFontSize(); // Apply font size and maintain spellcheck
+    }, 50);
+  }
+}
+
+// =============================================================================
+// SECTION 9: USER INTERFACE CONTROL HANDLERS
+// =============================================================================
+
+// Set up click handlers for all buttons and interface controls
+function setupControlEvents() {
+  // Mode toggle button (edit/preview switch)
   modeToggle.addEventListener('click', toggleEditMode);
   
-  // Open file button
+  // File opening with unsaved changes protection
   if (openButton) {
     openButton.addEventListener('click', () => {
-      
       if (documentChanged) {
         const confirmOpen = confirm('You have unsaved changes. Open a different file anyway?');
         if (!confirmOpen) return;
       }
       
+      // Use Electron API to show file selection dialog
       if (window.electronAPI && window.electronAPI.selectFile) {
         window.electronAPI.selectFile({
           title: 'Open File',
@@ -203,87 +461,61 @@ function setupControlEvents() {
           }
         })
         .catch(err => {
-          console.error('Error selecting file:', err);
           showNotification('Error selecting file: ' + err.message);
         });
       } else {
-        console.error('*** electronAPI not available or selectFile method not found');
-        console.log('electronAPI available?', !!window.electronAPI);
-        console.log('selectFile available?', !!(window.electronAPI && window.electronAPI.selectFile));
         showNotification('Error: File selection API not available');
       }
     });
   }
   
-  // Modified Remove Markdown button handler with confirmation dialog
+  // Remove Markdown formatting with user confirmation
   removeMarkdownButton.addEventListener('click', () => {
-    // Show confirmation dialog
     const confirmRemove = confirm(
       'Warning: Removing Markdown formatting is permanent and cannot be undone.\n\n' +
       'This will convert all formatting (headings, bold, links, etc.) to plain text.\n\n' +
       'Do you want to proceed?'
     );
     
-    // Only proceed if user confirms
     if (!confirmRemove) {
-      console.log('User cancelled Remove Markdown operation');
-      return;
+      return; // User cancelled
     }
     
-    // Make sure we're in edit mode
+    // Ensure we're in edit mode for the operation
     if (!htmlEl.classList.contains('edit-mode')) {
       htmlEl.classList.add('edit-mode');
       modeTooltip.textContent = 'go Preview';
     }
     
-    // Get the current content and remove markdown
+    // Convert markdown to plain text and update editor
     const plainText = removeMarkdown(editor.getValue());
-    
-    // Update the editor with plain text
     editor.setValue(plainText);
     documentChanged = editor.getValue() !== originalContent;
     
-    // Update preview content (even though it's not visible in edit mode)
     updatePreview();
-    
-    // Update position and stats
     updatePositionAndStats();
-    
-    // Show notification
     showNotification('Markdown formatting removed');
   });
   
-  // Save button
-  saveButton.addEventListener('click', () => {
-    saveFile(false);
-  });
+  // File save operations
+  saveButton.addEventListener('click', () => saveFile(false));
+  saveAsButton.addEventListener('click', () => saveFile(true));
   
-  // Save As button
-  saveAsButton.addEventListener('click', () => {
-    saveFile(true);
-  });
-  
-  // Close button - Make sure close button exists before adding listener
+  // Window close with unsaved changes protection
   if (closeButton) {
     closeButton.addEventListener('click', () => {
-      // Check if there are unsaved changes
       if (documentChanged) {
         const confirmClose = confirm('You have unsaved changes. Close anyway?');
         if (!confirmClose) return;
       }
       
-      // Close the window via IPC
       if (window.electronAPI && window.electronAPI.closeEditorDialog) {
         window.electronAPI.closeEditorDialog();
-      } else {
-        console.error('electronAPI not available or closeEditorDialog method not found');
       }
     });
-  } else {
-    console.error('Close button element not found!');
   }
   
-  // Word wrap toggle
+  // Text formatting controls
   wordWrapToggle.addEventListener('click', toggleWordWrap);
   
   // Font size controls
@@ -294,7 +526,7 @@ function setupControlEvents() {
     fontSizeDecrease.addEventListener('click', decreaseFontSize);
   }
   
-  // Find button - Use CodeMirror's built-in find functionality  
+  // Search functionality using CodeMirror's built-in find feature
   if (findButton) {
     findButton.addEventListener('click', () => {
       editor.execCommand('find');
@@ -302,43 +534,29 @@ function setupControlEvents() {
   }
 }
 
-// Toggle between edit and preview modes
-function toggleEditMode() {
-  htmlEl.classList.toggle('edit-mode');
-  const isEditMode = htmlEl.classList.contains('edit-mode');
-  
-  // Update tooltip text
-  modeTooltip.textContent = isEditMode ? 'go Preview' : 'go Edit';
-  
-  // If switching to preview mode, update the preview content
-  if (!isEditMode) {
-    updatePreview();
-    // Apply current font size to preview mode
-    updateFontSize();
-  } else {
-    // When switching to edit mode, ensure CodeMirror is fully ready for text input
-    setTimeout(() => {
-      ensureCodeMirrorReady(); // This replaces the simple refresh/focus sequence
-      updateFontSize(); // Apply font size after CodeMirror is ready
-    }, 50);
-  }
-}
+// =============================================================================
+// SECTION 10: MARKDOWN PROCESSING AND PREVIEW
+// =============================================================================
 
-// Update preview content with rendered markdown
+// Update the preview pane with rendered markdown content
 function updatePreview() {
   try {
-    // Simple markdown to HTML conversion
     const html = simpleMarkdownToHtml(editor.getValue());
     preview.innerHTML = html;
   } catch (error) {
-    console.error('Error updating preview:', error);
     preview.innerHTML = '<p style="color: red;">Error rendering markdown: ' + error.message + '</p>';
   }
 }
 
-// RemoveMarkdown function - Comprehensive markdown removal
+// Debounced preview update to avoid excessive rendering during typing
+let previewDebounceTimer;
+function updatePreviewDebounced() {
+  clearTimeout(previewDebounceTimer);
+  previewDebounceTimer = setTimeout(updatePreview, 300);
+}
+
+// Convert markdown text to plain text by removing all formatting
 function removeMarkdown(md, options) {
-  // Set default options if none provided
   options = options || {};
   options.listUnicodeChar = options.hasOwnProperty('listUnicodeChar') ? options.listUnicodeChar : false;
   options.stripListLeaders = options.hasOwnProperty('stripListLeaders') ? options.stripListLeaders : true;
@@ -348,10 +566,10 @@ function removeMarkdown(md, options) {
   
   var output = md || '';
   
-  // Remove horizontal rules
-  output = output.replace(/^(-\s*?|\*\s*?|_\s*?){3,}\s*$/gm, '');
-  
   try {
+    // Remove horizontal rules
+    output = output.replace(/^(-\s*?|\*\s*?|_\s*?){3,}\s*$/gm, '');
+    
     // Handle list markers
     if (options.stripListLeaders) {
       if (options.listUnicodeChar) {
@@ -366,7 +584,6 @@ function removeMarkdown(md, options) {
       output = output
         .replace(/\n={2,}/g, '\n')
         .replace(/~{3}.*\n/g, '')
-        // Improved code block handling
         .replace(/(`{3,})([\s\S]*?)\1/gm, function(match, p1, p2) {
           return p2.trim() + '%%CODEBLOCK_END%%\n';
         })
@@ -375,83 +592,54 @@ function removeMarkdown(md, options) {
     
     // Process main markdown elements
     output = output
-      // Remove HTML tags
-      .replace(/<[^>]*>/g, '')
-      // Remove setext headers
-      .replace(/^[=\-]{2,}\s*$/g, '')
-      // Remove footnotes
-      .replace(/\[\^.+?\](\: .*?$)?/g, '')
-      .replace(/\s{0,2}\[.*?\]: .*?$/g, '')
-      // Handle images and links
-      .replace(/\!\[(.*?)\][\[\(].*?[\]\)]/g, options.useImgAltText ? '$1' : '')
-      .replace(/\[(.*?)\][\[\(].*?[\]\)]/g, '$1')
-      // Better blockquote handling with spacing
+      .replace(/<[^>]*>/g, '') // Remove HTML tags
+      .replace(/^[=\-]{2,}\s*$/g, '') // Remove setext headers
+      .replace(/\[\^.+?\](\: .*?$)?/g, '') // Remove footnotes
+      .replace(/\s{0,2}\[.*?\]: .*?$/g, '') // Remove reference links
+      .replace(/\!\[(.*?)\][\[\(].*?[\]\)]/g, options.useImgAltText ? '$1' : '') // Handle images
+      .replace(/\[(.*?)\][\[\(].*?[\]\)]/g, '$1') // Handle links
       .replace(/^\s*>+\s?/gm, function(match) {
         return options.preserveBlockSpacing ? '\n' : '';
-      })
-      // Remove list markers again (thorough cleanup)
-      .replace(/^([\s\t]*)([\*\-\+]|\d+\.)\s+/gm, '$1')
-      // Remove reference links
-      .replace(/^\s{1,2}\[(.*?)\]: (\S+)( ".*?")?\s*$/g, '')
-      // Remove headers
-      .replace(/^(\n)?\s{0,}#{1,6}\s+| {0,}(\n)?\s{0,}#{0,} {0,}(\n)?\s{0,}$/gm, '$1$2$3')
-      // Remove emphasis
-      .replace(/([\*_]{1,3})(\S.*?\S{0,1})\1/g, '$2')
-      .replace(/([\*_]{1,3})(\S.*?\S{0,1})\1/g, '$2')
-      // Remove code markers
-      .replace(/`(.+?)`/g, '$1');
+      }) // Handle blockquotes
+      .replace(/^([\s\t]*)([\*\-\+]|\d+\.)\s+/gm, '$1') // Remove list markers
+      .replace(/^\s{1,2}\[(.*?)\]: (\S+)( ".*?")?\s*$/g, '') // Remove reference links
+      .replace(/^(\n)?\s{0,}#{1,6}\s+| {0,}(\n)?\s{0,}#{0,} {0,}(\n)?\s{0,}$/gm, '$1$2$3') // Remove headers
+      .replace(/([\*_]{1,3})(\S.*?\S{0,1})\1/g, '$2') // Remove emphasis
+      .replace(/([\*_]{1,3})(\S.*?\S{0,1})\1/g, '$2') // Remove emphasis (second pass)
+      .replace(/`(.+?)`/g, '$1'); // Remove code markers
     
-    // Final cleanup and spacing
+    // Final cleanup
     output = output
-      // Replace code block markers with proper spacing
       .replace(/%%CODEBLOCK_END%%\n/g, '\n\n\n')
-      // Normalize multiple newlines while preserving block spacing
       .replace(/\n{4,}/g, '\n\n\n')
       .replace(/\n{3}/g, '\n\n')
-      // Clean up any trailing whitespace
       .trim();
       
   } catch(e) {
-    console.error('Error processing markdown:', e);
-    return md;
+    return md; // Return original if processing fails
   }
   
   return output;
 }
 
-// A simple markdown to HTML converter
+// Simple markdown to HTML converter for preview functionality
 function simpleMarkdownToHtml(markdown) {
   if (!markdown) return '';
   
   let html = markdown
-    // Handle headings
-    .replace(/^# (.*?)$/gm, '<h1>$1</h1>')
-    .replace(/^## (.*?)$/gm, '<h2>$1</h2>')
-    .replace(/^### (.*?)$/gm, '<h3>$1</h3>')
-    
-    // Handle bold and italic
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    
-    // Handle links
-    .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>')
-    
-    // Handle code blocks
-    .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
-    
-    // Handle inline code
-    .replace(/`(.*?)`/g, '<code>$1</code>')
-    
-    // Handle blockquotes
-    .replace(/^> (.*?)$/gm, '<blockquote>$1</blockquote>')
-    
-    // Handle lists (basic)
-    .replace(/^- (.*?)$/gm, '<li>$1</li>')
-    
-    // Handle paragraphs (basic)
-    .replace(/^([^<].*?)$/gm, '<p>$1</p>');
+    .replace(/^# (.*?)$/gm, '<h1>$1</h1>') // H1 headers
+    .replace(/^## (.*?)$/gm, '<h2>$1</h2>') // H2 headers
+    .replace(/^### (.*?)$/gm, '<h3>$1</h3>') // H3 headers
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold text
+    .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic text
+    .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>') // Links
+    .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>') // Code blocks
+    .replace(/`(.*?)`/g, '<code>$1</code>') // Inline code
+    .replace(/^> (.*?)$/gm, '<blockquote>$1</blockquote>') // Blockquotes
+    .replace(/^- (.*?)$/gm, '<li>$1</li>') // List items
+    .replace(/^([^<].*?)$/gm, '<p>$1</p>'); // Paragraphs
   
-  // Wrap lists
+  // Wrap consecutive list items in ul tags
   html = html.replace(/<li>.*?<\/li>\n<li>.*?<\/li>/g, function(match) {
     return '<ul>' + match + '</ul>';
   });
@@ -459,41 +647,33 @@ function simpleMarkdownToHtml(markdown) {
   return html;
 }
 
-// A debounced version of updatePreview to avoid excessive rendering
-let previewDebounceTimer;
-function updatePreviewDebounced() {
-  clearTimeout(previewDebounceTimer);
-  previewDebounceTimer = setTimeout(updatePreview, 300);
-}
+// =============================================================================
+// SECTION 11: FILE OPERATIONS
+// =============================================================================
 
-// Open a file
+// Open a file using Electron's file system APIs
 async function openFile(filePath) {
   try {
     if (window.electronAPI && window.electronAPI.openFileInEditor) {
       const result = await window.electronAPI.openFileInEditor(filePath);
       if (!result.success) {
-        console.error('Error in openFileInEditor:', result.error);
         showNotification('Error opening file: ' + (result.error || 'Unknown error'));
       }
-    } else {
-      console.error('electronAPI not available or openFileInEditor method not found');
     }
   } catch (error) {
-    console.error('Error opening file:', error);
     showNotification('Error opening file: ' + error.message);
   }
 }
 
-// Save file (save or save as)
+// Save the current document content to a file
 async function saveFile(saveAs = false) {
   if (!window.electronAPI || !window.electronAPI.saveFile) {
-    console.error('saveFile API not available');
     showNotification('Error: API not available');
     return;
   }
   
   try {
-    const content = editor.getValue(); // Use CodeMirror's getValue() method
+    const content = editor.getValue();
     const result = await window.electronAPI.saveFile({
       filePath: currentFilePath,
       content,
@@ -503,21 +683,23 @@ async function saveFile(saveAs = false) {
     if (result && result.success) {
       currentFilePath = result.filePath;
       filepath.textContent = currentFilePath;
-      filepath.title = currentFilePath; // For tooltip on hover
+      filepath.title = currentFilePath; // Tooltip on hover
       documentChanged = false;
       originalContent = content;
       showNotification('File saved successfully');
     } else {
-      console.error('Failed to save file:', result);
       showNotification('Failed to save file');
     }
   } catch (error) {
-    console.error('Error saving file:', error);
     showNotification('Error saving file: ' + error.message);
   }
 }
 
-// Show a notification popup
+// =============================================================================
+// SECTION 12: UTILITY FUNCTIONS
+// =============================================================================
+
+// Show a temporary notification to the user
 function showNotification(message, duration = 2000) {
   notification.textContent = message;
   notification.classList.add('visible');
@@ -527,115 +709,70 @@ function showNotification(message, duration = 2000) {
   }, duration);
 }
 
-// Toggle word wrap
+// Toggle word wrap setting on and off
 function toggleWordWrap() {
   isWordWrapEnabled = !isWordWrapEnabled;
   updateWordWrap();
 }
 
-// Update word wrap setting
+// Apply current word wrap setting to CodeMirror
 function updateWordWrap() {
-  // Use CodeMirror's lineWrapping option
   editor.setOption('lineWrapping', isWordWrapEnabled);
   wordWrapToggle.textContent = `Wrap: ${isWordWrapEnabled ? 'On' : 'Off'}`;
 }
 
-// Increase font size
-function increaseFontSize() {
-  // Define size steps and maximum limit for readability
-  const maxSize = 24;
-  if (currentFontSize < maxSize) {
-    currentFontSize += 2; // Increase by 2px increments for smooth progression
-    updateFontSize();
-  }
-}
-
-// Decrease font size  
-function decreaseFontSize() {
-  // Define minimum size for readability
-  const minSize = 10;
-  if (currentFontSize > minSize) {
-    currentFontSize -= 2; // Decrease by 2px increments for smooth progression
-    updateFontSize();
-  }
-}
-
-// Apply font size changes to the appropriate element based on current mode
-function updateFontSize() {
-  const isEditMode = htmlEl.classList.contains('edit-mode');
-  
-  if (isEditMode) {
-    // In edit mode: apply font size to CodeMirror editor
-    const codeMirrorElement = editor.getWrapperElement();
-    codeMirrorElement.style.fontSize = currentFontSize + 'px';
-    
-    // Tell CodeMirror to refresh its layout and measurements
-    // This is crucial because font size changes affect line heights, 
-    // character widths, and overall text layout calculations
-    setTimeout(() => {
-      editor.refresh();
-    }, 10);
-  } else {
-    // In preview mode: apply font size to preview content
-    preview.style.fontSize = currentFontSize + 'px';
-  }
-  
-  // Update the display showing current font size
-  if (fontSizeDisplay) {
-    fontSizeDisplay.textContent = currentFontSize + 'px';
-  }
-}
-
-// Update cursor position and text statistics
+// Update the cursor position and document statistics display
 function updatePositionAndStats() {
-  const cursor = editor.getCursor(); // Get cursor position from CodeMirror
-  const text = editor.getValue(); // Get all text from CodeMirror
+  const cursor = editor.getCursor();
+  const text = editor.getValue();
   
-  // CodeMirror uses 0-based line numbers, so add 1 for display
+  // CodeMirror uses 0-based line numbers, so add 1 for user display
   const lineNumber = cursor.line + 1;
   const columnNumber = cursor.ch + 1;
   
-  // Update position display
   positionDisplay.textContent = `Line: ${lineNumber}, Column: ${columnNumber}`;
   
-  // Update statistics display
+  // Calculate and display word and character counts
   const wordCount = countWords(text);
   const charCount = text.length;
   statisticsDisplay.textContent = `Words: ${wordCount}, Characters: ${charCount}`;
 }
 
-// Count words in text
+// Count words in text by splitting on whitespace and filtering empty strings
 function countWords(text) {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
 
-// Handle file opened message from main process
+// =============================================================================
+// SECTION 13: ELECTRON API INTEGRATION
+// =============================================================================
+
+// Handle file opened message from the main Electron process
 if (window.electronAPI && window.electronAPI.onFileOpened) {
   window.electronAPI.onFileOpened((data) => {
     if (data && data.filePath && data.content !== undefined) {
       currentFilePath = data.filePath;
-      editor.setValue(data.content); // Use CodeMirror's setValue() method
+      editor.setValue(data.content);
       originalContent = data.content;
       documentChanged = false;
       
       // Update file path display
       filepath.textContent = currentFilePath;
-      filepath.title = currentFilePath; // For tooltip on hover
+      filepath.title = currentFilePath;
       
-      // Update stats
+      // Update interface elements
       updatePositionAndStats();
-      
-      // Update preview
       updatePreview();
-    } else {
-      console.error('Invalid data received from onFileOpened:', data);
+      
+      // Ensure spellcheck is active for the new content
+      setTimeout(() => {
+        activateSpellcheck();
+      }, 100);
     }
   });
-} else {
-  console.error('electronAPI not available or onFileOpened method not found');
 }
 
-// Handle theme changes from main process
+// Handle theme changes from the main Electron process
 if (window.electronAPI && window.electronAPI.onSetTheme) {
   window.electronAPI.onSetTheme(theme => {
     if (theme === 'light') {
@@ -643,10 +780,5 @@ if (window.electronAPI && window.electronAPI.onSetTheme) {
     } else {
       htmlEl.setAttribute('data-theme', 'dark');
     }
-    // CodeMirror theming is handled by CSS
   });
-} else {
-  console.error('electronAPI not available or onSetTheme method not found');
 }
-
-console.log('Editor dialog script loaded');

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="dark" class="edit-mode">
 <head>
   <meta charset="UTF-8">
   <title>StoryGrinder - Editor</title>
@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/matchesonscrollbar.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/dialog/dialog.min.css">
-  
+
   <style>
     :root[data-theme="light"] { 
       --bg:#fff; 
@@ -326,6 +326,62 @@
     #find-button { display:none; }
     .edit-mode #find-button { display:flex; }
 
+    /* These rules ensure search results are always readable in both light and dark modes */
+    /* Light theme search highlighting */
+    [data-theme="light"] .CodeMirror .cm-searching,
+    [data-theme="light"] .CodeMirror .CodeMirror-searching,
+    [data-theme="light"] .CodeMirror .cm-search-match,
+    [data-theme="light"] .CodeMirror .CodeMirror-matchhighlight,
+    [data-theme="light"] .CodeMirror .cm-selected,
+    [data-theme="light"] .CodeMirror .CodeMirror-selected,
+    [data-theme="light"] .CodeMirror .cm-search-current,
+    [data-theme="light"] .CodeMirror .search-highlight,
+    [data-theme="light"] .CodeMirror span.cm-searching,
+    [data-theme="light"] .CodeMirror span.cm-search-match {
+      background-color: #ffeb3b !important; /* Bright yellow background */
+      color: #000 !important; /* Black text for contrast */
+      border: 1px solid #f57f17 !important; /* Orange border for definition */
+      text-shadow: none !important; /* Remove any text shadows that might interfere */
+    }
+
+    /* Dark theme search highlighting - the comprehensive fix */
+    [data-theme="dark"] .CodeMirror .cm-searching,
+    [data-theme="dark"] .CodeMirror .CodeMirror-searching,
+    [data-theme="dark"] .CodeMirror .cm-search-match,
+    [data-theme="dark"] .CodeMirror .CodeMirror-matchhighlight,
+    [data-theme="dark"] .CodeMirror .cm-selected,
+    [data-theme="dark"] .CodeMirror .CodeMirror-selected,
+    [data-theme="dark"] .CodeMirror .cm-search-current,
+    [data-theme="dark"] .CodeMirror .search-highlight,
+    [data-theme="dark"] .CodeMirror span.cm-searching,
+    [data-theme="dark"] .CodeMirror span.cm-search-match {
+      background-color: #1a237e !important; /* Deep blue background */
+      color: #ffeb3b !important; /* Bright yellow text */
+      border: 1px solid #3f51b5 !important; /* Medium blue border */
+      text-shadow: none !important; /* Ensure clean text rendering */
+    }
+
+    /* Additional safety net - catch any search-related highlighting */
+    [data-theme="dark"] .CodeMirror *[class*="search"],
+    [data-theme="dark"] .CodeMirror *[class*="Search"],
+    [data-theme="dark"] .CodeMirror *[class*="match"],
+    [data-theme="dark"] .CodeMirror *[class*="Match"],
+    [data-theme="dark"] .CodeMirror *[class*="highlight"],
+    [data-theme="dark"] .CodeMirror *[class*="Highlight"] {
+      background-color: #1a237e !important;
+      color: #ffeb3b !important;
+    }
+
+    [data-theme="light"] .CodeMirror *[class*="search"],
+    [data-theme="light"] .CodeMirror *[class*="Search"],
+    [data-theme="light"] .CodeMirror *[class*="match"],
+    [data-theme="light"] .CodeMirror *[class*="Match"],
+    [data-theme="light"] .CodeMirror *[class*="highlight"],
+    [data-theme="light"] .CodeMirror *[class*="Highlight"] {
+      background-color: #ffeb3b !important;
+      color: #000 !important;
+    }
+
   </style>
 </head>
 <body>
@@ -353,7 +409,7 @@
       <button id="mode-toggle" class="control-button">
         <svg id="view-icon" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"></path></svg>
         <svg id="edit-icon" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"></path></svg>
-        <span class="tooltip" id="mode-tooltip">go Edit</span>
+        <span class="tooltip" id="mode-tooltip">go Preview</span>
       </button>
 
       <button id="open-button" class="control-button">
