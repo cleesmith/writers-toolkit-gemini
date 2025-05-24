@@ -1,10 +1,11 @@
-// editor-dialog.js - Complete clean version with reliable spellcheck
+// editor-dialog.js - Complete clean version with reliable spellcheck and One Dark theme
 // This file creates a powerful text editor using CodeMirror with features like:
 // - Live preview of markdown content
 // - Persistent spellcheck that survives font changes
 // - Customizable font sizes and word wrapping
 // - Tab functionality completely disabled for clean writing
 // - Placeholder text to guide new users
+// - One Dark theme for dark mode
 
 // =============================================================================
 // SECTION 1: GLOBAL VARIABLES AND STATE MANAGEMENT
@@ -65,6 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateWordWrap();
   updateFontSize(); // This also ensures spellcheck is properly configured
   updatePreview();
+  updateCodeMirrorTheme(); // Set initial theme
   
   // Step 6: Set the correct tooltip since we start in edit mode
   if (modeTooltip) {
@@ -210,7 +212,7 @@ function initCodeMirror() {
     mode: 'text/plain', // Plain text mode (no syntax highlighting)
     lineNumbers: true, // Show line numbers for reference
     lineWrapping: true, // Wrap long lines instead of horizontal scrolling
-    theme: 'default', // Use default theme (we handle dark/light with CSS)
+    theme: 'default', // Start with default, will be updated based on dark/light mode
     
     // Input configuration for reliable spellcheck support
     inputStyle: 'contenteditable', // This works better with browser spellcheck
@@ -266,7 +268,17 @@ function initCodeMirror() {
 }
 
 // =============================================================================
-// SECTION 5: SPELLCHECK MANAGEMENT (SIMPLIFIED APPROACH)
+// SECTION 5: THEME MANAGEMENT
+// =============================================================================
+
+// Update CodeMirror theme based on current dark/light mode
+function updateCodeMirrorTheme() {
+  const isDarkMode = htmlEl.getAttribute('data-theme') === 'dark';
+  editor.setOption('theme', isDarkMode ? 'one-dark' : 'default');
+}
+
+// =============================================================================
+// SECTION 6: SPELLCHECK MANAGEMENT (SIMPLIFIED APPROACH)
 // =============================================================================
 
 // Simple, reliable spellcheck activation that doesn't overwhelm the browser
@@ -294,7 +306,7 @@ function activateSpellcheck() {
 }
 
 // =============================================================================
-// SECTION 6: FONT SIZE MANAGEMENT WITH SPELLCHECK PRESERVATION
+// SECTION 7: FONT SIZE MANAGEMENT WITH SPELLCHECK PRESERVATION
 // =============================================================================
 
 // Update font size with a simplified approach that doesn't disrupt spellcheck
@@ -350,7 +362,7 @@ function decreaseFontSize() {
 }
 
 // =============================================================================
-// SECTION 7: CODEMIRROR EVENT HANDLING AND INTERACTION
+// SECTION 8: CODEMIRROR EVENT HANDLING AND INTERACTION
 // =============================================================================
 
 // Ensure CodeMirror is properly ready for text input and user interaction
@@ -406,7 +418,7 @@ function setupCodeMirrorEvents() {
 }
 
 // =============================================================================
-// SECTION 8: MODE SWITCHING BETWEEN EDIT AND PREVIEW
+// SECTION 9: MODE SWITCHING BETWEEN EDIT AND PREVIEW
 // =============================================================================
 
 // Toggle between edit mode (CodeMirror visible) and preview mode (rendered markdown visible)
@@ -431,7 +443,7 @@ function toggleEditMode() {
 }
 
 // =============================================================================
-// SECTION 9: USER INTERFACE CONTROL HANDLERS
+// SECTION 10: USER INTERFACE CONTROL HANDLERS
 // =============================================================================
 
 // Set up click handlers for all buttons and interface controls
@@ -535,7 +547,7 @@ function setupControlEvents() {
 }
 
 // =============================================================================
-// SECTION 10: MARKDOWN PROCESSING AND PREVIEW
+// SECTION 11: MARKDOWN PROCESSING AND PREVIEW
 // =============================================================================
 
 // Update the preview pane with rendered markdown content
@@ -648,7 +660,7 @@ function simpleMarkdownToHtml(markdown) {
 }
 
 // =============================================================================
-// SECTION 11: FILE OPERATIONS
+// SECTION 12: FILE OPERATIONS
 // =============================================================================
 
 // Open a file using Electron's file system APIs
@@ -696,7 +708,7 @@ async function saveFile(saveAs = false) {
 }
 
 // =============================================================================
-// SECTION 12: UTILITY FUNCTIONS
+// SECTION 13: UTILITY FUNCTIONS
 // =============================================================================
 
 // Show a temporary notification to the user
@@ -744,7 +756,7 @@ function countWords(text) {
 }
 
 // =============================================================================
-// SECTION 13: ELECTRON API INTEGRATION
+// SECTION 14: ELECTRON API INTEGRATION
 // =============================================================================
 
 // Handle file opened message from the main Electron process
@@ -780,5 +792,8 @@ if (window.electronAPI && window.electronAPI.onSetTheme) {
     } else {
       htmlEl.setAttribute('data-theme', 'dark');
     }
+    
+    // Update CodeMirror theme when global theme changes
+    updateCodeMirrorTheme();
   });
 }
