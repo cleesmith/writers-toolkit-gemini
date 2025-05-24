@@ -1,4 +1,4 @@
-// editor-dialog.js - Complete clean version with reliable spellcheck and One Dark theme
+// editor-dialog.js
 // This file creates a powerful text editor using CodeMirror with features like:
 // - Live preview of markdown content
 // - Persistent spellcheck that survives font changes
@@ -281,36 +281,81 @@ function updateCodeMirrorTheme() {
 // SECTION 6: SPELLCHECK MANAGEMENT (SIMPLIFIED APPROACH)
 // =============================================================================
 
-// Simple, reliable spellcheck activation that doesn't overwhelm the browser
-// This approach focuses on the essential settings without excessive manipulation
+// Robust spellcheck activation that persists through DOM changes
+// Uses MutationObserver to ensure spellcheck survives CodeMirror's DOM manipulations
+let spellcheckObserver = null;
+
 function activateSpellcheck() {
+  // First, apply spellcheck to all current elements
+  applySpellcheckAttributes();
+  
+  // Set up a MutationObserver to watch for DOM changes
+  // This ensures spellcheck persists when CodeMirror recreates elements
+  if (!spellcheckObserver) {
+    spellcheckObserver = new MutationObserver((mutations) => {
+      // When DOM changes occur, reapply spellcheck attributes
+      mutations.forEach(mutation => {
+        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+          // Delay slightly to let CodeMirror finish its DOM updates
+          setTimeout(() => {
+            applySpellcheckAttributes();
+          }, 10);
+        }
+      });
+    });
+    
+    // Watch the CodeMirror wrapper for any DOM changes
+    const wrapper = editor.getWrapperElement();
+    if (wrapper) {
+      spellcheckObserver.observe(wrapper, {
+        childList: true,
+        subtree: true
+      });
+    }
+  }
+}
+
+// Apply spellcheck attributes to all relevant elements
+function applySpellcheckAttributes() {
   const inputField = editor.getInputField();
   
-  // Configure the main input field that CodeMirror uses for text entry
+  // Configure the main input field
   if (inputField) {
     inputField.setAttribute('spellcheck', 'true');
-    inputField.setAttribute('autocorrect', 'off'); // Respect user preference
-    inputField.setAttribute('autocapitalize', 'off'); // Respect user preference
+    inputField.setAttribute('autocorrect', 'off');
+    inputField.setAttribute('autocapitalize', 'off');
     
-    // Ensure contenteditable elements are properly configured
     if (inputField.contentEditable !== undefined) {
       inputField.contentEditable = 'true';
     }
   }
   
-  // Also configure the wrapper element to support spellcheck
+  // Configure the wrapper
   const wrapper = editor.getWrapperElement();
   if (wrapper) {
     wrapper.setAttribute('spellcheck', 'true');
   }
+  
+  // Configure all contenteditable elements
+  const editableDivs = wrapper.querySelectorAll('div[contenteditable="true"]');
+  editableDivs.forEach(div => {
+    div.setAttribute('spellcheck', 'true');
+    div.setAttribute('autocorrect', 'off');
+    div.setAttribute('autocapitalize', 'off');
+  });
+  
+  // Also handle the CodeMirror-code elements which might be contenteditable
+  const codeElements = wrapper.querySelectorAll('.CodeMirror-code');
+  codeElements.forEach(elem => {
+    elem.setAttribute('spellcheck', 'true');
+  });
 }
 
 // =============================================================================
 // SECTION 7: FONT SIZE MANAGEMENT WITH SPELLCHECK PRESERVATION
 // =============================================================================
 
-// Update font size with a simplified approach that doesn't disrupt spellcheck
-// The key insight is to avoid aggressive refresh operations that break browser features
+// Update font size - spellcheck will be maintained by MutationObserver
 function updateFontSize() {
   const isEditMode = htmlEl.classList.contains('edit-mode');
   
@@ -319,18 +364,10 @@ function updateFontSize() {
     const codeMirrorElement = editor.getWrapperElement();
     codeMirrorElement.style.fontSize = currentFontSize + 'px';
     
-    // Use a gentle refresh approach that minimizes disruption
+    // Refresh CodeMirror to apply the new font size
+    // The MutationObserver will automatically reapply spellcheck after refresh
     setTimeout(() => {
       editor.refresh();
-      
-      // Simple spellcheck preservation - just ensure the attribute stays set
-      setTimeout(() => {
-        const inputField = editor.getInputField();
-        if (inputField) {
-          inputField.setAttribute('spellcheck', 'true');
-        }
-      }, 100);
-      
     }, 10);
   } else {
     // In preview mode, simply apply font size to the preview element
